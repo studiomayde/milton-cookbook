@@ -292,7 +292,6 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .slot .th{width:120px}
   .slot .tt{font-size:16px}
   .dtop .del{order:9}
-  .mvcol{display:none}
   .slot .mm{font-size:10px}
   .kick{font-size:10px}
   .dayrow{grid-template-columns:1fr;gap:10px}
@@ -603,7 +602,7 @@ function viewHome(){
   return `
     ${S.mode==='local'?`<div class="banner">You're seeing a copy saved on this device only. Open the shared link while signed in to claude.ai to see the family cookbook.</div>`:''}
     ${S.readOnly&&S.mode==='db'?`<div class="banner">You can browse this cookbook. Ask the owner to make you an editor if you'd like to add recipes or tick things off.</div>`:''}
-    <div class="head"><div class="tg"><div class="kick">${esc(kicker)}</div>${l.kind==='col'&&UI.renaming===l.id?`<form class="row" data-form="rencol" style="flex-wrap:nowrap"><input class="in" id="rencol" value="${esc(listTitle())}" autocomplete="off" style="font-family:var(--serif);font-size:30px;padding:6px 14px;max-width:420px"><button class="btn solid" type="submit">Save</button><button class="link" type="button" data-act="rencancel">Cancel</button></form>`:`<h1 class="h1">${esc(listTitle())}</h1>`}${UI.q?`<div class="sub">Results for “${esc(UI.q)}”  ·  <button class="link" data-act="clearq">Clear</button></div>`:''}</div>${l.kind==='col'&&canWrite()&&UI.renaming!==l.id?`<div class="row colactions" style="gap:18px;padding-bottom:10px"><button class="link" data-act="renamecol" data-id="${esc(l.id)}">Rename collection</button><button class="link mvcol" data-act="movecol" data-d="-1" data-id="${esc(l.id)}">Move up</button><button class="link mvcol" data-act="movecol" data-d="1" data-id="${esc(l.id)}">Move down</button></div>`:''}</div>
+    <div class="head"><div class="tg"><div class="kick">${esc(kicker)}</div>${l.kind==='col'&&UI.renaming===l.id?`<form class="row" data-form="rencol" style="flex-wrap:nowrap"><input class="in" id="rencol" value="${esc(listTitle())}" autocomplete="off" style="font-family:var(--serif);font-size:30px;padding:6px 14px;max-width:420px"><button class="btn solid" type="submit">Save</button><button class="link" type="button" data-act="rencancel">Cancel</button></form>`:`<h1 class="h1">${esc(listTitle())}</h1>`}${UI.q?`<div class="sub">Results for “${esc(UI.q)}”  ·  <button class="link" data-act="clearq">Clear</button></div>`:''}</div>${l.kind==='col'&&canWrite()&&UI.renaming!==l.id?`<div class="row colactions" style="gap:18px;padding-bottom:10px"><button class="link" data-act="renamecol" data-id="${esc(l.id)}">Rename collection</button></div>`:''}</div>
     <div class="mbtns" style="margin-bottom:14px"><label class="search" style="grid-column:1/-1">${ic('search')}<input id="mq" type="search" placeholder="Search recipes or ingredients…" value="${esc(UI.q)}" autocomplete="off"></label></div>
     <div class="between">
       ${showTabs?`<div class="seg"><button class="${UI.status==='all'?'on':''}" data-act="status" data-s="all">All  ${base.length}</button><button class="${UI.status==='tried'?'on':''}" data-act="status" data-s="tried">Tried  ${tried}</button><button class="${UI.status==='totry'?'on':''}" data-act="status" data-s="totry">To try  ${base.length-tried}</button></div>`:'<span></span>'}
