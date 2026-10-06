@@ -291,7 +291,7 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .slot{height:92px}
   .slot .th{width:120px}
   .slot .tt{font-size:14px}
-  .slot .mm{font-size:8px}
+  .slot .mm{font-size:9px}
   .dayrow{grid-template-columns:1fr;gap:10px}
   .cd{min-height:66px;align-items:center;border-color:transparent;padding:6px 2px}
   .cd .n{font-size:20px;width:36px;height:36px;margin:0}
@@ -309,7 +309,7 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   input,textarea,select:not(.sort){font-size:14px !important}
   select.sort{font-size:9px}
   input::placeholder,textarea::placeholder{font-size:11px}
-  .qin{width:84px}
+  .qin{width:84px;font-size:11px !important}
   .swapbar{top:64px}
 }
 .mbtns{display:none}
@@ -617,7 +617,7 @@ function viewSearch(){
     <label class="search">${ic('search')}<input id="sq" type="search" placeholder="Recipe, ingredient or who it's from" value="${esc(UI.q)}" autocomplete="off" enterkeyhint="search"></label>
     ${q?(hits.length?`<div class="sub" style="margin-top:16px">${hits.length} recipe${hits.length===1?'':'s'}</div><div class="grid">${hits.map(cardHTML).join('')}</div>`
       :`<div class="empty"><div class="serif">Nothing matches “${esc(q)}”.</div><p class="muted">Try a different ingredient or recipe name.</p></div>`)
-    :`<p class="muted" style="margin:18px 2px 0;font-size:12px">Try “chicken”, “lemon” or “Nonna”.</p>`}`;
+    :`<p class="muted" style="margin:18px 2px 0;font-size:12px">Try “chicken”, “lemon” or “Aunty”.</p>`}`;
 }
 function viewRecipe(){
   const r=R(UI.rid); if(!r) return `<div class="empty"><div class="serif">This recipe isn't in the book any more.</div><p><button class="btn" data-act="list" data-kind="all">Back to recipes</button></p></div>`;
@@ -672,8 +672,8 @@ function viewEdit(){
       <div><label class="photo" for="photo">${d.photo?`<img src="${d.photo}" alt="">`:''}${ic('camera')}<span class="serif">${d.photo?'Change photo':'Add a photo'}</span><span class="muted" style="font-size:10px">Take one or choose from your library</span><input type="file" id="photo" accept="image/*"></label>
         ${d.photo?`<button type="button" class="link" style="margin-top:10px" data-act="rmphoto">Remove photo</button>`:''}${UI.scanning?`<p class="muted" style="font-size:11px;margin:10px 0 0">Looking for a recipe in this photo… <span id="scanp">${UI.ocr||0}%</span></p>`:''}</div>
       <div class="fields">
-        <div class="field"><label class="lbl" for="f-title">Recipe name</label><input class="in" id="f-title" value="${esc(d.title)}" placeholder="e.g. Nonna's Sunday ragu" required></div>
-        <div class="field"><label class="lbl" for="f-from">Recipe from</label><input class="in" id="f-from" value="${esc(d.from)}" placeholder="Who gave it to us? e.g. Mum, Nonna, Sarah next door"></div>
+        <div class="field"><label class="lbl" for="f-title">Recipe name</label><input class="in" id="f-title" value="${esc(d.title)}" placeholder="e.g. Aunty's Sunday ragu" required></div>
+        <div class="field"><label class="lbl" for="f-from">Recipe from</label><input class="in" id="f-from" value="${esc(d.from)}" placeholder="Who gave it to us? e.g. Mum, Aunty, Sarah next door"></div>
         <div class="field"><label class="lbl" for="f-intro">A line about it</label><input class="in" id="f-intro" value="${esc(d.intro)}" placeholder="e.g. Our weeknight favourite"></div>
         <div class="field"><span class="lbl">Collections  ·  pick as many as you like</span><div class="chips">${cols.map(c=>`<button type="button" class="chip${colsOf(d).includes(c.id)?' on':''}" data-act="dcol" data-id="${c.id}">${esc(c.name)}</button>`).join('')}</div></div>
         <div class="three"><div class="field st"><span class="lbl">Status</span><div class="seg"><button type="button" class="${d.status==='tried'?'on':''}" data-act="dstatus" data-s="tried">Tried</button><button type="button" class="${d.status!=='tried'?'on':''}" data-act="dstatus" data-s="totry">To try</button></div></div>
