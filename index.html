@@ -374,7 +374,7 @@ function fmtMins(m){if(!m)return'';if(m<60)return m+' min';const h=Math.floor(m/
 
 /* ---------- state ---------- */
 const S={recipes:[],cols:[],plan:{},ticks:{},extras:[],regs:[],qty:{},qtyLocal:{},readOnly:false,mode:'loading',loaded:{}};
-const UI={view:'home',list:{kind:'all'},status:'all',sort:'new',q:'',rid:null,editId:null,pmode:'week',week:mondayOf(TODAY),day:TODAY,month:TODAY.slice(0,8)+'01',extraCols:[],extraDay:[],swap:null,sheet:null,cook:{},trolley:true,regEdit:false,regGroup:'Every week',draft:null,addingCol:false};
+const UI={view:'home',list:{kind:'all'},status:'all',sort:'new',q:'',rid:null,editId:null,pmode:'week',week:mondayOf(TODAY),day:TODAY,month:TODAY.slice(0,8)+'01',extraCols:[],extraDay:[],swap:null,sheet:null,cook:{},trolley:true,regEdit:false,regGroup:'Food',draft:null,addingCol:false};
 let sample=null;
 const photosHere=()=>true;
 const SB_URL='https://ppqrphmaixfzzlkpibjt.supabase.co';
@@ -733,7 +733,7 @@ function viewPlanner(){
 }
 function viewShopping(){
   const wk=UI.week; const items=shoppingItems(wk); const done=items.filter(i=>i.done).length; const pct=items.length?Math.round(done/items.length*100):0;
-  const groups=['Every week','Food','Snacks','Drinks','Household'];
+  const groups=['Food','Snacks','Drinks','Household'];
   return `<div class="head"><div class="tg"><div class="kick">Shopping list</div><h1 class="h1">This week's shop</h1><div class="sub">${weekLabel(wk)}  ·  ${items.length-done} to get${done?`  ·  ${done} in the trolley`:''}</div></div>
       <div class="row"><div class="seg"><button data-act="snav" data-d="-1" aria-label="Previous week">${ic('back')}</button><button data-act="stoday">${UI.week===mondayOf(TODAY)?'This week':'Back to this week'}</button><button data-act="snav" data-d="1" aria-label="Next week">${ic('right')}</button></div><button class="btn" data-act="sharelist">${ic('share')} Copy list</button></div></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
@@ -744,8 +744,7 @@ function viewShopping(){
     </div>
     <aside class="panel"><div class="between"><div><h2>Our regulars</h2><div class="muted" style="font-size:11px;margin-top:4px">The things we always grab. Tap to add to this week.</div></div>${canWrite()?`<button class="link" data-act="regedit">${UI.regEdit?'Done':'Edit'}</button>`:''}</div>
       ${canWrite()?`<form class="stack" data-form="reg"><input class="in" id="newreg" placeholder="Add a regular, e.g. rice crackers" autocomplete="off" style="padding:10px 14px;font-size:12px"><div class="row" style="gap:8px"><span class="lbl">Add to</span>${groups.map(g=>`<button type="button" class="chip${UI.regGroup===g?' on':''}" data-act="reggroup" data-g="${g}">${g}</button>`).join('')}</div><button class="btn" type="submit">${ic('plus')} Add regular</button></form>`:''}
-      ${groups.map(g=>{ const rs=S.regs.filter(r=>(r.group||'Every week')===g).sort((a,b)=>a.name.localeCompare(b.name)); return `<div><div class="lbl" style="padding-bottom:4px">${g}</div>${rs.length?rs.map(r=>`<div class="reg"><span>${esc(r.name)}</span>${UI.regEdit?`<button class="xbtn" data-act="rmreg" data-id="${r.id}" aria-label="Remove ${esc(r.name)}">${ic('x')}</button>`:`<button class="rbtn${r.on?' on':''}" data-act="togreg" data-id="${r.id}" aria-label="${r.on?'Remove from':'Add to'} this week">${ic(r.on?'check':'plus')}</button>`}</div>`).join(''):`<div class="reg muted" style="font-size:11px">None yet</div>`}</div>` }).join('')}
-      ${canWrite()&&S.regs.some(r=>(r.group||'Every week')==='Every week'&&!r.on)?`<button class="btn wide" data-act="allweekly">Add all every-week items</button>`:''}
+      ${groups.map(g=>{ const rs=S.regs.filter(r=>(groups.includes(r.group)?r.group:'Food')===g).sort((a,b)=>a.name.localeCompare(b.name)); return `<div><div class="lbl" style="padding-bottom:4px">${g}</div>${rs.length?rs.map(r=>`<div class="reg"><span>${esc(r.name)}</span>${UI.regEdit?`<button class="xbtn" data-act="rmreg" data-id="${r.id}" aria-label="Remove ${esc(r.name)}">${ic('x')}</button>`:`<button class="rbtn${r.on?' on':''}" data-act="togreg" data-id="${r.id}" aria-label="${r.on?'Remove from':'Add to'} this week">${ic(r.on?'check':'plus')}</button>`}</div>`).join(''):`<div class="reg muted" style="font-size:11px">None yet</div>`}</div>` }).join('')}
       
     </aside></div>`;
 }
@@ -886,7 +885,6 @@ document.addEventListener('click',async e=>{
     case 'rmreg': { S.regs=S.regs.filter(x=>x.id!==id); render(); Store.del('regulars',id); break }
     case 'regedit': UI.regEdit=!UI.regEdit; render(); break;
     case 'reggroup': UI.regGroup=t.dataset.g; render(); break;
-    case 'allweekly': { for(const r of S.regs.filter(r=>(r.group||'Every week')==='Every week'&&!r.on)){ r.on=true; Store.set('regulars',r.id,r) } render(); break }
     /* form */
     case 'dcol': { readDraft(); const d=UI.draft; let a=colsOf(d).slice(); a=a.includes(id)?a.filter(x=>x!==id):a.concat(id); d.cols=a; delete d.col; render(); break }
     case 'dstatus': readDraft(); UI.draft.status=t.dataset.s; render(); break;
