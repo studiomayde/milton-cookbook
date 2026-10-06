@@ -231,6 +231,10 @@ textarea.in{resize:vertical;line-height:1.55}
 .pr .th .ph{font-size:20px}
 .pr .serif{font-size:16px;line-height:1.15}
 .toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--on-fg);padding:12px 20px;border-radius:999px;font-size:11px;z-index:60;max-width:calc(100% - 32px)}
+.ni[draggable="true"]{cursor:grab}
+.ni.drop-before{box-shadow:inset 0 2px 0 var(--fg)}
+.ni.drop-after{box-shadow:inset 0 -2px 0 var(--fg)}
+.ni.dragging{opacity:.4}
 @media (max-width:1100px){
   .pl,.shop{grid-template-columns:1fr}
   .hero{grid-template-columns:1fr}
@@ -496,7 +500,7 @@ function openList(kind,id){ UI.list={kind,id}; UI.status='all'; go('home') }
 function canWrite(){ return !S.readOnly }
 function renderSide(){
   const n=k=>listRecipes(k).length;
-  const li=(kind,label,count,id)=>{ const on=UI.view==='home'&&UI.list.kind===kind&&(kind!=='col'||UI.list.id===id); return `<button class="ni${on?' on':''}" data-act="list" data-kind="${kind}" data-id="${esc(id||'')}"><span>${esc(label)}</span><span>${count}</span></button>` };
+  const li=(kind,label,count,id)=>{ const on=UI.view==='home'&&UI.list.kind===kind&&(kind!=='col'||UI.list.id===id); const dr=kind==='col'&&canWrite(); return `<button class="ni${on?' on':''}" data-act="list" data-kind="${kind}" data-id="${esc(id||'')}"${dr?` draggable="true" data-colid="${esc(id)}" title="Drag to reorder"`:''}><span>${esc(label)}</span><span>${count}</span></button>` };
   const cols=S.cols.slice().sort((a,b)=>(a.order||0)-(b.order||0));
   const plannerOn=UI.view==='planner', shopOn=UI.view==='shopping';
   $('#side').innerHTML=`
@@ -506,7 +510,7 @@ function renderSide(){
       <button class="btn ${shopOn?'solid':'ink'}" data-act="go" data-view="shopping" ${shopOn?'aria-current="page"':''}>Shopping list</button>
     </div>
     <div class="nav">
-      ${li('all','All recipes',S.recipes.length)}${li('tried','Tried & loved',n('tried'))}${li('totry','To try',n('totry'))}${li('fav','Favourites',n('fav'))}
+      ${li('all','All recipes',S.recipes.length)}${li('totry','To try',n('totry'))}${li('fav','Favourites',n('fav'))}
     </div>
     <div class="nav"><div class="lbl">Collections</div>
       ${cols.map(c=>li('col',c.name,listRecipes('col',c.id).length,c.id)).join('')}
@@ -547,7 +551,7 @@ function viewHome(){
   return `
     ${S.mode==='local'?`<div class="banner">You're seeing a copy saved on this device only. Open the shared link while signed in to claude.ai to see the family cookbook.</div>`:''}
     ${S.readOnly&&S.mode==='db'?`<div class="banner">You can browse this cookbook. Ask the owner to make you an editor if you'd like to add recipes or tick things off.</div>`:''}
-    <div class="head"><div class="tg"><div class="kick">${esc(kicker)}</div>${l.kind==='col'&&UI.renaming===l.id?`<form class="row" data-form="rencol" style="flex-wrap:nowrap"><input class="in" id="rencol" value="${esc(listTitle())}" autocomplete="off" style="font-family:var(--serif);font-size:30px;padding:6px 14px;max-width:420px"><button class="btn solid" type="submit">Save</button><button class="link" type="button" data-act="rencancel">Cancel</button></form>`:`<h1 class="h1">${esc(listTitle())}</h1>`}${l.kind==='col'&&canWrite()&&UI.renaming!==l.id?`<div><button class="link" data-act="renamecol" data-id="${esc(l.id)}">Rename collection</button></div>`:''}${UI.q?`<div class="sub">Results for “${esc(UI.q)}”  ·  <button class="link" data-act="clearq">Clear</button></div>`:''}</div></div>
+    <div class="head"><div class="tg"><div class="kick">${esc(kicker)}</div>${l.kind==='col'&&UI.renaming===l.id?`<form class="row" data-form="rencol" style="flex-wrap:nowrap"><input class="in" id="rencol" value="${esc(listTitle())}" autocomplete="off" style="font-family:var(--serif);font-size:30px;padding:6px 14px;max-width:420px"><button class="btn solid" type="submit">Save</button><button class="link" type="button" data-act="rencancel">Cancel</button></form>`:`<h1 class="h1">${esc(listTitle())}</h1>`}${l.kind==='col'&&canWrite()&&UI.renaming!==l.id?`<div class="row" style="gap:18px"><button class="link" data-act="renamecol" data-id="${esc(l.id)}">Rename collection</button><button class="link" data-act="movecol" data-d="-1" data-id="${esc(l.id)}">Move up</button><button class="link" data-act="movecol" data-d="1" data-id="${esc(l.id)}">Move down</button></div>`:''}${UI.q?`<div class="sub">Results for “${esc(UI.q)}”  ·  <button class="link" data-act="clearq">Clear</button></div>`:''}</div></div>
     <div class="mbtns" style="margin-bottom:14px"><label class="search" style="grid-column:1/-1">${ic('search')}<input id="mq" type="search" placeholder="Search recipes or ingredients…" value="${esc(UI.q)}" autocomplete="off"></label>
       <button class="btn solid" data-act="go" data-view="planner">Meal planner</button><button class="btn ink" data-act="go" data-view="shopping">Shopping list</button></div>
     <div class="between">
@@ -798,6 +802,7 @@ document.addEventListener('click',async e=>{
     case 'edit': startEdit(id); break;
     case 'canceledit': if(UI.editId) go('recipe',{rid:UI.editId}); else go('home'); break;
     case 'renamecol': UI.renaming=id; render(); setTimeout(()=>{ const i=$('#rencol'); if(i){ i.focus(); i.select() } },20); break;
+    case 'movecol': { const ids=sortedColIds(); const i=ids.indexOf(id), j=i+(+t.dataset.d); if(i<0||j<0||j>=ids.length) break; ids.splice(i,1); ids.splice(j,0,id); saveColOrder(ids); break }
     case 'rencancel': UI.renaming=null; render(); break;
     case 'addcol': UI.addingCol=true; render(); setTimeout(()=>{ const i=$('#newcol'); if(i) i.focus() },20); break;
     case 'fav': { const r=R(id); patchRecipe(id,{fav:!r.fav}); render(); break }
@@ -893,6 +898,14 @@ document.addEventListener('submit',async e=>{
     if(!r.tm) r.cookidoo=''; r.cols=colsOf(d); delete r.col;
     await saveRecipe(r); toast(UI.editId?'Recipe updated.':'Recipe saved.'); UI.cook[idv]={}; go('recipe',{rid:idv}) }
 });
+/* drag to reorder collections (sidebar) */
+let dragCol=null;
+function saveColOrder(ids){ ids.forEach((id,i)=>{ const c=S.cols.find(x=>x.id===id); if(c&&(c.order||0)!==i){ c.order=i; Store.set('collections',c.id,{name:c.name,order:i}) } }); render() }
+function sortedColIds(){ return S.cols.slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(c=>c.id) }
+document.addEventListener('dragstart',e=>{ const n=e.target.closest&&e.target.closest('.ni[data-colid]'); if(!n) return; dragCol=n.dataset.colid; n.classList.add('dragging'); try{ e.dataTransfer.setData('text/plain','col'); e.dataTransfer.effectAllowed='move' }catch(x){} });
+document.addEventListener('dragover',e=>{ if(!dragCol) return; const n=e.target.closest&&e.target.closest('.ni[data-colid]'); document.querySelectorAll('.drop-before,.drop-after').forEach(x=>x.classList.remove('drop-before','drop-after')); if(!n||n.dataset.colid===dragCol) return; e.preventDefault(); const r=n.getBoundingClientRect(); n.classList.add(e.clientY<r.top+r.height/2?'drop-before':'drop-after') });
+document.addEventListener('drop',e=>{ if(!dragCol) return; const n=e.target.closest&&e.target.closest('.ni[data-colid]'); if(n&&n.dataset.colid!==dragCol){ e.preventDefault(); const after=n.classList.contains('drop-after'); const ids=sortedColIds().filter(x=>x!==dragCol); let i=ids.indexOf(n.dataset.colid); if(after) i++; ids.splice(i,0,dragCol); dragCol=null; saveColOrder(ids) } });
+document.addEventListener('dragend',()=>{ dragCol=null; document.querySelectorAll('.dragging,.drop-before,.drop-after').forEach(x=>x.classList.remove('dragging','drop-before','drop-after')) });
 /* drag to swap (desktop) */
 let dragFrom=null;
 document.addEventListener('dragstart',e=>{ const s=e.target.closest&&e.target.closest('.slot'); if(!s) return; dragFrom={date:s.dataset.date,meal:s.dataset.meal}; try{ e.dataTransfer.setData('text/plain','slot'); e.dataTransfer.effectAllowed='move' }catch(x){} });
