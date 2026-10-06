@@ -587,7 +587,7 @@ function cardHTML(r){
   const tried=r.status==='tried';
   return `<article class="card" tabindex="0" role="button" data-act="open" data-id="${r.id}">
     <div class="pic">${r.photo?`<img src="${r.photo}" alt="">`:`<div class="ph">${esc((r.title||'?').charAt(0))}</div>`}
-      <div class="badges">${r.tm?'<span class="badge">Thermomix</span>':''}<span class="badge">${tried?ic('check')+'Tried':'To try'}</span></div></div>
+      ${r.tm?'<div class="badges"><span class="badge">Thermomix</span></div>':''}</div>
     <div><div class="k">${esc(recipeMeta(r))}</div><div class="t">${esc(r.title)}</div>${r.from?`<div class="f">From ${esc(r.from)}</div>`:''}</div>
   </article>` }
 function viewHome(){
