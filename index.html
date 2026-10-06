@@ -547,7 +547,7 @@ function viewHome(){
   return `
     ${S.mode==='local'?`<div class="banner">You're seeing a copy saved on this device only. Open the shared link while signed in to claude.ai to see the family cookbook.</div>`:''}
     ${S.readOnly&&S.mode==='db'?`<div class="banner">You can browse this cookbook. Ask the owner to make you an editor if you'd like to add recipes or tick things off.</div>`:''}
-    <div class="head"><div class="tg"><div class="kick">${esc(kicker)}</div><h1 class="h1">${esc(listTitle())}</h1>${UI.q?`<div class="sub">Results for “${esc(UI.q)}”  ·  <button class="link" data-act="clearq">Clear</button></div>`:''}</div></div>
+    <div class="head"><div class="tg"><div class="kick">${esc(kicker)}</div>${l.kind==='col'&&UI.renaming===l.id?`<form class="row" data-form="rencol" style="flex-wrap:nowrap"><input class="in" id="rencol" value="${esc(listTitle())}" autocomplete="off" style="font-family:var(--serif);font-size:30px;padding:6px 14px;max-width:420px"><button class="btn solid" type="submit">Save</button><button class="link" type="button" data-act="rencancel">Cancel</button></form>`:`<h1 class="h1">${esc(listTitle())}</h1>`}${l.kind==='col'&&canWrite()&&UI.renaming!==l.id?`<div><button class="link" data-act="renamecol" data-id="${esc(l.id)}">Rename collection</button></div>`:''}${UI.q?`<div class="sub">Results for “${esc(UI.q)}”  ·  <button class="link" data-act="clearq">Clear</button></div>`:''}</div></div>
     <div class="mbtns" style="margin-bottom:14px"><label class="search" style="grid-column:1/-1">${ic('search')}<input id="mq" type="search" placeholder="Search recipes or ingredients…" value="${esc(UI.q)}" autocomplete="off"></label>
       <button class="btn solid" data-act="go" data-view="planner">Meal planner</button><button class="btn ink" data-act="go" data-view="shopping">Shopping list</button></div>
     <div class="between">
@@ -797,6 +797,8 @@ document.addEventListener('click',async e=>{
     case 'new': startEdit(null); break;
     case 'edit': startEdit(id); break;
     case 'canceledit': if(UI.editId) go('recipe',{rid:UI.editId}); else go('home'); break;
+    case 'renamecol': UI.renaming=id; render(); setTimeout(()=>{ const i=$('#rencol'); if(i){ i.focus(); i.select() } },20); break;
+    case 'rencancel': UI.renaming=null; render(); break;
     case 'addcol': UI.addingCol=true; render(); setTimeout(()=>{ const i=$('#newcol'); if(i) i.focus() },20); break;
     case 'fav': { const r=R(id); patchRecipe(id,{fav:!r.fav}); render(); break }
     case 'tried': { const r=R(id); patchRecipe(id,{status:r.status==='tried'?'totry':'tried'}); render(); break }
@@ -881,6 +883,7 @@ document.addEventListener('change',async e=>{
 });
 document.addEventListener('submit',async e=>{
   e.preventDefault(); const f=e.target.dataset.form;
+  if(f==='rencol'){ const v=$('#rencol').value.trim(); const c=S.cols.find(x=>x.id===UI.renaming); UI.renaming=null; if(c&&v&&v!==c.name){ c.name=v; const doc={name:v,order:c.order||0}; Store.set('collections',c.id,doc); toast(`Renamed to ${v}.`) } render(); return }
   if(f==='col'){ const v=$('#newcol').value.trim(); UI.addingCol=false; if(v){ const cid=slug(v)+'-'+rid().slice(-4); const c={name:v,order:S.cols.length}; S.cols.push(Object.assign({id:cid},c)); Store.set('collections',cid,c); openList('col',cid) } else render() }
   if(f==='extra'){ const v=$('#extra').value.trim(); if(!v) return; const x=parseLine(v)||{name:v,qty:''}; const eid=Store.newId('extras'); const doc={name:x.name,qty:x.qty,done:false,at:Date.now()}; S.extras.push(Object.assign({id:eid},doc)); $('#extra').value=''; render(); Store.set('extras',eid,doc) }
   if(f==='reg'){ const v=$('#newreg').value.trim(); if(!v) return; const gid=slug(v); if(S.regs.some(r=>r.id===gid)){ toast(`${v} is already a regular.`); return } const doc={name:v.charAt(0).toUpperCase()+v.slice(1),group:UI.regGroup,on:false}; S.regs.push(Object.assign({id:gid},doc)); $('#newreg').value=''; render(); Store.set('regulars',gid,doc) }
