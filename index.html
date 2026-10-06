@@ -393,9 +393,14 @@ const Store={data:{},subs:{},chains:{},pending:{},since:null,
     S.mode='cloud';
     await this.pull(true);
     setInterval(()=>{ if(document.visibilityState==='visible') this.pull() },5000);
+    startLive();
+    window.addEventListener('focus',()=>this.pull()); window.addEventListener('online',()=>this.pull());
     document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') this.pull() });
   },
   async pull(first){
+    if(this.pulling&&!first){ this.again=true; return } this.pulling=true;
+    try{ await this._pull(first) } finally { this.pulling=false; if(this.again){ this.again=false; this.pull() } } },
+  async _pull(first){
     let rows;
     try{ const since=(!first&&this.since)?new Date(new Date(this.since).getTime()-15000).toISOString():null;
       rows=await rpc('cookbook_pull',{p_key:KEY,p_since:since}) }
@@ -416,7 +421,7 @@ const Store={data:{},subs:{},chains:{},pending:{},since:null,
   sub(c,cb){ this.subs[c]=cb; setTimeout(()=>this.emit(c),0) },
   newId(){ return rid() },
   write(k,fn){ this.pending[k]=(this.pending[k]||0)+1;
-    const p=(this.chains[k]||Promise.resolve()).then(fn).catch(writeErr).finally(()=>{ if(!--this.pending[k]) delete this.pending[k] });
+    const p=(this.chains[k]||Promise.resolve()).then(fn).then(()=>nudgeOthers()).catch(writeErr).finally(()=>{ if(!--this.pending[k]) delete this.pending[k] });
     this.chains[k]=p; return p },
   set(c,id,data){ const clean=JSON.parse(JSON.stringify(data)); delete clean.id;
     (this.data[c]=this.data[c]||{})[id]=clean; this.emit(c); this.cache();
@@ -424,6 +429,16 @@ const Store={data:{},subs:{},chains:{},pending:{},since:null,
   del(c,id){ if(this.data[c]) delete this.data[c][id]; this.emit(c); this.cache();
     return this.write(c+'/'+id,()=>rpc('cookbook_del',{p_key:KEY,p_coll:c,p_id:id})) }
 };
+/* live updates: after any change, tell every other open copy to refresh straight away */
+let live=null, nudgeT=null;
+async function startLive(){ try{
+  await new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js'; sc.onload=res; sc.onerror=rej; document.head.appendChild(sc) });
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('milton:'+KEY)); const h=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,24);
+  const client=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false}});
+  live=client.channel('cookbook-'+h,{config:{broadcast:{self:false}}});
+  live.on('broadcast',{event:'changed'},()=>Store.pull()).subscribe(st=>{ if(st==='SUBSCRIBED') Store.pull() });
+}catch(e){ live=null } }
+function nudgeOthers(){ if(!live) return; clearTimeout(nudgeT); nudgeT=setTimeout(()=>{ try{ live.send({type:'broadcast',event:'changed',payload:{at:Date.now()}}) }catch(e){} },150) }
 function writeErr(e){
   if(e&&(e.status===401||e.status===403)){ S.mode='badkey'; render(); return }
   toast("That didn't save. Check your connection and try again.");
