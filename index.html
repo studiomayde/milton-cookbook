@@ -733,7 +733,7 @@ function viewPlanner(){
 }
 function viewShopping(){
   const wk=UI.week; const items=shoppingItems(wk); const done=items.filter(i=>i.done).length; const pct=items.length?Math.round(done/items.length*100):0;
-  const groups=['Every week','Food','Snacks','Household'];
+  const groups=['Every week','Food','Snacks','Drinks','Household'];
   return `<div class="head"><div class="tg"><div class="kick">Shopping list</div><h1 class="h1">This week's shop</h1><div class="sub">${weekLabel(wk)}  ·  ${items.length-done} to get${done?`  ·  ${done} in the trolley`:''}</div></div>
       <div class="row"><div class="seg"><button data-act="snav" data-d="-1" aria-label="Previous week">${ic('back')}</button><button data-act="stoday">${UI.week===mondayOf(TODAY)?'This week':'Back to this week'}</button><button data-act="snav" data-d="1" aria-label="Next week">${ic('right')}</button></div><button class="btn" data-act="sharelist">${ic('share')} Copy list</button></div></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
