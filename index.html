@@ -760,13 +760,13 @@ function viewPlanner(){
   const body=UI.pmode==='week'?viewWeek():UI.pmode==='day'?viewDay():viewMonth();
   const items=shoppingItems(mondayOf(UI.pmode==='week'?UI.week:UI.day)); const left=items.filter(i=>!i.done).length;
   return plannerHead(esc(title))+`<div class="pl"><div style="min-width:0">${body}</div>
-    <aside class="panel mini"><div class="phead"><h2>Shopping list</h2><div class="muted" style="font-size:11px;margin-top:4px">${weekLabel(mondayOf(UI.pmode==='week'?UI.week:UI.day))}  ·  Total: ${left}</div></div>
+    <aside class="panel mini"><div class="phead"><h2>Shopping list</h2><div class="muted" style="font-size:11px;margin-top:4px">${weekLabel(mondayOf(UI.pmode==='week'?UI.week:UI.day))}  ·  Total: ${left} item${left===1?'':'s'}</div></div>
       ${shopListHTML(items,{mini:true,tags:false})}<button class="btn ink" data-act="go" data-view="shopping">Open shopping list</button></aside></div>`;
 }
 function viewShopping(){
   const wk=UI.week; const items=shoppingItems(wk); const done=items.filter(i=>i.done).length; const pct=items.length?Math.round(done/items.length*100):0;
   const groups=['Food','Snacks','Drinks','Frozen','Household'];
-  return `<div class="head"><div class="tg"><div class="kick">${weekLabel(wk)}</div><h1 class="h1">Shopping list</h1><div class="sub">Total: ${items.length-done}${done?`  ·  ${done} in the trolley`:''}</div></div>
+  return `<div class="head"><div class="tg"><div class="kick">${weekLabel(wk)}</div><h1 class="h1">Shopping list</h1><div class="sub">Total: ${items.length-done} item${items.length-done===1?'':'s'}${done?`  ·  ${done} in the trolley`:''}</div></div>
       <div class="row"><div class="seg"><button data-act="snav" data-d="-1" aria-label="Previous week">${ic('back')}</button><button data-act="stoday">${UI.week===mondayOf(TODAY)?'This week':'Back to this week'}</button><button data-act="snav" data-d="1" aria-label="Next week">${ic('right')}</button></div><button class="btn" data-act="sharelist">${ic('share')} Copy list</button></div></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
     <div class="shop"><div class="shopcol">
