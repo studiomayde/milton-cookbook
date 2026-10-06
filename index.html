@@ -785,7 +785,7 @@ function sheetHTML(){
 /* ---------- render with focus preservation ---------- */
 function render(){
   const a=document.activeElement; const fid=a&&a.id; let sel=null; try{ if(fid&&a.selectionStart!=null) sel=[a.selectionStart,a.selectionEnd] }catch(e){}
-  const keepVals={}; if(UI.view==='edit'){ document.querySelectorAll('#view .in').forEach(el=>{ if(el.id&&!DRAFT_IDS[el.id]) keepVals[el.id]=el.value }) }
+  const keepVals={}; document.querySelectorAll('#view input[id], #view textarea[id]').forEach(el=>{ if(!DRAFT_IDS[el.id]&&el.type!=='file'&&!el.classList.contains('qin')) keepVals[el.id]=el.value });
   const locked=S.mode==='nokey'||S.mode==='badkey'; document.body.classList.toggle('locked',locked);
   if(locked){ $('#gate').innerHTML=`<div class="box"><div class="kick">The Milton Cookbook</div><div class="serif">${S.mode==='nokey'?'Open the cookbook from the family link':'This link no longer opens the cookbook'}</div><p class="muted" style="margin:0;font-size:14px">${S.mode==='nokey'?'Ask May to send you the link. Once you open it on this device, it will remember you.':'Ask May for the current family link.'}</p></div>`; return }
   renderSide(); renderTop();
