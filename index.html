@@ -610,6 +610,14 @@ function viewHome(){
     ${shown.length?`<div class="grid">${shown.map(cardHTML).join('')}${canWrite()&&!UI.q?`<button class="addtile" data-act="new"><span class="plus">${ic('plus')}</span><span class="t">Add a recipe</span><span class="f muted" style="font-size:10px">Paste one in or type it up</span></button>`:''}</div>`
       :`<div class="empty"><div class="serif">${UI.q?'Nothing matches that search.':S.loaded.recipes?'No recipes here yet.':'Opening the cookbook…'}</div><p class="muted">${UI.q?'Try a different ingredient or recipe name.':canWrite()?'Add your first one with New recipe. Ingredients you add flow straight into the shopping list.':''}</p>${canWrite()&&!UI.q&&S.loaded.recipes?`<button class="btn solid" data-act="new">${ic('plus')} New recipe</button>`:''}</div>`}`;
 }
+function viewSearch(){
+  const q=UI.q.trim(); const hits=q?sortRecipes(S.recipes.filter(r=>searchHit(r,q))):[];
+  return `<div class="head" style="margin-bottom:16px"><div class="tg"><div class="kick">Search</div><h1 class="h1">Find a recipe</h1></div></div>
+    <label class="search">${ic('search')}<input id="sq" type="search" placeholder="Recipe, ingredient or who it's from" value="${esc(UI.q)}" autocomplete="off" enterkeyhint="search"></label>
+    ${q?(hits.length?`<div class="sub" style="margin-top:16px">${hits.length} recipe${hits.length===1?'':'s'}</div><div class="grid">${hits.map(cardHTML).join('')}</div>`
+      :`<div class="empty"><div class="serif">Nothing matches “${esc(q)}”.</div><p class="muted">Try a different ingredient or recipe name.</p></div>`)
+    :`<p class="muted" style="margin:18px 2px 0;font-size:12px">Try “chicken”, “lemon” or “Nonna”.</p>`}`;
+}
 function viewRecipe(){
   const r=R(UI.rid); if(!r) return `<div class="empty"><div class="serif">This recipe isn't in the book any more.</div><p><button class="btn" data-act="list" data-kind="all">Back to recipes</button></p></div>`;
   const checks=UI.cook[r.id]||(UI.cook[r.id]={});
@@ -811,7 +819,7 @@ function render(){
   const locked=S.mode==='nokey'||S.mode==='badkey'; document.body.classList.toggle('locked',locked);
   if(locked){ $('#gate').innerHTML=`<div class="box"><div class="kick">The Milton Cookbook</div><div class="serif">${S.mode==='nokey'?'Open the cookbook from the family link':'This link no longer opens the cookbook'}</div><p class="muted" style="margin:0;font-size:14px">${S.mode==='nokey'?'Ask May to send you the link. Once you open it on this device, it will remember you.':'Ask May for the current family link.'}</p></div>`; return }
   renderSide(); renderTop();
-  const v=UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():viewShopping();
+  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():viewShopping();
   $('#view').innerHTML=v;
   for(const id in keepVals){ const el=document.getElementById(id); if(el) el.value=keepVals[id] }
   $('#sheet').innerHTML=sheetHTML();
@@ -842,7 +850,7 @@ document.addEventListener('click',async e=>{
   switch(a){
     case 'list': UI.q=''; openList(t.dataset.kind,t.dataset.id||undefined); break;
     case 'go': if(t.dataset.view==='home'){UI.list={kind:'all'}} go(t.dataset.view); break;
-    case 'msearch': UI.list={kind:'all'}; go('home'); setTimeout(()=>{ const q=$('#mq'); if(q) q.focus() },50); break;
+    case 'msearch': go('search'); setTimeout(()=>{ const q=$('#sq'); if(q) q.focus() },50); break;
     case 'status': UI.status=t.dataset.s; render(); break;
     case 'clearq': UI.q=''; render(); break;
     case 'open': go('recipe',{rid:id}); break;
@@ -923,6 +931,7 @@ document.addEventListener('keydown',e=>{
 let qT;
 document.addEventListener('input',e=>{
   const id=e.target.id;
+  if(id==='sq'){ UI.q=e.target.value; clearTimeout(qT); qT=setTimeout(render,120) }
   if(id==='q'||id==='mq'){ UI.q=e.target.value; clearTimeout(qT); qT=setTimeout(()=>{ if(UI.view!=='home'){ UI.list={kind:'all'}; UI.view='home' } render() },160) }
   if(id==='pq'){ UI.sheet.q=e.target.value; render() }
   if(e.target.classList&&e.target.classList.contains('qin')){ const it=currentItems().find(i=>i.key===e.target.dataset.qkey); if(it) S.qtyLocal[it.qkey]=e.target.value }
