@@ -908,35 +908,65 @@ async function copyList(){ const items=shoppingItems(UI.week).filter(i=>!i.done)
 const QTY_START=/^\s*(?:[-•*·]\s*)?(?:\d|[½¼¾⅓⅔⅛]|a\s|an\s|one\s|two\s|three\s|half\s|pinch|handful|splash|dash|few\s)/i;
 const ING_WORDS=/\b(g|kg|ml|l|tsp|tbsp|cups?|teaspoons?|tablespoons?|grams?|cloves?|bunch|cans?|tins?|pinch|handful|sprigs?|slices?|large|small|medium)\b/i;
 function parseRecipeText(raw){
-  const lines=String(raw||'').replace(/\r/g,'').split('\n').map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean);
+  const all=String(raw||'').replace(/\r/g,'').split('\n').map(l=>l.replace(/\s+/g,' ').trim());
   const out={title:'',intro:'',prep:'',cook:'',serves:'',ingredients:[],method:[],notes:'',thermomix:false};
-  if(!lines.length) return out;
-  const isHead=(l,re)=>re.test(l.replace(/[:：]$/,'').trim())&&l.length<40;
-  const H_ING=/^(ingredients?|you will need|you'll need|what you need)\b/i, H_METH=/^(method|instructions?|directions?|steps|preparation|how to make( it)?|thermomix (method|instructions?)|to make)\b/i, H_NOTE=/^(notes?|tips?|recipe notes|cook'?s notes|variations?|storage|nutrition)\b/i, H_SKIP=/^(conventional|stove ?top|oven) (method|instructions?)/i;
-  const meta=l=>{ let m;
-    if((m=l.match(/prep(?:aration)?(?: time)?\s*[:\-]?\s*([\d][^|,;]*?(?:min(?:ute)?s?|hrs?|hours?)(?:\s*\d+\s*min(?:ute)?s?)?)/i))&&!out.prep) out.prep=m[1].trim();
-    if((m=l.match(/cook(?:ing)?(?: time)?\s*[:\-]?\s*([\d][^|,;]*?(?:min(?:ute)?s?|hrs?|hours?)(?:\s*\d+\s*min(?:ute)?s?)?)/i))&&!out.cook) out.cook=m[1].trim();
-    if((m=l.match(/(?:serves|servings?|makes|yield)\s*[:\-]?\s*(\d+(?:\s*[-–]\s*\d+)?)/i))&&!out.serves) out.serves=m[1].trim();
-    return /^(prep|cook|total|serves|servings?|makes|yield|difficulty|calories)\b/i.test(l) };
-  let mode='top', skipping=false; const top=[];
-  for(const l of lines){
-    if(isHead(l,H_SKIP)&&out.method.length){ skipping=true; continue }
-    if(isHead(l,H_ING)){ mode='ing'; skipping=false; continue }
-    if(isHead(l,H_METH)){ if(out.method.length&&/thermomix/i.test(l)===false&&skipping){continue} mode='meth'; skipping=false; continue }
-    if(isHead(l,H_NOTE)){ mode='note'; skipping=false; continue }
-    if(skipping) continue;
-    if(meta(l)&&mode!=='meth') continue;
+  if(!all.some(Boolean)) return out;
+  const clean=l=>l.replace(/[:：]$/,'').trim();
+  const H_ING=/^(\d+\s+)?(ingredients?|you will need|you'll need|what you need)$/i;
+  const H_METH=/^(method|instructions?|directions?|steps|preparation|how to make( it)?|thermomix (method|instructions?)|to make( it)?)$/i;
+  const H_NOTE=/^(notes?|tips?|recipe notes|cook'?s notes|variations?|storage)$/i;
+  const H_STOP=/^(nutrition|nutritional information|nutrition per serv|per serve|quantities above|share|print|rate this|reviews?|related|you might also)/i;
+  const H_ALT=/^(conventional|stove ?top|oven|non-thermomix) (method|instructions?|cooking instructions?)$/i;
+  const STEP_MARK=/^step\s*[\dlIO|]{1,2}(\s*[o0]?f\s*[\dlIO|]{1,2}|\s*\/\s*\d+)?[.:]?$/i;
+  const letters=l=>{ const t=l.replace(/\s/g,''); return t?(t.match(/[a-z]/gi)||[]).length/t.length:0 };
+  let pendingLabels=[];
+  const tm=v=>{ v=String(v).trim(); const h=v.match(/(\d+)\s*h/i), m=v.match(/(\d+)\s*m(?!l)/i); if(!h&&!m){ const n=v.match(/^(\d+)$/); return n?n[1]+' min':v } return (h?h[1]+' hr':'')+(h&&m?' ':'')+(m?m[1]+(h?'':' min'):'') };
+  const setMeta=(k,v)=>{ if(!v||out[k]) return; out[k]=k==='serves'?String(v).replace(/[^\d\-–]/g,'')||String(v):tm(v) };
+  let mode='top', alt=false, para=[]; const top=[], stepsRaw=[];
+  const flush=()=>{ if(para.length){ stepsRaw.push(para.join(' ')); para=[] } };
+  for(let i=0;i<all.length;i++){ const l=all[i];
+    if(!l){ if(mode==='meth') flush(); continue }
+    const c=clean(l);
+    if(letters(l)<0.45&&!/\d/.test(l)) continue;
+    // labels and values split across lines by photo reading, e.g. "Prep" ... "Serves" ... "30m 15"
+    if(/^(prep|cook|serves|servings|makes|difficulty)( time)?$/i.test(c)){ pendingLabels.push(c.toLowerCase().split(' ')[0]); continue }
+    if(pendingLabels.length&&/^(\d+\s*(m|mins?|h|hrs?|hours?)?\s*)+$/i.test(c)){ const vals=c.match(/\d+\s*(?:mins?|m|hrs?|h|hours?)?/gi)||[]; let vi=0;
+      for(const lb of pendingLabels){ if(lb==='difficulty') continue; const v=vals[vi++]; if(!v) break; if(lb==='prep')setMeta('prep',v); else if(lb==='cook')setMeta('cook',v); else setMeta('serves',v) } pendingLabels=[]; continue }
+    // a row of labels with the values on the next line, e.g. "Prep  Serves  Difficulty" / "30m  15"
+    if(/^(prep|cook|total|serves|servings|makes|difficulty)(\s+(prep|cook|total|serves|servings|makes|difficulty)(\s+time)?)+$/i.test(c)&&all[i+1]){
+      const labels=c.toLowerCase().split(/\s+/).filter(w=>w!=='time'), vals=all[i+1].split(/\s+/);
+      labels.forEach((lb,j)=>{ const v=vals[j]; if(!v) return; if(lb==='prep')setMeta('prep',v); else if(lb==='cook')setMeta('cook',v); else if(/serv|makes/.test(lb))setMeta('serves',v) }); i++; continue }
+    let m;
+    if((m=c.match(/^prep(?:aration)?(?: time)?\s*[:\-]?\s*(\d.*)$/i))){ setMeta('prep',m[1]); continue }
+    if((m=c.match(/^cook(?:ing)?(?: time)?\s*[:\-]?\s*(\d.*)$/i))){ setMeta('cook',m[1]); continue }
+    if((m=c.match(/^(?:serves|servings?|makes|yield)\s*[:\-]?\s*(\d.*)$/i))){ setMeta('serves',m[1]); continue }
+    if(/^(total(?: time)?|difficulty|calories)\b/i.test(c)) continue;
+    if(H_STOP.test(c)){ if(mode==='meth') flush(); mode='skip'; continue }
+    if(H_ALT.test(c)&&(stepsRaw.length||para.length)){ flush(); alt=true; continue }
+    if(H_ING.test(c)){ flush(); mode='ing'; alt=false; continue }
+    if(H_METH.test(c)){ flush(); if(!(alt||stepsRaw.length&&/thermomix/i.test(c)===false&&mode==='meth')) mode='meth'; alt=false; continue }
+    if(H_NOTE.test(c)){ flush(); mode='note'; alt=false; continue }
+    if(mode==='skip'||alt) continue;
     if(mode==='top') top.push(l);
     else if(mode==='ing'){ if(/[:]$/.test(l)&&!QTY_START.test(l)) continue; if(!/\d/.test(l)&&l.split(' ').length<=4&&l.split(' ').every(w=>/^[A-Z&]/.test(w))) continue; out.ingredients.push(l.replace(/^[-•*·▢☐□]\s*/,'')) }
-    else if(mode==='meth'){ const st=l.replace(/^(?:step\s*)?\d+[.):]?\s+/i,'').replace(/^[-•*·]\s*/,''); if(st.length>2) out.method.push(st) }
+    else if(mode==='meth'){
+      if(STEP_MARK.test(c)){ flush(); continue }
+      const num=l.match(/^(?:step\s*)?(\d+)[.):]\s*(.*)$/i);
+      if(num){ flush(); if(num[2]) para.push(num[2]); continue }
+      para.push(l.replace(/^[-•*·]\s*/,''));
+      if(/[.!?)]$/.test(l)&&para.join(' ').length>140&&!all[i+1]) flush() }
     else if(mode==='note') out.notes+=(out.notes?' ':'')+l.replace(/^[-•*·]\s*/,'');
   }
+  flush();
+  out.method=stepsRaw.map(x=>x.replace(/\s+/g,' ').replace(/([.!?])\s+[\d|]{1,2}$/,'$1').trim()).filter(x=>x.length>2&&letters(x)>0.5);
+  out.ingredients=out.ingredients.filter(x=>letters(x)>0.45);
   // no headings found: sort lines by how they look
   if(!out.ingredients.length&&!out.method.length){ const rest=top.slice(1);
     for(const l of rest){ if((QTY_START.test(l)||ING_WORDS.test(l))&&l.length<90) out.ingredients.push(l.replace(/^[-•*·]\s*/,'')); else if(l.length>25) out.method.push(l.replace(/^(?:step\s*)?\d+[.):]?\s+/i,'')) }
     top.length=Math.min(top.length,1) }
-  out.title=(top.find(l=>l.length>2&&l.length<90&&!/^https?:/i.test(l))||'').replace(/^recipe[:\s]+/i,'');
-  const introLine=top.find(l=>l!==out.title&&l.length>30&&l.length<240&&/[a-z]/.test(l)); if(introLine) out.intro=introLine;
+  const titleOk=l=>l.length>2&&l.length<90&&!/https?:|www\.|\||\.com|©|—/i.test(l)&&/[a-z]{3}/.test(l)&&letters(l)>0.75;
+  out.title=(top.find(titleOk)||'').replace(/^recipe[:\s]+/i,'').replace(/\s+recipe$/i,'');
+  const introLine=top.find(l=>l!==out.title&&titleOk(l)&&l.length>30&&l.length<240); if(introLine) out.intro=introLine;
   out.thermomix=/thermomix|\bspeed \d|\bmc (on|off)\b|varoma|\breverse\b.*speed/i.test(raw);
   out.title=out.title.charAt(0).toUpperCase()+out.title.slice(1);
   return out;
@@ -965,10 +995,11 @@ let ocrLib=null;
 function loadOcr(){ if(ocrLib) return ocrLib; ocrLib=new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js'; sc.onload=()=>res(window.Tesseract); sc.onerror=()=>{ ocrLib=null; rej(new Error('ocr')) }; document.head.appendChild(sc) }); return ocrLib }
 async function importImages(files){ readDraft(); const list=Array.from(files).slice(0,4); if(!list.length) return;
   UI.importing='image'; UI.ocr=0; render();
-  try{ const T=await loadOcr(); let text='';
-    for(let i=0;i<list.length;i++){ const img=await toJpeg(await readUrl(list[i]),2000,.9);
-      const res=await T.recognize(img,'eng',{logger:m=>{ if(m.status==='recognizing text'){ const p=Math.round(((i+m.progress)/list.length)*100); if(p!==UI.ocr){ UI.ocr=p; const el=document.getElementById('ocrp'); if(el) el.textContent=p+'%' } } }});
-      text+=(res&&res.data&&res.data.text||'')+'\n' }
+  try{ const T=await loadOcr(); let text=''; let cur=0;
+    const worker=await T.createWorker('eng',1,{logger:m=>{ if(m.status==='recognizing text'){ const p=Math.round(((cur+m.progress)/list.length)*100); if(p!==UI.ocr){ UI.ocr=p; const el=document.getElementById('ocrp'); if(el) el.textContent=p+'%' } } }});
+    await worker.setParameters({tessedit_pageseg_mode:'3'});
+    for(let i=0;i<list.length;i++){ cur=i; const img=await toJpeg(await readUrl(list[i]),2200,.92); const res=await worker.recognize(img); text+=(res&&res.data&&res.data.text||'')+'\n\n' }
+    await worker.terminate();
     UI.importing=null; const n=applyRecipe(parseRecipeText(text));
     try{ const first=await readUrl(list[0]); UI.importThumb=await compressUrl(first); if(!UI.draft.photo) UI.draft.photo=UI.importThumb }catch(e){}
     render(); const ft=document.getElementById('f-title'); if(ft) ft.scrollIntoView({behavior:'smooth',block:'center'});
