@@ -602,7 +602,7 @@ function viewEdit(){
     <div class="head"><div class="tg"><div class="kick">${UI.editId?'Edit recipe':'New recipe'}</div><h1 class="h1">${UI.editId?esc(d.title||'Edit recipe'):'Add a recipe'}</h1></div></div>
     ${`<div class="import">
       <span class="lbl">Import from a photo</span>
-      <label class="photo" for="rimg" style="aspect-ratio:auto;min-height:150px;padding:24px;text-align:center">${photosHere()?(UI.importing==='image'?'<span class="serif">Reading the recipe…</span><span class="muted" style="font-size:10px">This can take up to a minute.</span>':`${ic('camera')}<span class="serif">Upload a photo of a recipe</span><span class="muted" style="font-size:10px">A screenshot someone sent you, a cookbook page or a handwritten card. You can add a few photos for a longer recipe. We'll fill in the form below for you to check.</span><input type="file" id="rimg" accept="image/jpeg,image/png,image/webp,image/gif" multiple>`):`${ic('camera')}<span class="serif">Copy the text from your photo</span><span class="muted" style="font-size:10px;max-width:46ch">Reading photos isn't available in this view yet. On your phone, open the photo, press and hold on the recipe text, choose Select All, then Copy, and paste it in the box below.</span>`}</label>
+      <label class="photo" for="rimg" style="aspect-ratio:auto;min-height:150px;padding:24px;text-align:center">${photosHere()?(UI.importing==='image'?`<span class="serif">Reading the photo… <span id="ocrp">${UI.ocr||0}%</span></span><span class="muted" style="font-size:10px">The first time takes a little longer while it gets ready.</span>`:`${ic('camera')}<span class="serif">Upload a photo of a recipe</span><span class="muted" style="font-size:10px">A screenshot someone sent you, a cookbook page or a handwritten card. You can add a few photos for a longer recipe. We'll fill in the form below for you to check.</span><input type="file" id="rimg" accept="image/jpeg,image/png,image/webp,image/gif" multiple>`):`${ic('camera')}<span class="serif">Copy the text from your photo</span><span class="muted" style="font-size:10px;max-width:46ch">Reading photos isn't available in this view yet. On your phone, open the photo, press and hold on the recipe text, choose Select All, then Copy, and paste it in the box below.</span>`}</label>
       <span class="lbl" style="margin-top:8px">Or paste a link or the recipe text</span><textarea class="in" id="paste" rows="3" placeholder="Paste a recipe link, or copy and paste the recipe text"></textarea>
       <div class="row"><button class="btn solid" data-act="autofill" id="autofill" ${UI.importing?'disabled':''}>${UI.importing==='text'?'Reading the recipe…':'Populate recipe'}</button></div></div>
       <div class="divider">or add it yourself</div>`}
@@ -904,29 +904,74 @@ function pickSurprise(force){ const s=UI.sheet; let pool=S.recipes;
 async function copyList(){ const items=shoppingItems(UI.week).filter(i=>!i.done); let txt=`Shopping list, ${weekLabel(UI.week)}\n`;
   for(const a of AISLES){ const g=items.filter(i=>i.aisle===a); if(!g.length) continue; txt+=`\n${a}\n`+g.map(i=>`- ${i.name}${i.qty?' ('+i.qty+')':''}`).join('\n')+'\n' }
   try{ await navigator.clipboard.writeText(txt); toast('Shopping list copied. Paste it into a message.') }catch(e){ toast("Couldn't copy here. Try again from the shopping list.") } }
+/* ---------- free recipe reading: pasted text, photos (on-device text recognition) and links ---------- */
+const QTY_START=/^\s*(?:[-•*·]\s*)?(?:\d|[½¼¾⅓⅔⅛]|a\s|an\s|one\s|two\s|three\s|half\s|pinch|handful|splash|dash|few\s)/i;
+const ING_WORDS=/\b(g|kg|ml|l|tsp|tbsp|cups?|teaspoons?|tablespoons?|grams?|cloves?|bunch|cans?|tins?|pinch|handful|sprigs?|slices?|large|small|medium)\b/i;
+function parseRecipeText(raw){
+  const lines=String(raw||'').replace(/\r/g,'').split('\n').map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean);
+  const out={title:'',intro:'',prep:'',cook:'',serves:'',ingredients:[],method:[],notes:'',thermomix:false};
+  if(!lines.length) return out;
+  const isHead=(l,re)=>re.test(l.replace(/[:：]$/,'').trim())&&l.length<40;
+  const H_ING=/^(ingredients?|you will need|you'll need|what you need)\b/i, H_METH=/^(method|instructions?|directions?|steps|preparation|how to make( it)?|thermomix (method|instructions?)|to make)\b/i, H_NOTE=/^(notes?|tips?|recipe notes|cook'?s notes|variations?|storage|nutrition)\b/i, H_SKIP=/^(conventional|stove ?top|oven) (method|instructions?)/i;
+  const meta=l=>{ let m;
+    if((m=l.match(/prep(?:aration)?(?: time)?\s*[:\-]?\s*([\d][^|,;]*?(?:min(?:ute)?s?|hrs?|hours?)(?:\s*\d+\s*min(?:ute)?s?)?)/i))&&!out.prep) out.prep=m[1].trim();
+    if((m=l.match(/cook(?:ing)?(?: time)?\s*[:\-]?\s*([\d][^|,;]*?(?:min(?:ute)?s?|hrs?|hours?)(?:\s*\d+\s*min(?:ute)?s?)?)/i))&&!out.cook) out.cook=m[1].trim();
+    if((m=l.match(/(?:serves|servings?|makes|yield)\s*[:\-]?\s*(\d+(?:\s*[-–]\s*\d+)?)/i))&&!out.serves) out.serves=m[1].trim();
+    return /^(prep|cook|total|serves|servings?|makes|yield|difficulty|calories)\b/i.test(l) };
+  let mode='top', skipping=false; const top=[];
+  for(const l of lines){
+    if(isHead(l,H_SKIP)&&out.method.length){ skipping=true; continue }
+    if(isHead(l,H_ING)){ mode='ing'; skipping=false; continue }
+    if(isHead(l,H_METH)){ if(out.method.length&&/thermomix/i.test(l)===false&&skipping){continue} mode='meth'; skipping=false; continue }
+    if(isHead(l,H_NOTE)){ mode='note'; skipping=false; continue }
+    if(skipping) continue;
+    if(meta(l)&&mode!=='meth') continue;
+    if(mode==='top') top.push(l);
+    else if(mode==='ing'){ if(/[:]$/.test(l)&&!QTY_START.test(l)) continue; if(!/\d/.test(l)&&l.split(' ').length<=4&&l.split(' ').every(w=>/^[A-Z&]/.test(w))) continue; out.ingredients.push(l.replace(/^[-•*·▢☐□]\s*/,'')) }
+    else if(mode==='meth'){ const st=l.replace(/^(?:step\s*)?\d+[.):]?\s+/i,'').replace(/^[-•*·]\s*/,''); if(st.length>2) out.method.push(st) }
+    else if(mode==='note') out.notes+=(out.notes?' ':'')+l.replace(/^[-•*·]\s*/,'');
+  }
+  // no headings found: sort lines by how they look
+  if(!out.ingredients.length&&!out.method.length){ const rest=top.slice(1);
+    for(const l of rest){ if((QTY_START.test(l)||ING_WORDS.test(l))&&l.length<90) out.ingredients.push(l.replace(/^[-•*·]\s*/,'')); else if(l.length>25) out.method.push(l.replace(/^(?:step\s*)?\d+[.):]?\s+/i,'')) }
+    top.length=Math.min(top.length,1) }
+  out.title=(top.find(l=>l.length>2&&l.length<90&&!/^https?:/i.test(l))||'').replace(/^recipe[:\s]+/i,'');
+  const introLine=top.find(l=>l!==out.title&&l.length>30&&l.length<240&&/[a-z]/.test(l)); if(introLine) out.intro=introLine;
+  out.thermomix=/thermomix|\bspeed \d|\bmc (on|off)\b|varoma|\breverse\b.*speed/i.test(raw);
+  out.title=out.title.charAt(0).toUpperCase()+out.title.slice(1);
+  return out;
+}
+function applyRecipe(out,photo){
+  const d=UI.draft; let n=0;
+  for(const k of ['title','intro','prep','cook','serves','notes']) if(out[k]&&!String(d[k]||'').trim()){ d[k]=String(out[k]); n++ }
+  if(out.ingredients&&out.ingredients.length&&!String(d.ingredients||'').trim()){ d.ingredients=out.ingredients.join('\n'); n++ }
+  if(out.method&&out.method.length&&!String(d.method||'').trim()){ d.method=out.method.join('\n'); n++ }
+  if(out.thermomix) d.tm=true;
+  return n }
 async function autofill(){ const t=(($('#paste')||{}).value||'').trim(); if(!t){ toast('Paste a recipe link or the recipe text first.'); return }
-  readDraft(); const isUrl=/^https?:\/\/\S+$/i.test(t); if(isUrl&&!String(UI.draft.source||'').trim()) UI.draft.source=t;
-  runImport(isUrl?'link':'text', isUrl?{url:t}:{text:t.slice(0,30000)}) }
-async function importImages(files){ readDraft(); const images=[];
-  for(const f of Array.from(files).slice(0,4)){ try{ const d=await toJpeg(await readUrl(f),1600,.82); images.push({media_type:'image/jpeg',data:d.split(',')[1]}) }catch(e){} }
-  if(!images.length){ toast("That photo couldn't be used. Try a JPG or PNG."); return } runImport('image',{images}) }
-async function runImport(kind,payload){
-  UI.importing=kind==='image'?'image':'text'; render();
-  try{ const r=await fetch(FN_URL,{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(Object.assign({key:KEY},payload))});
+  readDraft(); const isUrl=/^https?:\/\/\S+$/i.test(t);
+  if(!isUrl){ const n=applyRecipe(parseRecipeText(t)); render(); toast(n?'Filled in. Check it over, then save.':"Couldn't pick out the recipe. Try pasting just the ingredients and method."); return }
+  if(!String(UI.draft.source||'').trim()) UI.draft.source=t;
+  UI.importing='text'; render();
+  try{ const r=await fetch(FN_URL,{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({key:KEY,url:t})});
     let out=null; try{ out=await r.json() }catch(e){}
     UI.importing=null;
-    if(r.status===404){ render(); toast("Populate recipe isn't switched on yet. Add the populate function in Supabase (see the README)."); return }
-    if(!r.ok||!out||out.error){ render(); const er=out&&out.error;
-      toast(er==='no_key'?'Add your Anthropic API key in Supabase to switch this on.':er==='fetch_failed'?"Couldn't open that link. Copy the recipe text from the page and paste it instead.":"Couldn't read that recipe. Fill the form in by hand instead."); return }
-    if(!out.title){ render(); toast(kind==='image'?"Couldn't find a recipe in that photo. Try a clearer one.":"Couldn't find a recipe there."); return }
-    const d=UI.draft;
-    for(const k of ['title','intro','prep','cook','serves','notes']) if(out[k]&&!String(d[k]||'').trim()) d[k]=String(out[k]);
-    if(Array.isArray(out.ingredients)&&!String(d.ingredients||'').trim()) d.ingredients=out.ingredients.join('\n');
-    if(Array.isArray(out.method)&&!String(d.method||'').trim()) d.method=out.method.join('\n');
-    if(out.thermomix===true) d.tm=true;
-    if(out.photo&&!d.photo){ try{ d.photo=await compressUrl(out.photo) }catch(e){} }
-    render(); toast('Filled in. Check it over, then save.');
-  }catch(e){ UI.importing=null; render(); toast(navigator.onLine===false?"You're offline. Check your connection and try again.":"Populate recipe isn't switched on yet. It needs the populate function and an Anthropic API key in Supabase (see the README).") } }
+    if(!r.ok||!out||out.error){ render(); toast(out&&out.error==='fetch_failed'?"That website wouldn't let us in. Copy the recipe text from the page and paste it instead.":r.status===404?"Reading links needs the free populate function in Supabase (see the README). You can paste the recipe text instead.":"Couldn't read that link. Copy the recipe text from the page and paste it instead."); return }
+    const rec=out.recipe||parseRecipeText(out.text||'');
+    const n=applyRecipe(rec); if(out.photo&&!UI.draft.photo){ try{ UI.draft.photo=await compressUrl(out.photo) }catch(e){} }
+    render(); toast(n?'Filled in. Check it over, then save.':"Couldn't find a recipe on that page. Copy the recipe text and paste it instead.");
+  }catch(e){ UI.importing=null; render(); toast(navigator.onLine===false?"You're offline. Check your connection and try again.":"Reading links needs the free populate function in Supabase (see the README). You can paste the recipe text instead.") } }
+let ocrLib=null;
+function loadOcr(){ if(ocrLib) return ocrLib; ocrLib=new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js'; sc.onload=()=>res(window.Tesseract); sc.onerror=()=>{ ocrLib=null; rej(new Error('ocr')) }; document.head.appendChild(sc) }); return ocrLib }
+async function importImages(files){ readDraft(); const list=Array.from(files).slice(0,4); if(!list.length) return;
+  UI.importing='image'; UI.ocr=0; render();
+  try{ const T=await loadOcr(); let text='';
+    for(let i=0;i<list.length;i++){ const img=await toJpeg(await readUrl(list[i]),2000,.9);
+      const res=await T.recognize(img,'eng',{logger:m=>{ if(m.status==='recognizing text'){ const p=Math.round(((i+m.progress)/list.length)*100); if(p!==UI.ocr){ UI.ocr=p; const el=document.getElementById('ocrp'); if(el) el.textContent=p+'%' } } }});
+      text+=(res&&res.data&&res.data.text||'')+'\n' }
+    UI.importing=null; const n=applyRecipe(parseRecipeText(text)); render();
+    toast(n?'Filled in from the photo. Check it over, especially quantities, then save.':"Couldn't read a recipe in that photo. Try a clearer, straight-on shot.");
+  }catch(e){ UI.importing=null; render(); toast("Couldn't read the photo. Check your connection and try again.") } }
 
 /* ---------- boot ---------- */
 render();

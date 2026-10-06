@@ -1,6 +1,7 @@
-// Supabase Edge Function: reads a recipe from a link, pasted text or photos
-// and returns it as structured fields for the Add a recipe form.
-// Needs the secret ANTHROPIC_API_KEY (Edge Functions > Secrets).
+// Supabase Edge Function: reads a recipe from a web link for the Add a recipe form.
+// Free: no API keys needed. Most recipe sites publish their recipe as structured
+// data (schema.org "Recipe"); this reads that. If a page has none, it returns the
+// page text and the app picks the recipe out of it.
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -10,12 +11,15 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-const PROMPT = `Turn this recipe into JSON with exactly these keys:
-"title" (string), "intro" (one short sentence or ""), "prep" (like "10 min" or ""), "cook" (like "30 min" or ""),
-"serves" (string or ""), "ingredients" (array of strings, one ingredient each with its quantity first in metric, e.g. "500g potato gnocchi"; leave out section headings),
-"method" (array of strings, one step each, no numbering; if there are Thermomix and conventional versions, use the Thermomix steps),
-"notes" (short tips as one string, or ""), "thermomix" (true if the recipe is written for a Thermomix, otherwise false).
-Use Australian English. If there is no recipe, return {"title":""}. Return only the JSON.`;
+const ENT: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", rsquo: "'", lsquo: "'", rdquo: '"', ldquo: '"', ndash: "–", mdash: "—", deg: "°", frac12: "½", frac14: "¼", frac34: "¾", hellip: "…" };
+const decode = (s: string) =>
+  String(s ?? "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&([a-z]+\d*);/gi, (m, n) => ENT[n.toLowerCase()] ?? m)
+    .replace(/\s+/g, " ")
+    .trim();
 
 // deno-lint-ignore no-explicit-any
 function findRecipe(node: any): any {
@@ -29,15 +33,51 @@ function findRecipe(node: any): any {
   return null;
 }
 
-function readPage(html: string) {
-  for (const m of html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
-    try { const r = findRecipe(JSON.parse(m[1].trim())); if (r) return { recipe: r, text: "" }; } catch { /* keep looking */ }
+function duration(iso: string): string {
+  const m = String(iso || "").match(/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?/i);
+  if (!m) return "";
+  const h = (+m[1] || 0) * 24 + (+m[2] || 0), min = +m[3] || 0;
+  if (!h && !min) return "";
+  return h ? `${h} hr${min ? " " + min : ""}` : `${min} min`;
+}
+
+// deno-lint-ignore no-explicit-any
+function steps(ins: any): { name: string; steps: string[] }[] {
+  if (!ins) return [];
+  if (typeof ins === "string") return [{ name: "", steps: decode(ins).split(/(?<=\.)\s+(?=[A-Z])/).filter(Boolean) }];
+  if (!Array.isArray(ins)) ins = [ins];
+  const sections: { name: string; steps: string[] }[] = [];
+  let loose: string[] = [];
+  for (const it of ins) {
+    if (typeof it === "string") loose.push(decode(it));
+    else if (it && it["@type"] === "HowToSection") {
+      if (loose.length) { sections.push({ name: "", steps: loose }); loose = []; }
+      sections.push({ name: decode(it.name || ""), steps: steps(it.itemListElement).flatMap((s) => s.steps) });
+    } else if (it) loose.push(decode(it.text || it.name || ""));
   }
-  const text = html
-    .replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&#8217;/g, "'")
-    .replace(/\s+/g, " ").trim();
-  return { recipe: null, text: text.slice(0, 40000) };
+  if (loose.length) sections.push({ name: "", steps: loose });
+  return sections.map((s) => ({ ...s, steps: s.steps.filter(Boolean) }));
+}
+
+function fromSchema(r: any) {
+  const secs = steps(r.recipeInstructions);
+  const tmSec = secs.find((s) => /thermomix|tm\d/i.test(s.name));
+  const convSec = secs.find((s) => /conventional|stovetop|stove top|oven/i.test(s.name));
+  const method = tmSec ? tmSec.steps : convSec && secs.length > 1 ? secs.filter((s) => s !== convSec).flatMap((s) => s.steps) : secs.flatMap((s) => s.steps);
+  const all = JSON.stringify(r).toLowerCase();
+  const yieldv = Array.isArray(r.recipeYield) ? r.recipeYield[0] : r.recipeYield;
+  const desc = decode(r.description || "");
+  return {
+    title: decode(r.name || ""),
+    intro: desc.length > 160 ? desc.split(/(?<=[.!?])\s/)[0] : desc,
+    prep: duration(r.prepTime),
+    cook: duration(r.cookTime),
+    serves: decode(String(yieldv ?? "")).replace(/\s*(servings?|serves|people|portions?)\s*/gi, " ").trim(),
+    ingredients: (r.recipeIngredient || r.ingredients || []).map(decode).filter(Boolean),
+    method,
+    notes: "",
+    thermomix: !!tmSec || /thermomix|\bspeed \d|\bmc on\b|varoma/.test(all),
+  };
 }
 
 async function imageAsDataUrl(url: string): Promise<string | null> {
@@ -57,7 +97,7 @@ async function imageAsDataUrl(url: string): Promise<string | null> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { key, text, url, images } = await req.json();
+    const { key, url } = await req.json();
     const sbUrl = Deno.env.get("SUPABASE_URL")!;
     const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
     const ok = await fetch(`${sbUrl}/rest/v1/rpc/cookbook_check`, {
@@ -66,61 +106,35 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ p_key: key }),
     }).then((r) => r.json()).catch(() => false);
     if (ok !== true) return json({ error: "not_allowed" }, 403);
+    if (!url) return json({ error: "no_url" }, 400);
 
-    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!apiKey) return json({ error: "no_key" }, 500);
+    let html = "";
+    try {
+      const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36", Accept: "text/html" } });
+      if (!r.ok) throw new Error(String(r.status));
+      html = await r.text();
+    } catch { return json({ error: "fetch_failed" }, 502); }
 
-    let source = "";
+    let schema = null;
+    for (const m of html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+      try { schema = findRecipe(JSON.parse(m[1].trim())); if (schema) break; } catch { /* keep looking */ }
+    }
     let photoUrl = "";
-    if (url) {
-      let html = "";
-      try {
-        const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36", Accept: "text/html" } });
-        if (!r.ok) throw new Error(String(r.status));
-        html = await r.text();
-      } catch { return json({ error: "fetch_failed" }, 502); }
-      const page = readPage(html);
-      if (page.recipe) {
-        source = "Recipe data from the web page:\n" + JSON.stringify(page.recipe).slice(0, 40000);
-        const im = page.recipe.image;
-        photoUrl = typeof im === "string" ? im : Array.isArray(im) ? (typeof im[0] === "string" ? im[0] : im[0]?.url) : im?.url || "";
-      } else {
-        source = "Text of the web page:\n" + page.text;
-      }
-      if (!photoUrl) {
-        const og = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
-        if (og) photoUrl = og[1];
-      }
-    } else if (text) {
-      source = "Recipe text:\n" + String(text).slice(0, 30000);
+    if (schema) {
+      const im = schema.image;
+      photoUrl = typeof im === "string" ? im : Array.isArray(im) ? (typeof im[0] === "string" ? im[0] : im[0]?.url) : im?.url || "";
     }
-
-    // deno-lint-ignore no-explicit-any
-    const content: any[] = [];
-    for (const im of (images || []).slice(0, 4)) {
-      content.push({ type: "image", source: { type: "base64", media_type: im.media_type || "image/jpeg", data: im.data } });
+    if (!photoUrl) {
+      const og = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
+      if (og) photoUrl = og[1];
     }
-    content.push({ type: "text", text: PROMPT + "\n\n" + (source || "The recipe is in the attached photo(s), in order. Read any handwriting carefully.") });
+    const photo = photoUrl ? await imageAsDataUrl(new URL(photoUrl, url).toString()) : null;
 
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({
-        model: Deno.env.get("ANTHROPIC_MODEL") || "claude-haiku-4-5-20251001",
-        max_tokens: 4096,
-        messages: [{ role: "user", content }],
-      }),
-    });
-    const data = await r.json();
-    if (!r.ok) return json({ error: "ai_failed", detail: data?.error?.message }, 502);
-    // deno-lint-ignore no-explicit-any
-    const out = (data.content || []).map((c: any) => c.text || "").join("");
-    // deno-lint-ignore no-explicit-any
-    let recipe: any;
-    try { recipe = JSON.parse(out.slice(out.indexOf("{"), out.lastIndexOf("}") + 1)); }
-    catch { return json({ error: "parse_failed" }, 502); }
-    if (photoUrl && url) recipe.photo = await imageAsDataUrl(new URL(photoUrl, url).toString());
-    return json(recipe);
+    if (schema) return json({ recipe: fromSchema(schema), photo });
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<(br|\/p|\/li|\/h\d|\/div)[^>]*>/gi, "\n").replace(/<[^>]+>/g, " ");
+    return json({ text: decode(text.replace(/\n/g, " ⏎ ")).replace(/ ?⏎ ?/g, "\n").slice(0, 60000), photo });
   } catch (e) {
     return json({ error: "server", detail: String(e) }, 500);
   }

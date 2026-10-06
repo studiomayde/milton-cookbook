@@ -15,13 +15,12 @@ Open the Supabase project, go to **SQL Editor**, paste in the setup script and c
 ### 2. Website (GitHub Pages)
 In this repository: **Settings → Pages → Build and deployment**. Set Source to **Deploy from a branch**, choose **main** and **/ (root)**, then **Save**. The site appears at `https://studiomayde.github.io/milton-cookbook/` after a minute or two.
 
-### 3. Populate recipe (optional)
-Reads a recipe from a link, pasted text or a photo and fills in the Add a recipe form.
+### 3. Recipe links (optional, free)
+Populate recipe reads pasted text and photos right in the browser, for free. To also read **recipe links**, add the free link reader:
 
-1. In Supabase, open **Edge Functions** and deploy a new function named `populate`, pasting in `supabase/functions/populate/index.ts`.
-2. Under **Edge Functions → Secrets**, add `ANTHROPIC_API_KEY` with an API key from console.anthropic.com. It's paid per use, typically a cent or two per recipe.
+1. In Supabase, open **Edge Functions**, choose **Deploy a new function → Via Editor**, name it `populate`, paste in `supabase/functions/populate/index.ts` and click **Deploy function**.
 
-Without this step everything else works; the Populate recipe button just says it isn't switched on yet.
+No API keys or payment needed. Most recipe websites publish their recipe in a standard format, which this reads, along with the recipe's photo.
 
 ## Changing the family key
 Make a new random key, then in the SQL Editor run:
