@@ -722,9 +722,10 @@ function viewShopping(){
       ${canWrite()&&done?`<div class="row" style="gap:24px"><button class="link" data-act="cleartrolley">Clear trolley</button><button class="link" data-act="untick">Untick all</button></div>`:''}
     </div>
     <aside class="panel"><div class="between"><div><h2>Our regulars</h2><div class="muted" style="font-size:11px;margin-top:4px">The things we always grab. Tap to add to this week.</div></div>${canWrite()?`<button class="link" data-act="regedit">${UI.regEdit?'Done':'Edit'}</button>`:''}</div>
+      ${canWrite()?`<form class="stack" data-form="reg"><input class="in" id="newreg" placeholder="Add a regular, e.g. rice crackers" autocomplete="off" style="padding:10px 14px;font-size:12px"><div class="row" style="gap:8px"><span class="lbl">Add to</span>${groups.map(g=>`<button type="button" class="chip${UI.regGroup===g?' on':''}" data-act="reggroup" data-g="${g}">${g}</button>`).join('')}</div><button class="btn" type="submit">${ic('plus')} Add regular</button></form>`:''}
       ${groups.map(g=>{ const rs=S.regs.filter(r=>(r.group||'Every week')===g).sort((a,b)=>a.name.localeCompare(b.name)); return `<div><div class="lbl" style="padding-bottom:4px">${g}</div>${rs.length?rs.map(r=>`<div class="reg"><span>${esc(r.name)}</span>${UI.regEdit?`<button class="xbtn" data-act="rmreg" data-id="${r.id}" aria-label="Remove ${esc(r.name)}">${ic('x')}</button>`:`<button class="rbtn${r.on?' on':''}" data-act="togreg" data-id="${r.id}" aria-label="${r.on?'Remove from':'Add to'} this week">${ic(r.on?'check':'plus')}</button>`}</div>`).join(''):`<div class="reg muted" style="font-size:11px">None yet</div>`}</div>` }).join('')}
       ${canWrite()&&S.regs.some(r=>(r.group||'Every week')==='Every week'&&!r.on)?`<button class="btn wide" data-act="allweekly">Add all every-week items</button>`:''}
-      ${canWrite()?`<form class="stack" data-form="reg"><input class="in" id="newreg" placeholder="Add a regular, e.g. rice crackers" autocomplete="off" style="padding:10px 14px;font-size:12px"><div class="row" style="gap:8px"><span class="lbl">Add to</span>${groups.map(g=>`<button type="button" class="chip${UI.regGroup===g?' on':''}" data-act="reggroup" data-g="${g}">${g}</button>`).join('')}</div><button class="btn" type="submit">${ic('plus')} Add regular</button></form>`:''}
+      
     </aside></div>`;
 }
 
