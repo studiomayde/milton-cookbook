@@ -231,7 +231,12 @@ textarea.in{resize:vertical;line-height:1.55}
 .pr .th .ph{font-size:20px}
 .pr .serif{font-size:16px;line-height:1.15}
 .toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--on-fg);padding:12px 20px;border-radius:999px;font-size:11px;z-index:60;max-width:calc(100% - 32px)}
-.ni[draggable="true"]{cursor:grab}
+.ni[data-colid]{cursor:grab;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+.ni[data-colid]>span:first-child{display:flex;align-items:center;gap:6px}
+.cgrip{display:inline-flex;width:0;overflow:hidden;opacity:0;transition:width .12s,opacity .12s;color:var(--faint)}
+.cgrip svg.i{width:14px;height:14px}
+.ni[data-colid]:hover .cgrip,.ni.dragging .cgrip{width:14px;opacity:1}
+body.colsorting,body.colsorting *{cursor:grabbing !important}
 .ni.drop-before{box-shadow:inset 0 2px 0 var(--fg)}
 .ni.drop-after{box-shadow:inset 0 -2px 0 var(--fg)}
 .ni.dragging{opacity:.4}
@@ -500,7 +505,7 @@ function openList(kind,id){ UI.list={kind,id}; UI.status='all'; go('home') }
 function canWrite(){ return !S.readOnly }
 function renderSide(){
   const n=k=>listRecipes(k).length;
-  const li=(kind,label,count,id)=>{ const on=UI.view==='home'&&UI.list.kind===kind&&(kind!=='col'||UI.list.id===id); const dr=kind==='col'&&canWrite(); return `<button class="ni${on?' on':''}" data-act="list" data-kind="${kind}" data-id="${esc(id||'')}"${dr?` draggable="true" data-colid="${esc(id)}" title="Drag to reorder"`:''}><span>${esc(label)}</span><span>${count}</span></button>` };
+  const li=(kind,label,count,id)=>{ const on=UI.view==='home'&&UI.list.kind===kind&&(kind!=='col'||UI.list.id===id); const dr=kind==='col'&&canWrite(); return `<button class="ni${on?' on':''}" data-act="list" data-kind="${kind}" data-id="${esc(id||'')}"${dr?` data-colid="${esc(id)}" title="Drag to reorder"`:''}><span>${dr?`<span class="cgrip">${ic('grip')}</span>`:''}${esc(label)}</span><span>${count}</span></button>` };
   const cols=S.cols.slice().sort((a,b)=>(a.order||0)-(b.order||0));
   const plannerOn=UI.view==='planner', shopOn=UI.view==='shopping';
   $('#side').innerHTML=`
@@ -899,13 +904,28 @@ document.addEventListener('submit',async e=>{
     await saveRecipe(r); toast(UI.editId?'Recipe updated.':'Recipe saved.'); UI.cook[idv]={}; go('recipe',{rid:idv}) }
 });
 /* drag to reorder collections (sidebar) */
-let dragCol=null;
 function saveColOrder(ids){ ids.forEach((id,i)=>{ const c=S.cols.find(x=>x.id===id); if(c&&(c.order||0)!==i){ c.order=i; Store.set('collections',c.id,{name:c.name,order:i}) } }); render() }
 function sortedColIds(){ return S.cols.slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(c=>c.id) }
-document.addEventListener('dragstart',e=>{ const n=e.target.closest&&e.target.closest('.ni[data-colid]'); if(!n) return; dragCol=n.dataset.colid; n.classList.add('dragging'); try{ e.dataTransfer.setData('text/plain','col'); e.dataTransfer.effectAllowed='move' }catch(x){} });
-document.addEventListener('dragover',e=>{ if(!dragCol) return; const n=e.target.closest&&e.target.closest('.ni[data-colid]'); document.querySelectorAll('.drop-before,.drop-after').forEach(x=>x.classList.remove('drop-before','drop-after')); if(!n||n.dataset.colid===dragCol) return; e.preventDefault(); const r=n.getBoundingClientRect(); n.classList.add(e.clientY<r.top+r.height/2?'drop-before':'drop-after') });
-document.addEventListener('drop',e=>{ if(!dragCol) return; const n=e.target.closest&&e.target.closest('.ni[data-colid]'); if(n&&n.dataset.colid!==dragCol){ e.preventDefault(); const after=n.classList.contains('drop-after'); const ids=sortedColIds().filter(x=>x!==dragCol); let i=ids.indexOf(n.dataset.colid); if(after) i++; ids.splice(i,0,dragCol); dragCol=null; saveColOrder(ids) } });
-document.addEventListener('dragend',()=>{ dragCol=null; document.querySelectorAll('.dragging,.drop-before,.drop-after').forEach(x=>x.classList.remove('dragging','drop-before','drop-after')) });
+let colDrag=null, suppressClick=false;
+document.addEventListener('pointerdown',e=>{ const n=e.target.closest&&e.target.closest('.ni[data-colid]'); if(!n||e.button!==0) return;
+  colDrag={id:n.dataset.colid,el:n,x:e.clientX,y:e.clientY,active:false,touch:e.pointerType!=='mouse',t:Date.now(),pid:e.pointerId} });
+document.addEventListener('pointermove',e=>{ if(!colDrag||e.pointerId!==colDrag.pid) return;
+  const dist=Math.abs(e.clientY-colDrag.y)+Math.abs(e.clientX-colDrag.x);
+  if(!colDrag.active){
+    if(colDrag.touch&&Date.now()-colDrag.t<250){ if(dist>8) colDrag=null; return }
+    if(dist<6) return;
+    colDrag.active=true; colDrag.el.classList.add('dragging'); document.body.classList.add('colsorting'); try{ colDrag.el.setPointerCapture(e.pointerId) }catch(x){} }
+  e.preventDefault();
+  document.querySelectorAll('.drop-before,.drop-after').forEach(x=>x.classList.remove('drop-before','drop-after'));
+  const rows=[...document.querySelectorAll('#side .ni[data-colid]')].filter(r=>r.dataset.colid!==colDrag.id); let target=null, before=true;
+  for(const r of rows){ const b=r.getBoundingClientRect(); if(e.clientY<b.top+b.height/2){ target=r; before=true; break } target=r; before=false }
+  colDrag.target=target?target.dataset.colid:null; colDrag.before=before; if(target) target.classList.add(before?'drop-before':'drop-after') },{passive:false});
+function endColDrag(e){ if(!colDrag) return; const d=colDrag; colDrag=null; document.body.classList.remove('colsorting');
+  document.querySelectorAll('.dragging,.drop-before,.drop-after').forEach(x=>x.classList.remove('dragging','drop-before','drop-after'));
+  if(!d.active) return; suppressClick=true; setTimeout(()=>suppressClick=false,50);
+  if(!d.target||e.type==='pointercancel') return; const ids=sortedColIds().filter(x=>x!==d.id); let i=ids.indexOf(d.target); if(!d.before) i++; ids.splice(i,0,d.id); saveColOrder(ids) }
+document.addEventListener('pointerup',endColDrag); document.addEventListener('pointercancel',endColDrag);
+document.addEventListener('click',e=>{ if(suppressClick){ e.stopPropagation(); e.preventDefault(); suppressClick=false } },true);
 /* drag to swap (desktop) */
 let dragFrom=null;
 document.addEventListener('dragstart',e=>{ const s=e.target.closest&&e.target.closest('.slot'); if(!s) return; dragFrom={date:s.dataset.date,meal:s.dataset.meal}; try{ e.dataTransfer.setData('text/plain','slot'); e.dataTransfer.effectAllowed='move' }catch(x){} });
