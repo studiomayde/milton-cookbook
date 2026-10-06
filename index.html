@@ -283,6 +283,8 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .three .st{grid-column:1/-1}
   .wk{display:none}
   .mweek{display:flex;flex-direction:column}
+  .phead{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+  .phead>div{margin-top:0 !important;text-align:right;white-space:nowrap}
   .mday .mdl{font-size:10px}
   .mday .mtoday{font-size:11px}
   .mday{display:flex;flex-direction:column;gap:10px;padding:16px 0 18px;border-top:1px solid var(--line)}
@@ -749,7 +751,7 @@ function viewPlanner(){
   const body=UI.pmode==='week'?viewWeek():UI.pmode==='day'?viewDay():viewMonth();
   const items=shoppingItems(mondayOf(UI.pmode==='week'?UI.week:UI.day)); const left=items.filter(i=>!i.done).length;
   return plannerHead(esc(title))+`<div class="pl"><div style="min-width:0">${body}</div>
-    <aside class="panel mini"><div><h2>Shopping list</h2><div class="muted" style="font-size:11px;margin-top:4px">${weekLabel(mondayOf(UI.pmode==='week'?UI.week:UI.day))}  ·  ${left} to get</div></div>
+    <aside class="panel mini"><div class="phead"><h2>Shopping list</h2><div class="muted" style="font-size:11px;margin-top:4px">${weekLabel(mondayOf(UI.pmode==='week'?UI.week:UI.day))}  ·  ${left} to get</div></div>
       ${shopListHTML(items,{mini:true,tags:false})}<button class="btn ink" data-act="go" data-view="shopping">Open shopping list</button></aside></div>`;
 }
 function viewShopping(){
