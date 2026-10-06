@@ -468,7 +468,7 @@ function listRecipes(kind,id){ let a=S.recipes;
   if(kind==='tried')a=a.filter(r=>r.status==='tried'); else if(kind==='totry')a=a.filter(r=>r.status!=='tried');
   else if(kind==='fav')a=a.filter(r=>r.fav); else if(kind==='tm')a=a.filter(r=>r.tm); else if(kind==='col')a=a.filter(r=>colsOf(r).includes(id));
   return a }
-function listTitle(){ const l=UI.list; return {all:'Milton Recipes',tried:'Tried & loved',totry:'To try',fav:'Favourites',tm:'Thermomix',col:colName(l.id)}[l.kind] }
+function listTitle(){ const l=UI.list; return {all:'Recipes',tried:'Tried & loved',totry:'To try',fav:'Favourites',tm:'Thermomix',col:colName(l.id)}[l.kind] }
 function searchHit(r,q){ q=q.toLowerCase(); return (r.title||'').toLowerCase().includes(q)||(r.ingredients||'').toLowerCase().includes(q)||(r.from||'').toLowerCase().includes(q) }
 function sortRecipes(a){ a=a.slice();
   if(UI.sort==='az')a.sort((x,y)=>(x.title||'').localeCompare(y.title||''));
