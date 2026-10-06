@@ -602,7 +602,7 @@ function viewEdit(){
     <div class="head"><div class="tg"><div class="kick">${UI.editId?'Edit recipe':'New recipe'}</div><h1 class="h1">${UI.editId?esc(d.title||'Edit recipe'):'Add a recipe'}</h1></div></div>
     ${`<div class="import">
       <span class="lbl">Import from a photo</span>
-      <label class="photo" for="rimg" style="aspect-ratio:auto;min-height:150px;padding:24px;text-align:center">${photosHere()?(UI.importing==='image'?`<span class="serif">Reading the photo… <span id="ocrp">${UI.ocr||0}%</span></span><span class="muted" style="font-size:10px">The first time takes a little longer while it gets ready.</span>`:`${ic('camera')}<span class="serif">Upload a photo of a recipe</span><span class="muted" style="font-size:10px">A screenshot someone sent you, a cookbook page or a handwritten card. You can add a few photos for a longer recipe. We'll fill in the form below for you to check.</span><input type="file" id="rimg" accept="image/jpeg,image/png,image/webp,image/gif" multiple>`):`${ic('camera')}<span class="serif">Copy the text from your photo</span><span class="muted" style="font-size:10px;max-width:46ch">Reading photos isn't available in this view yet. On your phone, open the photo, press and hold on the recipe text, choose Select All, then Copy, and paste it in the box below.</span>`}</label>
+      <label class="photo" for="rimg" style="aspect-ratio:auto;min-height:150px;padding:24px;text-align:center">${UI.importThumb&&UI.importing!=='image'?`<img src="${UI.importThumb}" alt="" style="opacity:.35"><span class="serif" style="position:relative">Read from your photo</span><span class="muted" style="font-size:10px;position:relative">The details are filled in below. Tap here to read a different photo.</span><input type="file" id="rimg" accept="image/jpeg,image/png,image/webp,image/gif" multiple>`:''}${UI.importThumb&&UI.importing!=='image'?'':photosHere()?(UI.importing==='image'?`<span class="serif">Reading the photo… <span id="ocrp">${UI.ocr||0}%</span></span><span class="muted" style="font-size:10px">The first time takes a little longer while it gets ready.</span>`:`${ic('camera')}<span class="serif">Upload a photo of a recipe</span><span class="muted" style="font-size:10px">A screenshot someone sent you, a cookbook page or a handwritten card. You can add a few photos for a longer recipe. We'll fill in the form below for you to check.</span><input type="file" id="rimg" accept="image/jpeg,image/png,image/webp,image/gif" multiple>`):`${ic('camera')}<span class="serif">Copy the text from your photo</span><span class="muted" style="font-size:10px;max-width:46ch">Reading photos isn't available in this view yet. On your phone, open the photo, press and hold on the recipe text, choose Select All, then Copy, and paste it in the box below.</span>`}</label>
       <span class="lbl" style="margin-top:8px">Or paste a link or the recipe text</span><textarea class="in" id="paste" rows="3" placeholder="Paste a recipe link, or copy and paste the recipe text"></textarea>
       <div class="row"><button class="btn solid" data-act="autofill" id="autofill" ${UI.importing?'disabled':''}>${UI.importing==='text'?'Reading the recipe…':'Populate recipe'}</button></div></div>
       <div class="divider">or add it yourself</div>`}
@@ -771,7 +771,7 @@ function readDraft(){ if(UI.view!=='edit') return; const d=UI.draft; const v=id=
   for(const k in map){ const x=v(map[k]); if(x!==undefined) d[k]=x } }
 function startEdit(id){ const r=id?R(id):null; const firstCol=(S.cols.slice().sort((a,b)=>(a.order||0)-(b.order||0)).find(c=>/dinner/i.test(c.name))||S.cols[0]||{}).id||'';
   UI.draft=r?JSON.parse(JSON.stringify(r)):{title:'',from:'',intro:'',cols:[UI.list.kind==='col'?UI.list.id:firstCol].filter(Boolean),status:'totry',prep:'',cook:'',serves:'',tm:UI.list.kind==='tm',cookidoo:'',source:'',ingredients:'',method:'',notes:'',photo:''};
-  UI.editId=id||null; UI.linkTip=false; go('edit') }
+  UI.editId=id||null; UI.linkTip=false; UI.importThumb=null; go('edit') }
 const readUrl=file=>new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=rej; fr.readAsDataURL(file) });
 const loadImg=url=>new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url });
 async function toJpeg(url,max,q){ const img=await loadImg(url); const s=Math.min(1,max/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s);
@@ -969,7 +969,9 @@ async function importImages(files){ readDraft(); const list=Array.from(files).sl
     for(let i=0;i<list.length;i++){ const img=await toJpeg(await readUrl(list[i]),2000,.9);
       const res=await T.recognize(img,'eng',{logger:m=>{ if(m.status==='recognizing text'){ const p=Math.round(((i+m.progress)/list.length)*100); if(p!==UI.ocr){ UI.ocr=p; const el=document.getElementById('ocrp'); if(el) el.textContent=p+'%' } } }});
       text+=(res&&res.data&&res.data.text||'')+'\n' }
-    UI.importing=null; const n=applyRecipe(parseRecipeText(text)); render();
+    UI.importing=null; const n=applyRecipe(parseRecipeText(text));
+    try{ const first=await readUrl(list[0]); UI.importThumb=await compressUrl(first); if(!UI.draft.photo) UI.draft.photo=UI.importThumb }catch(e){}
+    render(); const ft=document.getElementById('f-title'); if(ft) ft.scrollIntoView({behavior:'smooth',block:'center'});
     toast(n?'Filled in from the photo. Check it over, especially quantities, then save.':"Couldn't read a recipe in that photo. Try a clearer, straight-on shot.");
   }catch(e){ UI.importing=null; render(); toast("Couldn't read the photo. Check your connection and try again.") } }
 
