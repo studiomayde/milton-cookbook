@@ -926,7 +926,7 @@ async function runImport(kind,payload){
     if(out.thermomix===true) d.tm=true;
     if(out.photo&&!d.photo){ try{ d.photo=await compressUrl(out.photo) }catch(e){} }
     render(); toast('Filled in. Check it over, then save.');
-  }catch(e){ UI.importing=null; render(); toast("Can't reach the cookbook. Check your connection.") } }
+  }catch(e){ UI.importing=null; render(); toast(navigator.onLine===false?"You're offline. Check your connection and try again.":"Populate recipe isn't switched on yet. It needs the populate function and an Anthropic API key in Supabase (see the README).") } }
 
 /* ---------- boot ---------- */
 render();
