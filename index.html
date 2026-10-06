@@ -282,6 +282,8 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .three .st{grid-column:1/-1}
   .wk{display:none}
   .mweek{display:flex;flex-direction:column}
+  .mday .mdl{font-size:10px}
+  .mday .mtoday{font-size:11px}
   .mday{display:flex;flex-direction:column;gap:10px;padding:16px 0 18px;border-top:1px solid var(--line)}
   .slot{height:92px}
   .slot .th{width:120px}
@@ -702,7 +704,7 @@ function viewWeek(){
     g+=`<div class="day"><span class="lbl" style="${today?'color:var(--fg)':''}">${DAYS[i]}</span><span class="dnum">${dd.getDate()}</span>${i>0&&dd.getDate()===1?`<span class="lbl" style="color:var(--fg)">${MONTHS[dd.getMonth()].slice(0,3)}</span>`:''}${today?'<span style="font-style:italic;font-size:9px">Today</span>':''}</div>`;
     g+=meals.map(m=>`<div class="cell">${slotHTML(d,m)}</div>`).join('');
     const p=S.plan[d]||{}; const filled=MEALS.filter(m=>p[m[0]]&&R(p[m[0]]));
-    mob+=`<div class="mday"><div class="between"><div class="row" style="align-items:baseline"><span class="dnum" style="font-size:26px">${dd.getDate()}</span><span class="lbl" style="${today?'color:var(--fg)':''}">${DAYS[i]}  ·  ${MONTHS[dd.getMonth()].slice(0,3)}</span>${today?'<span style="font-style:italic;font-size:9px">Today</span>':''}</div>${canWrite()?`<button class="link" data-act="slot" data-date="${d}" data-meal="${(MEALS.find(m=>!p[m[0]])||MEALS[2])[0]}">+ Add</button>`:''}</div>
+    mob+=`<div class="mday"><div class="between"><div class="row" style="align-items:baseline"><span class="dnum" style="font-size:26px">${dd.getDate()}</span><span class="lbl mdl" style="${today?'color:var(--fg)':''}">${DAYS[i]}  ·  ${MONTHS[dd.getMonth()].slice(0,3)}</span>${today?'<span class="mtoday" style="font-style:italic">Today</span>':''}</div>${canWrite()?`<button class="link" data-act="slot" data-date="${d}" data-meal="${(MEALS.find(m=>!p[m[0]])||MEALS[2])[0]}">+ Add</button>`:''}</div>
       ${filled.map(m=>slotHTML(d,m[0],true)).join('')}</div>`;
   }
   g+='</div>'; mob+='</div>';
