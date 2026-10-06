@@ -644,11 +644,10 @@ function viewRecipe(){
         ${r.intro?`<p class="intro">${esc(r.intro)}</p>`:''}
         ${stats.length?`<div class="stats">${stats.map(s=>`<div><span class="lbl">${s[0]}</span><b>${esc(s[1])}</b></div>`).join('')}</div>`:''}
         ${r.from?`<div class="from"><span class="lbl">Recipe from</span><span class="av">${esc(r.from.charAt(0).toUpperCase())}</span><span style="font-weight:500;font-size:13px">${esc(r.from)}</span></div>`:''}
-        <div class="row">
+        ${(r.tm&&r.cookidoo)||r.source?`<div class="row">
           ${r.tm&&r.cookidoo?`<a class="btn solid" href="${esc(r.cookidoo)}" target="_blank" rel="noopener">${ic('ext')} Open in Cookidoo</a>`:''}
           ${r.source?`<a class="btn" href="${esc(r.source)}" target="_blank" rel="noopener">${ic('link')} Original recipe</a>`:''}
-          ${canWrite()?`<button class="btn" data-act="cooked" data-id="${r.id}">${ic('pot')} We cooked this today</button>`:''}
-        </div>
+        </div>`:''}
       </div></div>
     <div class="body2">
       <div class="list"><div class="hd"><span class="lbl" style="color:var(--fg)">Ingredients</span><span class="muted" style="font-style:italic;font-size:11px">Tick as you go</span></div>
@@ -656,6 +655,7 @@ function viewRecipe(){
       </div>
       <div class="list"><div class="hd"><span class="lbl" style="color:var(--fg)">Method</span></div>
         ${steps.length?steps.map((s,i)=>`<div class="step"><span class="n">${pad(i+1)}</span><p>${esc(s)}</p></div>`).join(''):'<p class="muted">No method added yet.</p>'}
+        ${canWrite()?`<div style="margin-top:24px"><button class="btn" data-act="cooked" data-id="${r.id}">${ic('pot')} We cooked this today</button></div>`:''}
         ${r.notes||r.lastCooked?`<div class="notes"><span class="lbl">Our notes</span>${r.notes?`<q>${esc(r.notes)}</q>`:''}${r.lastCooked?`<span class="muted" style="font-size:10px">Last cooked ${esc(longDate(r.lastCooked))}</span>`:''}</div>`:''}
       </div>
     </div>`;
