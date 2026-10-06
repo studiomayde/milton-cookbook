@@ -608,7 +608,7 @@ function viewEdit(){
       <div class="divider">or add it yourself</div>`}
     <form class="form" data-form="recipe" autocomplete="off">
       <div><label class="photo" for="photo">${d.photo?`<img src="${d.photo}" alt="">`:''}${ic('camera')}<span class="serif">${d.photo?'Change photo':'Add a photo'}</span><span class="muted" style="font-size:10px">Take one or choose from your library</span><input type="file" id="photo" accept="image/*"></label>
-        ${d.photo?`<button type="button" class="link" style="margin-top:10px" data-act="rmphoto">Remove photo</button>`:''}</div>
+        ${d.photo?`<button type="button" class="link" style="margin-top:10px" data-act="rmphoto">Remove photo</button>`:''}${UI.scanning?`<p class="muted" style="font-size:11px;margin:10px 0 0">Looking for a recipe in this photo… <span id="scanp">${UI.ocr||0}%</span></p>`:''}</div>
       <div class="fields">
         <div class="field"><label class="lbl" for="f-title">Recipe name</label><input class="in" id="f-title" value="${esc(d.title)}" placeholder="e.g. Nonna's Sunday ragu" required></div>
         <div class="field"><label class="lbl" for="f-from">Recipe from</label><input class="in" id="f-from" value="${esc(d.from)}" placeholder="Who gave it to us? e.g. Mum, Nonna, Sarah next door"></div>
@@ -753,7 +753,7 @@ function sheetHTML(){
 /* ---------- render with focus preservation ---------- */
 function render(){
   const a=document.activeElement; const fid=a&&a.id; let sel=null; try{ if(fid&&a.selectionStart!=null) sel=[a.selectionStart,a.selectionEnd] }catch(e){}
-  const keepVals={}; if(UI.view==='edit'){ document.querySelectorAll('#view .in').forEach(el=>{ if(el.id) keepVals[el.id]=el.value }) }
+  const keepVals={}; if(UI.view==='edit'){ document.querySelectorAll('#view .in').forEach(el=>{ if(el.id&&!DRAFT_IDS[el.id]) keepVals[el.id]=el.value }) }
   const locked=S.mode==='nokey'||S.mode==='badkey'; document.body.classList.toggle('locked',locked);
   if(locked){ $('#gate').innerHTML=`<div class="box"><div class="kick">The Milton Cookbook</div><div class="serif">${S.mode==='nokey'?'Open the cookbook from the family link':'This link no longer opens the cookbook'}</div><p class="muted" style="margin:0;font-size:14px">${S.mode==='nokey'?'Ask May to send you the link. Once you open it on this device, it will remember you.':'Ask May for the current family link.'}</p></div>`; return }
   renderSide(); renderTop();
@@ -766,6 +766,7 @@ function render(){
 let rT; function soon(){ clearTimeout(rT); rT=setTimeout(render,30) }
 
 /* ---------- draft (edit form) ---------- */
+const DRAFT_IDS={'f-title':'title','f-from':'from','f-intro':'intro','f-prep':'prep','f-cook':'cook','f-serves':'serves','f-cookidoo':'cookidoo','f-source':'source','f-ing':'ingredients','f-method':'method','f-notes':'notes'};
 function readDraft(){ if(UI.view!=='edit') return; const d=UI.draft; const v=id=>{ const el=document.getElementById(id); return el?el.value:undefined };
   const map={title:'f-title',from:'f-from',intro:'f-intro',prep:'f-prep',cook:'f-cook',serves:'f-serves',cookidoo:'f-cookidoo',source:'f-source',ingredients:'f-ing',method:'f-method',notes:'f-notes'};
   for(const k in map){ const x=v(map[k]); if(x!==undefined) d[k]=x } }
@@ -868,13 +869,14 @@ document.addEventListener('input',e=>{
   const id=e.target.id;
   if(id==='q'||id==='mq'){ UI.q=e.target.value; clearTimeout(qT); qT=setTimeout(()=>{ if(UI.view!=='home'){ UI.list={kind:'all'}; UI.view='home' } render() },160) }
   if(id==='pq'){ UI.sheet.q=e.target.value; render() }
+  if(UI.view==='edit'&&UI.draft&&DRAFT_IDS[id]) UI.draft[DRAFT_IDS[id]]=e.target.value;
 });
 document.addEventListener('change',async e=>{
   const id=e.target.id;
   if(id==='sort'){ UI.sort=e.target.value; render() }
   if(id==='daynote'){ setPlan(UI.day,{notes:e.target.value.trim()}) }
   if(id==='rimg'&&e.target.files&&e.target.files.length){ importImages(e.target.files) }
-  if(id==='photo'&&e.target.files&&e.target.files[0]){ readDraft(); try{ UI.draft.photo=await compress(e.target.files[0]); render() }catch(err){ toast("That photo couldn't be used. Try a JPG or PNG.") } }
+  if(id==='photo'&&e.target.files&&e.target.files[0]){ const f=e.target.files[0]; readDraft(); try{ UI.draft.photo=await compress(f); render() }catch(err){ toast("That photo couldn't be used. Try a JPG or PNG."); return } scanPhoto(f) }
 });
 document.addEventListener('submit',async e=>{
   e.preventDefault(); const f=e.target.dataset.form;
@@ -993,18 +995,26 @@ async function autofill(){ const t=(($('#paste')||{}).value||'').trim(); if(!t){
   }catch(e){ UI.importing=null; render(); toast(navigator.onLine===false?"You're offline. Check your connection and try again.":"Reading links needs the free populate function in Supabase (see the README). You can paste the recipe text instead.") } }
 let ocrLib=null;
 function loadOcr(){ if(ocrLib) return ocrLib; ocrLib=new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js'; sc.onload=()=>res(window.Tesseract); sc.onerror=()=>{ ocrLib=null; rej(new Error('ocr')) }; document.head.appendChild(sc) }); return ocrLib }
+async function ocrFiles(list,progressId){
+  const T=await loadOcr(); let text=''; let cur=0;
+  const worker=await T.createWorker('eng',1,{logger:m=>{ if(m.status==='recognizing text'){ const p=Math.round(((cur+m.progress)/list.length)*100); if(p!==UI.ocr){ UI.ocr=p; const el=document.getElementById(progressId); if(el) el.textContent=p+'%' } } }});
+  await worker.setParameters({tessedit_pageseg_mode:'3'});
+  for(let i=0;i<list.length;i++){ cur=i; const img=await toJpeg(await readUrl(list[i]),2200,.92); const res=await worker.recognize(img); text+=(res&&res.data&&res.data.text||'')+'\n\n' }
+  await worker.terminate(); return text }
+const looksLikeRecipe=r=>r.ingredients.length>=2||r.method.length>=2;
 async function importImages(files){ readDraft(); const list=Array.from(files).slice(0,4); if(!list.length) return;
   UI.importing='image'; UI.ocr=0; render();
-  try{ const T=await loadOcr(); let text=''; let cur=0;
-    const worker=await T.createWorker('eng',1,{logger:m=>{ if(m.status==='recognizing text'){ const p=Math.round(((cur+m.progress)/list.length)*100); if(p!==UI.ocr){ UI.ocr=p; const el=document.getElementById('ocrp'); if(el) el.textContent=p+'%' } } }});
-    await worker.setParameters({tessedit_pageseg_mode:'3'});
-    for(let i=0;i<list.length;i++){ cur=i; const img=await toJpeg(await readUrl(list[i]),2200,.92); const res=await worker.recognize(img); text+=(res&&res.data&&res.data.text||'')+'\n\n' }
-    await worker.terminate();
-    UI.importing=null; const n=applyRecipe(parseRecipeText(text));
+  try{ const text=await ocrFiles(list,'ocrp');
+    UI.importing=null; const rec=parseRecipeText(text); const n=looksLikeRecipe(rec)||rec.title?applyRecipe(rec):0;
     try{ const first=await readUrl(list[0]); UI.importThumb=await compressUrl(first); if(!UI.draft.photo) UI.draft.photo=UI.importThumb }catch(e){}
     render(); const ft=document.getElementById('f-title'); if(ft) ft.scrollIntoView({behavior:'smooth',block:'center'});
     toast(n?'Filled in from the photo. Check it over, especially quantities, then save.':"Couldn't read a recipe in that photo. Try a clearer, straight-on shot.");
   }catch(e){ UI.importing=null; render(); toast("Couldn't read the photo. Check your connection and try again.") } }
+async function scanPhoto(file){ if(UI.scanning) return; UI.scanning=true; UI.ocr=0; render();
+  try{ const text=await ocrFiles([file],'scanp'); UI.scanning=false; if(UI.view!=='edit'){ return } readDraft();
+    const rec=parseRecipeText(text); const n=looksLikeRecipe(rec)?applyRecipe(rec):0; render();
+    if(n){ toast('Found a recipe in the photo and filled in the form. Check it over, then save.'); const ft=document.getElementById('f-title'); if(ft) ft.scrollIntoView({behavior:'smooth',block:'center'}) }
+  }catch(e){ UI.scanning=false; if(UI.view==='edit') render() } }
 
 /* ---------- boot ---------- */
 render();
