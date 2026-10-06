@@ -300,7 +300,8 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .sheet.hasimg .sb{padding-top:10px}
   .it .nm{flex-wrap:nowrap;overflow:hidden}
   .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-  input,textarea,select{font-size:14px !important}
+  input,textarea,select:not(.sort){font-size:14px !important}
+  select.sort{font-size:9px}
   input::placeholder,textarea::placeholder{font-size:11px}
   .qin{width:84px}
   .swapbar{top:64px}
