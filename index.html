@@ -291,6 +291,7 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .slot{height:92px}
   .slot .th{width:120px}
   .slot .tt{font-size:16px}
+  .dtop .del{order:9}
   .slot .mm{font-size:10px}
   .kick{font-size:8px}
   .dayrow{grid-template-columns:1fr;gap:10px}
@@ -632,8 +633,8 @@ function viewRecipe(){
         <button class="btn${r.fav?' solid':''}" data-act="fav" data-id="${r.id}">${ic('heart')} ${r.fav?'Favourite':'Favourite'}</button>
         <button class="btn" data-act="plan" data-id="${r.id}">${ic('cal')} Add to plan</button>
         <button class="btn" data-act="edit" data-id="${r.id}">${ic('edit')} Edit</button>
-        <button class="btn icon" data-act="askdel" data-id="${r.id}" aria-label="Delete recipe">${ic('trash')}</button>
-        <button class="btn ${tried?'solid':'ink'}" data-act="tried" data-id="${r.id}">${ic('check')} ${tried?'Tried':'Mark as tried'}</button></div>`:''}
+        <button class="btn icon del" data-act="askdel" data-id="${r.id}" aria-label="Delete recipe">${ic('trash')}</button>
+        <button class="btn${tried?' solid':''}" data-act="tried" data-id="${r.id}">${ic('check')} ${tried?'Tried':'Mark as tried'}</button></div>`:''}
     </div>
     <div class="hero">${picHTML(r)}
       <div class="info">
