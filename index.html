@@ -653,7 +653,7 @@ function renderSide(){
   const cols=S.cols.slice().sort((a,b)=>(a.order||0)-(b.order||0));
   const plannerOn=UI.view==='planner', shopOn=UI.view==='shopping';
   const SUB={lists:`
-      <button class="ni${UI.view==='lists'&&!UI.lid?' on':''}" data-act="openlist" data-id=""><span>${ic('list')} All lists</span><span>${S.lists.length}</span></button>
+      <button class="ni${UI.view==='lists'&&!UI.lid?' on':''}" data-act="openlist" data-id=""><span>All lists</span><span>${S.lists.length}</span></button>
       ${sortedLists().map(L=>{ const on=UI.view==='lists'&&UI.lid===L.id; return `<button class="ni${on?' on':''}" data-act="openlist" data-id="${esc(L.id)}"><span>${esc(L.name)}</span><span>${itemsOf(L.id).filter(i=>!i.done).length}</span></button>` }).join('')}
       ${canWrite()?(UI.addingList?`<form class="addcol" data-form="sidelist">${ic('plus')}<input id="sidelist" placeholder="List name" autocomplete="off"></form>`:`<button class="addcol" data-act="addlist">${ic('plus')} New list</button>`):''}`,home:`
       ${li('all','All recipes',S.recipes.length)}${li('totry','To try',n('totry'))}${li('fav','Favourites',n('fav'))}
@@ -1018,7 +1018,7 @@ document.addEventListener('click',async e=>{
   if(a==='scrim'){ if(e.target===t){ UI.sheet=null; render() } return }
   switch(a){
     case 'list': UI.q=''; openList(t.dataset.kind,t.dataset.id||undefined); break;
-    case 'go': if(t.closest('#side')&&(t.dataset.view==='lists'||t.dataset.view==='home')){ const k=t.dataset.view==='lists'?'lists':'recipes'; FOLD[k]=true; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} } if(t.dataset.view==='home'){UI.list={kind:'all'}} if(t.dataset.view==='lists'){UI.lid=null;UI.lrename=false} go(t.dataset.view); break;
+    case 'go': if(t.closest('#side')&&t.classList.contains('sec')){ const k=t.dataset.view==='lists'?'lists':t.dataset.view==='home'?'recipes':null; for(const x of Object.keys(FOLD)) FOLD[x]=false; if(k) FOLD[k]=true; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} } if(t.dataset.view==='home'){UI.list={kind:'all'}} if(t.dataset.view==='lists'){UI.lid=null;UI.lrename=false} go(t.dataset.view); break;
     case 'dashday': UI.pmode='day'; UI.day=t.dataset.date; go('planner'); break;
     case 'addsec': UI.addingSec=true; render(); setTimeout(()=>{ const i=$('#newsec'); if(i) i.focus() },20); break;
     case 'addsecx': UI.addingSec=false; render(); break;
@@ -1028,7 +1028,7 @@ document.addEventListener('click',async e=>{
     case 'delsec': { const L=S.lists.find(x=>x.id===UI.sheet.lid); if(L){ const sid=UI.sheet.sec; const sc=secsOf(L).find(x=>x.id===sid); S.litems.filter(i=>i.list===L.id&&i.sec===sid).forEach(i=>Store.del('litems',i.id)); S.litems=S.litems.filter(i=>!(i.list===L.id&&i.sec===sid)); L.secs=secsOf(L).filter(x=>x.id!==sid); Store.set('lists',L.id,L); toast(`Deleted ${sc?sc.name:'the heading'}.`) } UI.sheet=null; render(); break }
     case 'openlist': UI.addingSec=false; UI.secRename=null; UI.lrename=false; go('lists',{lid:id||null}); break;
     case 'menu': document.body.classList.toggle('menuopen'); break;
-    case 'fold': { const k=t.dataset.k; FOLD[k]=!FOLD[k]; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
+    case 'fold': { const k=t.dataset.k; const op=!FOLD[k]; for(const x of Object.keys(FOLD)) FOLD[x]=false; FOLD[k]=op; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
     case 'idealist': newList(t.dataset.name); break;
     case 'addlist': UI.addingList=true; render(); setTimeout(()=>{ const i=$('#sidelist'); if(i) i.focus() },20); break;
     case 'ltick': { const i=S.litems.find(x=>x.id===id); if(!i) break; i.done=!i.done; i.doneAt=i.done?Date.now():null; render(); saveLItem(i); break }
