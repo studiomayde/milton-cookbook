@@ -667,7 +667,7 @@ function openList(kind,id){ UI.list={kind,id}; UI.status='all'; go('home') }
 
 /* ---------- render: chrome ---------- */
 function canWrite(){ return !S.readOnly }
-const FOLD=(()=>{ try{ return JSON.parse(localStorage.getItem('milton-open')||'{}')||{} }catch(e){ return {} } })();
+const FOLD={};
 function fold(k,label,inner){ const shut=!FOLD[k]; return `<div class="nav fold${shut?' shut':''}"><button class="fhd" data-act="fold" data-k="${k}" aria-expanded="${!shut}"><span class="lbl">${label}</span>${ic('down')}</button>${shut?'':inner}</div>` }
 function renderSide(){ setTimeout(()=>{ UI.justOpened=null },0);
 
@@ -1045,7 +1045,8 @@ document.addEventListener('click',async e=>{
   if(a==='scrim'){ if(e.target===t){ UI.sheet=null; render() } return }
   switch(a){
     case 'list': UI.q=''; openList(t.dataset.kind,t.dataset.id||undefined); break;
-    case 'go': if(t.closest('#side')&&t.classList.contains('sec')){ const k=t.dataset.view==='lists'?'lists':t.dataset.view==='home'?'recipes':null; const was=k&&FOLD[k]; for(const x of Object.keys(FOLD)) FOLD[x]=false; if(k){ FOLD[k]=true; if(!was) UI.justOpened=k } try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} } if(t.dataset.view==='home'){UI.list={kind:'all'}} if(t.dataset.view==='lists'){UI.lid=null;UI.lrename=false} go(t.dataset.view); break;
+    case 'go': if(t.dataset.view==='dash'){ for(const x of Object.keys(FOLD)) FOLD[x]=false }
+      if(t.closest('#side')&&t.classList.contains('sec')){ const k=t.dataset.view==='lists'?'lists':t.dataset.view==='home'?'recipes':null; const was=k&&FOLD[k]; for(const x of Object.keys(FOLD)) FOLD[x]=false; if(k){ FOLD[k]=true; if(!was) UI.justOpened=k } try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} } if(t.dataset.view==='home'){UI.list={kind:'all'}} if(t.dataset.view==='lists'){UI.lid=null;UI.lrename=false} go(t.dataset.view); break;
     case 'dashday': UI.pmode='day'; UI.day=t.dataset.date; go('planner'); break;
     case 'addsec': UI.addingSec=true; render(); setTimeout(()=>{ const i=$('#newsec'); if(i) i.focus() },20); break;
     case 'addsecx': UI.addingSec=false; render(); break;
