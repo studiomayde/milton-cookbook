@@ -51,6 +51,11 @@ a{color:inherit}
 .sec.on{color:var(--fg)}
 .sec.on::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--fg);margin-left:auto}
 .nav{display:flex;flex-direction:column;gap:2px}
+.fhd{display:flex;align-items:center;justify-content:space-between;width:100%;padding:4px 12px 8px;text-align:left}
+.fhd .lbl{padding:0}
+.fhd svg.i{width:13px;height:13px;color:var(--muted);transition:transform .2s}
+.fhd:hover .lbl,.fhd:hover svg.i{color:var(--fg)}
+.fold.shut .fhd svg.i{transform:rotate(-90deg)}
 .nav .lbl{padding:0 12px 8px}
 .ni{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-radius:4px;font-size:12px;text-align:left;width:100%}
 .ni span:last-child{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -579,6 +584,8 @@ function openList(kind,id){ UI.list={kind,id}; UI.status='all'; go('home') }
 
 /* ---------- render: chrome ---------- */
 function canWrite(){ return !S.readOnly }
+const FOLD=(()=>{ try{ return JSON.parse(localStorage.getItem('milton-fold')||'{}')||{} }catch(e){ return {} } })();
+function fold(k,label,inner){ const shut=!!FOLD[k]; return `<div class="nav fold${shut?' shut':''}"><button class="fhd" data-act="fold" data-k="${k}" aria-expanded="${!shut}"><span class="lbl">${label}</span>${ic('down')}</button>${shut?'':inner}</div>` }
 function renderSide(){
   const n=k=>listRecipes(k).length;
   const li=(kind,label,count,id)=>{ const on=UI.view==='home'&&UI.list.kind===kind&&(kind!=='col'||UI.list.id===id); const dr=kind==='col'&&canWrite(); return `<button class="ni${on?' on':''}" data-act="list" data-kind="${kind}" data-id="${esc(id||'')}"${dr?` data-colid="${esc(id)}" title="Drag to reorder"`:''}><span>${dr?`<span class="cgrip">${ic('grip')}</span>`:''}${esc(label)}</span><span>${count}</span></button>` };
@@ -587,19 +594,16 @@ function renderSide(){
   $('#side').innerHTML=`
     <button class="logo" data-act="list" data-kind="all">Milton Manor</button>
     <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Shopping list','bag',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn]].map(x=>`<button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>`).join('')}</div>
-    <div class="nav"><div class="lbl">Lists</div>
+    ${fold('lists','Lists',`
       ${sortedLists().map(L=>{ const on=UI.view==='lists'&&UI.lid===L.id; return `<button class="ni${on?' on':''}" data-act="openlist" data-id="${esc(L.id)}"><span>${esc(L.name)}</span><span>${itemsOf(L.id).filter(i=>!i.done).length}</span></button>` }).join('')}
       <button class="ni${UI.view==='lists'&&!UI.lid?' on':''}" data-act="openlist" data-id=""><span>${ic('list')} All lists</span><span>${S.lists.length}</span></button>
-      ${canWrite()?(UI.addingList?`<form class="addcol" data-form="sidelist">${ic('plus')}<input id="sidelist" placeholder="List name" autocomplete="off"></form>`:`<button class="addcol" data-act="addlist">${ic('plus')} New list</button>`):''}
-    </div>
-    <div class="nav">
-      ${li('all','All recipes',S.recipes.length)}${li('totry','To try',n('totry'))}${li('fav','Favourites',n('fav'))}
-    </div>
-    <div class="nav"><div class="lbl">Collections</div>
+      ${canWrite()?(UI.addingList?`<form class="addcol" data-form="sidelist">${ic('plus')}<input id="sidelist" placeholder="List name" autocomplete="off"></form>`:`<button class="addcol" data-act="addlist">${ic('plus')} New list</button>`):''}`)}
+    ${fold('recipes','Recipes',`
+      ${li('all','All recipes',S.recipes.length)}${li('totry','To try',n('totry'))}${li('fav','Favourites',n('fav'))}`)}
+    ${fold('cols','Collections',`
       ${cols.map(c=>li('col',c.name,listRecipes('col',c.id).length,c.id)).join('')}
       ${li('tm','Thermomix',n('tm'))}
-      ${canWrite()?(UI.addingCol?`<form class="addcol" data-form="col">${ic('plus')}<input id="newcol" placeholder="Collection name" autocomplete="off"></form>`:`<button class="addcol" data-act="addcol">${ic('plus')} New collection</button>`):''}
-    </div>
+      ${canWrite()?(UI.addingCol?`<form class="addcol" data-form="col">${ic('plus')}<input id="newcol" placeholder="Collection name" autocomplete="off"></form>`:`<button class="addcol" data-act="addcol">${ic('plus')} New collection</button>`):''}`)}
     ${canWrite()?`<button class="btn ${UI.view==='edit'&&!UI.editId?'solid':'ink'}" data-act="new" ${UI.view==='edit'&&!UI.editId?'aria-current="page"':''}>${ic('plus')} New recipe</button>`:''}`;
 }
 function renderTop(){
@@ -919,6 +923,7 @@ document.addEventListener('click',async e=>{
     case 'list': UI.q=''; openList(t.dataset.kind,t.dataset.id||undefined); break;
     case 'go': if(t.dataset.view==='home'){UI.list={kind:'all'}} if(t.dataset.view==='lists'){UI.lid=null;UI.lrename=false} go(t.dataset.view); break;
     case 'openlist': UI.lrename=false; go('lists',{lid:id||null}); break;
+    case 'fold': { const k=t.dataset.k; FOLD[k]=!FOLD[k]; try{ localStorage.setItem('milton-fold',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
     case 'idealist': newList(t.dataset.name); break;
     case 'addlist': UI.addingList=true; render(); setTimeout(()=>{ const i=$('#sidelist'); if(i) i.focus() },20); break;
     case 'ltick': { const i=S.litems.find(x=>x.id===id); if(!i) break; i.done=!i.done; i.doneAt=i.done?Date.now():null; render(); saveLItem(i); break }
