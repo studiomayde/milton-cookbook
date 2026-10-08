@@ -321,6 +321,11 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .side,.top{display:none}
   .mtop{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:6}
   .mtop .logo{padding:0;font-size:16px}
+  .mburger{border:0;width:34px;height:34px;padding:6px;margin-left:-6px}
+  .mburger svg.i{width:20px;height:20px}
+  body.menuopen .side{display:flex !important;position:fixed;top:0;left:0;bottom:0;width:min(84vw,330px);height:100%;z-index:40;background:var(--bg);border-right:1px solid var(--line);padding:calc(24px + env(safe-area-inset-top,0px)) 16px calc(28px + env(safe-area-inset-bottom,0px));box-shadow:0 10px 40px rgba(0,0,0,.12);animation:slidein .22s ease-out}
+  body.menuopen .mscrim{display:block}
+  body.menuopen{overflow:hidden}
   .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bg);border-top:1px solid var(--line);justify-content:space-around;align-items:center;padding:8px 8px calc(10px + env(safe-area-inset-bottom,0px))}
   .tabbar button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:500;color:var(--faint);min-width:56px}
   .tabbar button.on{color:var(--fg)}
@@ -388,6 +393,8 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .swapbar{top:64px}
 }
 .mbtns{display:block}
+.mscrim{display:none;position:fixed;inset:0;z-index:35;background:var(--scrim)}
+@keyframes slidein{from{transform:translateX(-100%)}to{transform:none}}
 .top{display:none !important}
 .gate{display:none;min-height:100vh;place-items:center;padding:24px;text-align:center}
 .gate .box{max-width:420px;display:flex;flex-direction:column;gap:14px;align-items:center}
@@ -409,6 +416,7 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   </div>
 </div>
 <nav class="tabbar" id="tabbar"></nav>
+<div class="mscrim" data-act="menu"></div>
 <div id="sheet"></div>
 <div id="toast" class="toast" hidden></div>
 
@@ -419,6 +427,7 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
 const $=(s,r=document)=>r.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const IC={
+  menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
   list:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17"/>',
   search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   shuffle:'<path d="M4 7h3.5c4 0 5 10 9 10H20M4 17h3.5c1.6 0 2.7-1.6 3.6-3.6M13 9.6C13.9 8.2 14.9 7 16.5 7H20M17.5 4.5 20 7l-2.5 2.5M17.5 14.5 20 17l-2.5 2.5"/>',
@@ -619,7 +628,7 @@ function toggleTick(it){
   S.ticks[it.tick]={at:Date.now()}; render(); return Store.set('ticks',it.tick,{at:Date.now()}) }
 
 /* ---------- navigation ---------- */
-function go(view,extra){ UI.view=view; Object.assign(UI,extra||{}); UI.sheet=null; UI.swap=view==='planner'?UI.swap:null; render(); window.scrollTo(0,0) }
+function go(view,extra){ document.body.classList.remove('menuopen'); UI.view=view; Object.assign(UI,extra||{}); UI.sheet=null; UI.swap=view==='planner'?UI.swap:null; render(); window.scrollTo(0,0) }
 function openList(kind,id){ UI.list={kind,id}; UI.status='all'; go('home') }
 
 /* ---------- render: chrome ---------- */
@@ -649,7 +658,7 @@ function renderSide(){
 function renderTop(){
   $('#top').innerHTML=`<label class="search">${ic('search')}<input id="q" type="search" placeholder="Search recipes or ingredients…" value="${esc(UI.q)}" autocomplete="off"></label>`;
   const share=UI.view==='shopping';
-  $('#mtop').innerHTML=`<button class="logo" data-act="go" data-view="dash">Milton Manor</button>
+  $('#mtop').innerHTML=`<span class="row" style="gap:10px;flex-wrap:nowrap"><button class="btn icon mburger" data-act="menu" aria-label="Menu">${ic('menu')}</button><button class="logo" data-act="go" data-view="dash">Milton Manor</button></span>
     ${UI.view==='lists'&&UI.lid?`<button class="btn icon" data-act="copylist" aria-label="Copy list">${ic('share')}</button>`:share?`<button class="btn icon" data-act="sharelist" aria-label="Copy list">${ic('share')}</button>`:UI.view==='home'?`<button class="btn icon" data-act="surprise" aria-label="Surprise me">${ic('shuffle')}</button>`:''}`;
   const t=(v,label,icon)=>`<button class="${UI.view===v||(v==='home'&&UI.view==='recipe')?'on':''}" data-act="${v==='search'?'msearch':'go'}" data-view="${v}">${ic(icon)}<span>${label}</span></button>`;
   $('#tabbar').innerHTML=t('lists','Lists','list')+t('shopping','Groceries','bag')+(canWrite()?`<button class="fab" data-act="new" aria-label="New recipe">${ic('plus')}</button>`:'')+t('home','Recipes','book')+t('planner','Meals','cal');
@@ -1006,6 +1015,7 @@ document.addEventListener('click',async e=>{
     case 'asksecdel': { const L=S.lists.find(x=>x.id===UI.lid); const sc=L&&secsOf(L).find(x=>x.id===t.dataset.sec); if(sc){ UI.sheet={type:'delsec',lid:L.id,sec:sc.id} ; render() } break }
     case 'delsec': { const L=S.lists.find(x=>x.id===UI.sheet.lid); if(L){ const sid=UI.sheet.sec; const sc=secsOf(L).find(x=>x.id===sid); S.litems.filter(i=>i.list===L.id&&i.sec===sid).forEach(i=>Store.del('litems',i.id)); S.litems=S.litems.filter(i=>!(i.list===L.id&&i.sec===sid)); L.secs=secsOf(L).filter(x=>x.id!==sid); Store.set('lists',L.id,L); toast(`Deleted ${sc?sc.name:'the heading'}.`) } UI.sheet=null; render(); break }
     case 'openlist': UI.addingSec=false; UI.secRename=null; UI.lrename=false; go('lists',{lid:id||null}); break;
+    case 'menu': document.body.classList.toggle('menuopen'); break;
     case 'fold': { const k=t.dataset.k; FOLD[k]=!FOLD[k]; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
     case 'idealist': newList(t.dataset.name); break;
     case 'addlist': UI.addingList=true; render(); setTimeout(()=>{ const i=$('#sidelist'); if(i) i.focus() },20); break;
