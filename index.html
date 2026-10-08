@@ -52,6 +52,9 @@ a{color:inherit}
 .secg.open .fx svg.i{transform:none}
 .fx:hover{color:var(--fg)}
 .subnav{padding:0 0 14px 29px}
+.subnav.anim{overflow:hidden;animation:subdown .32s ease-out}
+@keyframes subdown{from{max-height:0;opacity:0;padding-bottom:0}to{max-height:900px;opacity:1}}
+@media (prefers-reduced-motion:reduce){.subnav.anim{animation:none}}
 .sec{display:flex;align-items:center;gap:12px;padding:15px 12px 16px;flex:1;min-width:0;font-family:var(--serif);font-size:22px;line-height:1;color:var(--muted);text-align:left;width:100%}
 .sec svg.i{width:17px;height:17px;flex:none}
 .sec:hover{color:var(--fg)}
@@ -657,7 +660,8 @@ function openList(kind,id){ UI.list={kind,id}; UI.status='all'; go('home') }
 function canWrite(){ return !S.readOnly }
 const FOLD=(()=>{ try{ return JSON.parse(localStorage.getItem('milton-open')||'{}')||{} }catch(e){ return {} } })();
 function fold(k,label,inner){ const shut=!FOLD[k]; return `<div class="nav fold${shut?' shut':''}"><button class="fhd" data-act="fold" data-k="${k}" aria-expanded="${!shut}"><span class="lbl">${label}</span>${ic('down')}</button>${shut?'':inner}</div>` }
-function renderSide(){
+function renderSide(){ setTimeout(()=>{ UI.justOpened=null },0);
+
   const n=k=>listRecipes(k).length;
   const li=(kind,label,count,id)=>{ const on=UI.view==='home'&&UI.list.kind===kind&&(kind!=='col'||UI.list.id===id); const dr=kind==='col'&&canWrite(); return `<button class="ni${on?' on':''}" data-act="list" data-kind="${kind}" data-id="${esc(id||'')}"${dr?` data-colid="${esc(id)}" title="Drag to reorder"`:''}><span>${dr?`<span class="cgrip">${ic('grip')}</span>`:''}${esc(label)}</span><span>${count}</span></button>` };
   const cols=S.cols.slice().sort((a,b)=>(a.order||0)-(b.order||0));
@@ -677,7 +681,7 @@ function renderSide(){
   $('#side').innerHTML=`
     <button class="logo" data-act="go" data-view="dash">Milton Manor</button>
     <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Groceries','bag',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn]].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
-      return `<div class="secg${open?' open':''}"><div class="secrow"><button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>${k?`<button class="fx" data-act="fold" data-k="${k}" aria-expanded="${!!open}" aria-label="${open?'Hide':'Show'} ${x[1]}">${ic('down')}</button>`:''}</div>${open?`<div class="nav subnav">${SUB[x[0]]}</div>`:''}</div>` }).join('')}</div>`;
+      return `<div class="secg${open?' open':''}"><div class="secrow"><button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>${k?`<button class="fx" data-act="fold" data-k="${k}" aria-expanded="${!!open}" aria-label="${open?'Hide':'Show'} ${x[1]}">${ic('down')}</button>`:''}</div>${open?`<div class="nav subnav${UI.justOpened===k?' anim':''}">${SUB[x[0]]}</div>`:''}</div>` }).join('')}</div>`;
 }
 function renderTop(){
   $('#top').innerHTML=`<label class="search">${ic('search')}<input id="q" type="search" placeholder="Search recipes or ingredients…" value="${esc(UI.q)}" autocomplete="off"></label>`;
@@ -1031,7 +1035,7 @@ document.addEventListener('click',async e=>{
   if(a==='scrim'){ if(e.target===t){ UI.sheet=null; render() } return }
   switch(a){
     case 'list': UI.q=''; openList(t.dataset.kind,t.dataset.id||undefined); break;
-    case 'go': if(t.closest('#side')&&t.classList.contains('sec')){ const k=t.dataset.view==='lists'?'lists':t.dataset.view==='home'?'recipes':null; for(const x of Object.keys(FOLD)) FOLD[x]=false; if(k) FOLD[k]=true; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} } if(t.dataset.view==='home'){UI.list={kind:'all'}} if(t.dataset.view==='lists'){UI.lid=null;UI.lrename=false} go(t.dataset.view); break;
+    case 'go': if(t.closest('#side')&&t.classList.contains('sec')){ const k=t.dataset.view==='lists'?'lists':t.dataset.view==='home'?'recipes':null; const was=k&&FOLD[k]; for(const x of Object.keys(FOLD)) FOLD[x]=false; if(k){ FOLD[k]=true; if(!was) UI.justOpened=k } try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} } if(t.dataset.view==='home'){UI.list={kind:'all'}} if(t.dataset.view==='lists'){UI.lid=null;UI.lrename=false} go(t.dataset.view); break;
     case 'dashday': UI.pmode='day'; UI.day=t.dataset.date; go('planner'); break;
     case 'addsec': UI.addingSec=true; render(); setTimeout(()=>{ const i=$('#newsec'); if(i) i.focus() },20); break;
     case 'addsecx': UI.addingSec=false; render(); break;
@@ -1043,7 +1047,7 @@ document.addEventListener('click',async e=>{
     case 'lfav': { const L=S.lists.find(x=>x.id===UI.lid); if(!L) break; L.fav=!L.fav; render(); Store.set('lists',L.id,L); toast(L.fav?'Added to favourites.':'Removed from favourites.'); break }
     case 'openlist': if(!id) UI.lfav=false; UI.addingSec=false; UI.secRename=null; UI.lrename=false; go('lists',{lid:id||null}); break;
     case 'menu': document.body.classList.toggle('menuopen'); break;
-    case 'fold': { const k=t.dataset.k; const op=!FOLD[k]; for(const x of Object.keys(FOLD)) FOLD[x]=false; FOLD[k]=op; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
+    case 'fold': { const k=t.dataset.k; const op=!FOLD[k]; for(const x of Object.keys(FOLD)) FOLD[x]=false; FOLD[k]=op; if(op) UI.justOpened=k; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
     case 'idealist': newList(t.dataset.name); break;
     case 'addlist': UI.addingList=true; render(); setTimeout(()=>{ const i=$('#sidelist'); if(i) i.focus() },20); break;
     case 'ltick': { const i=S.litems.find(x=>x.id===id); if(!i) break; i.done=!i.done; i.doneAt=i.done?Date.now():null; render(); saveLItem(i); break }
