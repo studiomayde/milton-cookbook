@@ -642,7 +642,7 @@ function viewHome(){
     </div>
     ${l.kind==='all'||l.kind==='col'||l.kind==='tm'?`<div class="chips scroll" style="margin-top:18px">${chip('all','','All meals')}${cols.map(c=>chip('col',c.id,c.name)).join('')}${chip('tm','','Thermomix')}</div>`:''}
     ${shown.length?`<div class="grid">${shown.map(cardHTML).join('')}${canWrite()&&!UI.q?`<button class="addtile" data-act="new"><span class="plus">${ic('plus')}</span><span class="t">Add a recipe</span><span class="f muted" style="font-size:10px">Paste one in or type it up</span></button>`:''}</div>`
-      :`<div class="empty"><div class="serif">${UI.q?'Nothing matches that search.':S.loaded.recipes?'No recipes here yet.':'Opening the cookbook…'}</div><p class="muted">${UI.q?'Try a different ingredient or recipe name.':canWrite()?'Add your first one with New recipe. Ingredients you add flow straight into the shopping list.':''}</p>${canWrite()&&!UI.q&&S.loaded.recipes?`<button class="btn solid" data-act="new">${ic('plus')} New recipe</button>`:''}</div>`}`;
+      :`<div class="empty"><div class="serif">${UI.q?'Nothing matches that search.':S.loaded.recipes?'No recipes here yet.':'Opening Milton Manor…'}</div><p class="muted">${UI.q?'Try a different ingredient or recipe name.':canWrite()?'Add your first one with New recipe. Ingredients you add flow straight into the shopping list.':''}</p>${canWrite()&&!UI.q&&S.loaded.recipes?`<button class="btn solid" data-act="new">${ic('plus')} New recipe</button>`:''}</div>`}`;
 }
 function viewSearch(){
   const q=UI.q.trim(); const hits=q?sortRecipes(S.recipes.filter(r=>searchHit(r,q))):[];
