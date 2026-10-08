@@ -269,6 +269,13 @@ textarea.in{resize:vertical;line-height:1.55}
 .wstat span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .lsec{display:flex;flex-direction:column;background:var(--soft);border-radius:8px;padding:22px 24px 14px}
 .lsec>.it:first-child{border-top:0}
+.igrip{display:grid;place-items:center;width:16px;margin:0 -6px 0 -10px;color:var(--faint);cursor:grab;touch-action:none;flex:none;align-self:stretch;opacity:.55}
+.igrip svg.i{width:13px;height:13px}
+.lit:hover .igrip{opacity:1}
+.lit.idragging{opacity:.4}
+.lit.idrop-before{box-shadow:inset 0 2px 0 var(--fg)}
+.lit.idrop-after{box-shadow:inset 0 -2px 0 var(--fg)}
+.secadd.idrop-before{box-shadow:inset 0 2px 0 var(--fg)}
 .sgrip{display:inline-grid;place-items:center;width:22px;height:26px;margin-left:-6px;color:var(--faint);cursor:grab;touch-action:none;align-self:center}
 .sgrip svg.i{width:14px;height:14px}
 .sgrip:hover{color:var(--fg)}
@@ -923,9 +930,10 @@ function viewDash(){
 /* ---------- household lists ---------- */
 const LIST_IDEAS=['Vouchers to use','Household jobs','Things to fix','Bills to pay','Gift ideas','Birthdays','Packing list','Before the baby'];
 function sortedLists(){ return S.lists.slice().sort((a,b)=>(a.order||0)-(b.order||0)||(a.at||0)-(b.at||0)) }
-function itemsOf(lid){ return S.litems.filter(i=>i.list===lid).sort((a,b)=>(a.at||0)-(b.at||0)) }
+const ikey=i=>i.ord!=null?i.ord:(i.at||0);
+function itemsOf(lid){ return S.litems.filter(i=>i.list===lid).sort((a,b)=>ikey(a)-ikey(b)) }
 function liHTML(i){ const w=canWrite();
-  return `<div class="it lit"><button class="itmain" data-act="ltick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span>${i.done&&i.sec?(()=>{ const L=S.lists.find(x=>x.id===i.list); const sc=L&&secsOf(L).find(x=>x.id===i.sec); return sc?`<span class="rt">${esc(sc.name)}</span>`:'' })():''}</span></button>${w&&!i.done?`<input class="lnote" id="ln-${esc(i.id)}" data-id="${esc(i.id)}" value="${esc(i.note||'')}" placeholder="Note" aria-label="Note for ${esc(i.name)}" autocomplete="off">`:i.note?`<span class="q">${esc(i.note)}</span>`:''}${w?`<button class="xbtn" data-act="rmlitem" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
+  return `<div class="it lit"${w&&!i.done?` data-iid="${esc(i.id)}" data-sec="${esc(i.sec||'')}"`:''}>${w&&!i.done?`<span class="igrip" data-id="${esc(i.id)}" aria-label="Drag to reorder">${ic('grip')}</span>`:''}<button class="itmain" data-act="ltick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span>${i.done&&i.sec?(()=>{ const L=S.lists.find(x=>x.id===i.list); const sc=L&&secsOf(L).find(x=>x.id===i.sec); return sc?`<span class="rt">${esc(sc.name)}</span>`:'' })():''}</span></button>${w&&!i.done?`<input class="lnote" id="ln-${esc(i.id)}" data-id="${esc(i.id)}" value="${esc(i.note||'')}" placeholder="Note" aria-label="Note for ${esc(i.name)}" autocomplete="off">`:i.note?`<span class="q">${esc(i.note)}</span>`:''}${w?`<button class="xbtn" data-act="rmlitem" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
 function secsOf(L){ return Array.isArray(L.secs)?L.secs:[] }
 function listBodyHTML(L,todo,its){ const w=canWrite(); const secs=secsOf(L); const ids=new Set(secs.map(x=>x.id));
   const loose=todo.filter(i=>!i.sec||!ids.has(i.sec));
@@ -933,7 +941,7 @@ function listBodyHTML(L,todo,its){ const w=canWrite(); const secs=secsOf(L); con
   for(const sc of secs){ const g=todo.filter(i=>i.sec===sc.id); const all=its.filter(i=>i.sec===sc.id);
     out+=`<div class="lsec" data-sec="${esc(sc.id)}"><div class="lsh">${UI.secRename===sc.id?`<form class="row" data-form="rensec" data-sec="${esc(sc.id)}" style="flex-wrap:nowrap;flex:1"><input class="in" id="rensec" value="${esc(sc.name)}" autocomplete="off" style="font-family:var(--serif);font-size:20px;padding:4px 12px"><button class="btn solid sm" type="submit">Save</button><button class="link" type="button" data-act="rensecx">Cancel</button></form>`:`<h3>${w&&secs.length>1?`<span class="sgrip" data-sec="${esc(sc.id)}" title="Drag to reorder" aria-label="Drag to reorder">${ic('grip')}</span>`:''}${esc(sc.name)}<span class="count">${g.length}${all.length-g.length?` / ${all.length}`:''}</span></h3>${w?`<span class="row" style="gap:16px"><button class="link" data-act="rensec" data-sec="${esc(sc.id)}">Rename</button><button class="link" data-act="asksecdel" data-sec="${esc(sc.id)}">Delete</button></span>`:''}`}</div>
       ${g.map(liHTML).join('')}
-      ${w?`<form class="secadd" data-form="secitem" data-sec="${esc(sc.id)}">${ic('plus')}<input id="si-${esc(sc.id)}" placeholder="Add to ${esc(sc.name)}" autocomplete="off"></form>`:''}</div>` }
+      ${w?`<form class="secadd" data-form="secitem" data-sec="${esc(sc.id)}" data-drop-end="${esc(sc.id)}">${ic('plus')}<input id="si-${esc(sc.id)}" placeholder="Add to ${esc(sc.name)}" autocomplete="off"></form>`:''}</div>` }
   if(w) out+=UI.addingSec?`<form class="row" data-form="newsec" style="flex-wrap:nowrap"><input class="in" id="newsec" placeholder="Heading name, e.g. Gift cards" autocomplete="off" style="padding:10px 14px"><button class="btn solid" type="submit">Add</button><button class="link" type="button" data-act="addsecx">Cancel</button></form>`:`<button class="btn" data-act="addsec" style="align-self:flex-start">${ic('plus')} Add heading</button>`;
   return out }
 function viewLists(){
@@ -1209,6 +1217,29 @@ document.addEventListener('pointermove',e=>{ if(!secDrag||e.pointerId!==secDrag.
   for(const r of rows){ const b=r.getBoundingClientRect(); if(e.clientY<b.top+b.height/2){ target=r; before=true; break } target=r; before=false }
   secDrag.target=target?target.dataset.sec:null; secDrag.before=before; if(target) target.classList.add(before?'sdrop-before':'sdrop-after');
   if(e.clientY<60) window.scrollBy(0,-12); else if(e.clientY>window.innerHeight-90) window.scrollBy(0,12) },{passive:false});
+let iDrag=null;
+document.addEventListener('pointerdown',e=>{ const g=e.target.closest&&e.target.closest('.igrip'); if(!g) return; e.preventDefault();
+  iDrag={id:g.dataset.id,pid:e.pointerId}; const row=g.closest('.lit'); if(row) row.classList.add('idragging'); document.body.classList.add('secsorting'); try{ g.setPointerCapture(e.pointerId) }catch(x){} });
+document.addEventListener('pointermove',e=>{ if(!iDrag||e.pointerId!==iDrag.pid) return; e.preventDefault();
+  document.querySelectorAll('.idrop-before,.idrop-after').forEach(x=>x.classList.remove('idrop-before','idrop-after'));
+  const els=[...document.querySelectorAll('.lit[data-iid],.secadd[data-drop-end]')].filter(r=>r.dataset.iid!==iDrag.id);
+  let best=null,bd=1e9; for(const r of els){ const b=r.getBoundingClientRect(); const dd=e.clientY<b.top?b.top-e.clientY:e.clientY>b.bottom?e.clientY-b.bottom:0; if(dd<bd){ bd=dd; best=r } }
+  iDrag.target=null; if(best){ const b=best.getBoundingClientRect(); const end=!!best.dataset.dropEnd; const before=end||e.clientY<b.top+b.height/2;
+    iDrag.target=end?{end:best.dataset.dropEnd}:{id:best.dataset.iid,before}; best.classList.add(before?'idrop-before':'idrop-after') }
+  if(e.clientY<60) window.scrollBy(0,-12); else if(e.clientY>window.innerHeight-90) window.scrollBy(0,12) },{passive:false});
+function endItemDrag(){ if(!iDrag) return; const d=iDrag; iDrag=null; document.body.classList.remove('secsorting');
+  document.querySelectorAll('.idragging,.idrop-before,.idrop-after').forEach(x=>x.classList.remove('idragging','idrop-before','idrop-after'));
+  const L=S.lists.find(x=>x.id===UI.lid); const it=S.litems.find(x=>x.id===d.id); if(!L||!it||!d.target) return;
+  const ids=new Set(secsOf(L).map(x=>x.id)); const secOf=i=>i.sec&&ids.has(i.sec)?i.sec:'';
+  const groups=[''].concat(secsOf(L).map(x=>x.id)).map(k=>({k,items:itemsOf(L.id).filter(i=>!i.done&&secOf(i)===k&&i.id!==it.id)}));
+  let g, pos;
+  if(d.target.end!=null){ g=groups.find(x=>x.k===d.target.end); pos=g?g.items.length:-1 }
+  else { const t=S.litems.find(x=>x.id===d.target.id); if(!t) return; g=groups.find(x=>x.k===secOf(t)); pos=g.items.indexOf(t); if(!d.target.before) pos++ }
+  if(!g||pos<0) return; g.items.splice(pos,0,it);
+  const oldSec=secOf(it); if(g.k){ it.sec=g.k } else { delete it.sec }
+  let n=0; for(const gr of groups) for(const i of gr.items){ const changed=i.ord!==n||i===it&&oldSec!==g.k; i.ord=n++; if(changed) saveLItem(i) }
+  render() }
+document.addEventListener('pointerup',endItemDrag); document.addEventListener('pointercancel',endItemDrag);
 function endSecDrag(){ if(!secDrag) return; const d=secDrag; secDrag=null; document.body.classList.remove('secsorting');
   document.querySelectorAll('.sdragging,.sdrop-before,.sdrop-after').forEach(x=>x.classList.remove('sdragging','sdrop-before','sdrop-after'));
   const L=S.lists.find(x=>x.id===UI.lid); if(!L||!d.target) return; const secs=secsOf(L).slice(); const from=secs.findIndex(x=>x.id===d.id); if(from<0) return;
