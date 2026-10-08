@@ -265,6 +265,13 @@ textarea.in{resize:vertical;line-height:1.55}
 .wstat span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .lsec{display:flex;flex-direction:column;background:var(--soft);border-radius:8px;padding:22px 24px 14px}
 .lsec>.it:first-child{border-top:0}
+.sgrip{display:inline-grid;place-items:center;width:22px;height:26px;margin-left:-6px;color:var(--faint);cursor:grab;touch-action:none;align-self:center}
+.sgrip svg.i{width:14px;height:14px}
+.sgrip:hover{color:var(--fg)}
+.lsec.sdragging{opacity:.45}
+.lsec.sdrop-before{box-shadow:0 -3px 0 var(--fg)}
+.lsec.sdrop-after{box-shadow:0 3px 0 var(--fg)}
+body.secsorting{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .lsec .lnote:focus,.lsec .secadd input:focus{background:var(--bg)}
 .lsh{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:4px 0 10px}
 .lsh h3{font-family:var(--serif);font-weight:400;font-size:24px;line-height:1.1;margin:0;display:flex;align-items:baseline;gap:10px}
@@ -384,7 +391,7 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   input::placeholder,textarea::placeholder{font-size:11px}
   .qin{width:84px;font-size:11px !important}
   .lnote{width:110px;font-size:12px !important}
-  .lit .itmain{flex:1;max-width:none}
+  .lit .itmain{flex:0 1 auto;max-width:55%}
   .lacts{gap:20px}
   .lsec{padding:16px 16px 8px}
   .dgrid{grid-template-columns:1fr;grid-auto-rows:auto;gap:14px}
@@ -392,7 +399,7 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .wg h2{font-size:26px}
   .wthumb .t{font-size:14px}
   .dnew{display:none}
-  .lit .lnote{flex:none;width:110px;min-width:0;margin-left:0;text-align:right}
+  .lit .lnote{flex:1;width:auto;min-width:70px;margin-left:10px;text-align:left}
   .lcards{grid-template-columns:1fr;gap:12px}
   .lcard{min-height:0}
   .swapbar{top:64px}
@@ -906,7 +913,7 @@ function listBodyHTML(L,todo,its){ const w=canWrite(); const secs=secsOf(L); con
   const loose=todo.filter(i=>!i.sec||!ids.has(i.sec));
   let out=loose.length||!secs.length?`<div class="lsec">${loose.length?loose.map(liHTML).join(''):`<p class="muted" style="margin:0">${its.length?'Everything is ticked off.':'Nothing on this list yet.'}</p>`}</div>`:'';
   for(const sc of secs){ const g=todo.filter(i=>i.sec===sc.id); const all=its.filter(i=>i.sec===sc.id);
-    out+=`<div class="lsec"><div class="lsh">${UI.secRename===sc.id?`<form class="row" data-form="rensec" data-sec="${esc(sc.id)}" style="flex-wrap:nowrap;flex:1"><input class="in" id="rensec" value="${esc(sc.name)}" autocomplete="off" style="font-family:var(--serif);font-size:20px;padding:4px 12px"><button class="btn solid sm" type="submit">Save</button><button class="link" type="button" data-act="rensecx">Cancel</button></form>`:`<h3>${esc(sc.name)}<span class="count">${g.length}${all.length-g.length?` / ${all.length}`:''}</span></h3>${w?`<span class="row" style="gap:16px"><button class="link" data-act="rensec" data-sec="${esc(sc.id)}">Rename</button><button class="link" data-act="asksecdel" data-sec="${esc(sc.id)}">Delete</button></span>`:''}`}</div>
+    out+=`<div class="lsec" data-sec="${esc(sc.id)}"><div class="lsh">${UI.secRename===sc.id?`<form class="row" data-form="rensec" data-sec="${esc(sc.id)}" style="flex-wrap:nowrap;flex:1"><input class="in" id="rensec" value="${esc(sc.name)}" autocomplete="off" style="font-family:var(--serif);font-size:20px;padding:4px 12px"><button class="btn solid sm" type="submit">Save</button><button class="link" type="button" data-act="rensecx">Cancel</button></form>`:`<h3>${w&&secs.length>1?`<span class="sgrip" data-sec="${esc(sc.id)}" title="Drag to reorder" aria-label="Drag to reorder">${ic('grip')}</span>`:''}${esc(sc.name)}<span class="count">${g.length}${all.length-g.length?` / ${all.length}`:''}</span></h3>${w?`<span class="row" style="gap:16px"><button class="link" data-act="rensec" data-sec="${esc(sc.id)}">Rename</button><button class="link" data-act="asksecdel" data-sec="${esc(sc.id)}">Delete</button></span>`:''}`}</div>
       ${g.map(liHTML).join('')}
       ${w?`<form class="secadd" data-form="secitem" data-sec="${esc(sc.id)}">${ic('plus')}<input id="si-${esc(sc.id)}" placeholder="Add to ${esc(sc.name)}" autocomplete="off"></form>`:''}</div>` }
   if(w) out+=UI.addingSec?`<form class="row" data-form="newsec" style="flex-wrap:nowrap"><input class="in" id="newsec" placeholder="Heading name, e.g. Gift cards" autocomplete="off" style="padding:10px 14px"><button class="btn solid" type="submit">Add</button><button class="link" type="button" data-act="addsecx">Cancel</button></form>`:`<button class="btn" data-act="addsec" style="align-self:flex-start">${ic('plus')} Add heading</button>`;
@@ -1167,6 +1174,21 @@ document.addEventListener('pointermove',e=>{ if(!colDrag||e.pointerId!==colDrag.
   const rows=[...document.querySelectorAll('#side .ni[data-colid]')].filter(r=>r.dataset.colid!==colDrag.id); let target=null, before=true;
   for(const r of rows){ const b=r.getBoundingClientRect(); if(e.clientY<b.top+b.height/2){ target=r; before=true; break } target=r; before=false }
   colDrag.target=target?target.dataset.colid:null; colDrag.before=before; if(target) target.classList.add(before?'drop-before':'drop-after') },{passive:false});
+let secDrag=null;
+document.addEventListener('pointerdown',e=>{ const g=e.target.closest&&e.target.closest('.sgrip'); if(!g) return; e.preventDefault();
+  secDrag={id:g.dataset.sec,el:g.closest('.lsec'),pid:e.pointerId}; secDrag.el.classList.add('sdragging'); document.body.classList.add('secsorting'); try{ g.setPointerCapture(e.pointerId) }catch(x){} });
+document.addEventListener('pointermove',e=>{ if(!secDrag||e.pointerId!==secDrag.pid) return; e.preventDefault();
+  document.querySelectorAll('.sdrop-before,.sdrop-after').forEach(x=>x.classList.remove('sdrop-before','sdrop-after'));
+  const rows=[...document.querySelectorAll('.lsec[data-sec]')].filter(r=>r.dataset.sec!==secDrag.id); let target=null,before=true;
+  for(const r of rows){ const b=r.getBoundingClientRect(); if(e.clientY<b.top+b.height/2){ target=r; before=true; break } target=r; before=false }
+  secDrag.target=target?target.dataset.sec:null; secDrag.before=before; if(target) target.classList.add(before?'sdrop-before':'sdrop-after');
+  if(e.clientY<60) window.scrollBy(0,-12); else if(e.clientY>window.innerHeight-90) window.scrollBy(0,12) },{passive:false});
+function endSecDrag(){ if(!secDrag) return; const d=secDrag; secDrag=null; document.body.classList.remove('secsorting');
+  document.querySelectorAll('.sdragging,.sdrop-before,.sdrop-after').forEach(x=>x.classList.remove('sdragging','sdrop-before','sdrop-after'));
+  const L=S.lists.find(x=>x.id===UI.lid); if(!L||!d.target) return; const secs=secsOf(L).slice(); const from=secs.findIndex(x=>x.id===d.id); if(from<0) return;
+  const [m]=secs.splice(from,1); let to=secs.findIndex(x=>x.id===d.target); if(to<0) return; if(!d.before) to++; secs.splice(to,0,m);
+  if(secs.map(x=>x.id).join()===secsOf(L).map(x=>x.id).join()) return; L.secs=secs; render(); Store.set('lists',L.id,L) }
+document.addEventListener('pointerup',endSecDrag); document.addEventListener('pointercancel',endSecDrag);
 function endColDrag(e){ if(!colDrag) return; const d=colDrag; colDrag=null; document.body.classList.remove('colsorting');
   document.querySelectorAll('.dragging,.drop-before,.drop-after').forEach(x=>x.classList.remove('dragging','drop-before','drop-after'));
   if(!d.active) return; suppressClick=true; setTimeout(()=>suppressClick=false,50);
