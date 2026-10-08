@@ -252,6 +252,8 @@ textarea.in{resize:vertical;line-height:1.55}
 .wrow .wd.today{color:var(--fg);font-weight:500}
 .wrow .wt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wrow .wn{color:var(--muted);font-size:11px;white-space:nowrap}
+.wrow.wbig{font-size:14px}
+.wrow.wbig .wn{font-size:13px}
 .wthumbs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .wthumb{display:flex;flex-direction:column;gap:8px;text-align:left;min-width:0}
 .wthumb .pic{aspect-ratio:1/1}
@@ -861,7 +863,7 @@ function viewDash(){
   const shop=`<div class="wg">${wh(`Total: ${todo.length} item${todo.length===1?'':'s'}`,'Shopping list','shopping','Open list')}<div>${todo.slice(0,6).map(i=>`<button class="wrow" data-act="go" data-view="shopping"><span class="cb"></span><span class="wt">${esc(i.name)}</span><span class="wn">${esc(i.qty||'')}</span></button>`).join('')||'<p class="muted" style="margin:0">Nothing on the list yet.</p>'}${todo.length>6?`<div class="wrow muted" style="font-size:11px">+ ${todo.length-6} more</div>`:''}</div></div>`;
   // lists
   const ls=sortedLists();
-  const lists=`<div class="wg">${wh(`${ls.length} list${ls.length===1?'':'s'}`,'Lists','lists','All lists',' data-lid=""')}<div>${ls.map(L=>{ const its=itemsOf(L.id), t=its.filter(i=>!i.done); return `<button class="wrow" data-act="openlist" data-id="${esc(L.id)}"><span class="wt">${esc(L.name)}</span><span class="wn">${t.length} to do</span></button>` }).join('')||'<p class="muted" style="margin:0">No lists yet.</p>'}</div></div>`;
+  const lists=`<div class="wg">${wh(`${ls.length} list${ls.length===1?'':'s'}`,'Lists','lists','All lists',' data-lid=""')}<div>${ls.map(L=>{ const its=itemsOf(L.id), t=its.filter(i=>!i.done); return `<button class="wrow wbig" data-act="openlist" data-id="${esc(L.id)}"><span class="wt">${esc(L.name)}</span><span class="wn">${t.length} to do</span></button>` }).join('')||'<p class="muted" style="margin:0">No lists yet.</p>'}</div></div>`;
   // recipes
   const recent=S.recipes.slice().sort((a,b)=>(b.created||0)-(a.created||0)).slice(0,3); const totry=S.recipes.filter(r=>r.status!=='tried').length;
   const recipes=`<div class="wg">${wh('Recently added','Recipes','home','All recipes')}
