@@ -221,6 +221,8 @@ textarea.in{resize:vertical;line-height:1.55}
 .lnote::placeholder{color:var(--muted);opacity:.45}
 .lnote:hover{border-color:var(--line)}
 .lnote:focus{border-color:var(--fg);background:var(--bg);text-align:left;color:var(--fg)}
+.lit .itmain{flex:0 1 auto;max-width:45%}
+.lit .lnote{flex:1;width:auto;min-width:140px;text-align:left;margin-left:16px}
 .lwrap{max-width:760px;display:flex;flex-direction:column;gap:24px}
 .progress{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin:6px 0 20px}
 .progress i{display:block;height:100%;background:var(--fg)}
@@ -327,6 +329,8 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   input::placeholder,textarea::placeholder{font-size:11px}
   .qin{width:84px;font-size:11px !important}
   .lnote{width:110px;font-size:11px !important}
+  .lit .itmain{flex:1;max-width:none}
+  .lit .lnote{flex:none;width:110px;min-width:0;margin-left:0;text-align:right}
   .lcards{grid-template-columns:1fr;gap:12px}
   .lcard{min-height:0}
   .swapbar{top:64px}
@@ -809,7 +813,7 @@ const LIST_IDEAS=['Vouchers to use','Household jobs','Things to fix','Bills to p
 function sortedLists(){ return S.lists.slice().sort((a,b)=>(a.order||0)-(b.order||0)||(a.at||0)-(b.at||0)) }
 function itemsOf(lid){ return S.litems.filter(i=>i.list===lid).sort((a,b)=>(a.at||0)-(b.at||0)) }
 function liHTML(i){ const w=canWrite();
-  return `<div class="it"><button class="itmain" data-act="ltick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span></span></button>${w&&!i.done?`<input class="lnote" id="ln-${esc(i.id)}" data-id="${esc(i.id)}" value="${esc(i.note||'')}" placeholder="Note" aria-label="Note for ${esc(i.name)}" autocomplete="off">`:i.note?`<span class="q">${esc(i.note)}</span>`:''}${w?`<button class="xbtn" data-act="rmlitem" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
+  return `<div class="it lit"><button class="itmain" data-act="ltick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span></span></button>${w&&!i.done?`<input class="lnote" id="ln-${esc(i.id)}" data-id="${esc(i.id)}" value="${esc(i.note||'')}" placeholder="Note" aria-label="Note for ${esc(i.name)}" autocomplete="off">`:i.note?`<span class="q">${esc(i.note)}</span>`:''}${w?`<button class="xbtn" data-act="rmlitem" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
 function viewLists(){
   const L=UI.lid&&S.lists.find(x=>x.id===UI.lid);
   if(!L){ UI.lid=null; const ls=sortedLists(); const used=new Set(ls.map(x=>x.name.toLowerCase())); const ideas=LIST_IDEAS.filter(x=>!used.has(x.toLowerCase()));
