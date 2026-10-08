@@ -867,7 +867,6 @@ function viewDash(){
   // recipes
   const recent=S.recipes.slice().sort((a,b)=>(b.created||0)-(a.created||0)).slice(0,3); const totry=S.recipes.filter(r=>r.status!=='tried').length;
   const recipes=`<div class="wg">${wh('Recently added','Recipes','home','All recipes')}
-    <div class="wstat"><div><b>${S.recipes.length}</b><span>Recipes</span></div><div><b>${totry}</b><span>To try</span></div><div><b>${S.recipes.filter(r=>r.tm).length}</b><span>Thermomix</span></div></div>
     ${recent.length?`<div class="wthumbs">${recent.map(r=>`<button class="wthumb" data-act="open" data-id="${r.id}"><span class="pic">${r.photo?`<img src="${r.photo}" alt="">`:`<span class="ph">${esc((r.title||'?').charAt(0))}</span>`}</span><span class="t">${esc(r.title)}</span></button>`).join('')}</div>`:''}
     <div class="row"><button class="btn" data-act="surprise">${ic('shuffle')} Surprise me</button>${canWrite()?`<button class="btn" data-act="new">${ic('plus')} New recipe</button>`:''}</div></div>`;
   return `<div class="head"><div class="tg"><div class="kick">${esc(longDate(TODAY))}</div><h1 class="h1">${hello}</h1></div></div>
