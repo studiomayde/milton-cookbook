@@ -280,6 +280,14 @@ body.secsorting{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .secadd svg.i{width:16px;height:16px;flex:none;margin:0 1px}
 .secadd input{border:0;background:transparent;outline:none;width:100%;font-size:12px;padding:4px 0;color:var(--fg)}
 .secadd input::placeholder{color:var(--muted);opacity:.6}
+.lheart{display:inline-flex;vertical-align:-1px;margin-right:6px}
+.lheart svg.i{width:11px;height:11px;fill:currentColor}
+.ni .lheart{margin:0 0 0 4px;color:var(--muted)}
+.ni.on .lheart{color:var(--on-fg)}
+.ni[data-lstid]:hover .cgrip{width:14px;opacity:1}
+.lcard.dragging{opacity:.4}
+.lcard.drop-before{box-shadow:-4px 0 0 var(--fg)}
+.lcard.drop-after{box-shadow:4px 0 0 var(--fg)}
 .lwrap{max-width:760px;display:flex;flex-direction:column;gap:24px}
 .progress{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin:6px 0 20px}
 .progress i{display:block;height:100%;background:var(--fg)}
@@ -401,6 +409,8 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .dnew{display:none}
   .lit .lnote{flex:1;width:auto;min-width:70px;margin-left:10px;text-align:left}
   .lcards{grid-template-columns:1fr;gap:12px}
+  .lcard.drop-before{box-shadow:0 -4px 0 var(--fg)}
+  .lcard.drop-after{box-shadow:0 4px 0 var(--fg)}
   .lcard{min-height:0}
   .swapbar{top:64px}
 }
@@ -653,8 +663,10 @@ function renderSide(){
   const cols=S.cols.slice().sort((a,b)=>(a.order||0)-(b.order||0));
   const plannerOn=UI.view==='planner', shopOn=UI.view==='shopping';
   const SUB={lists:`
-      <button class="ni${UI.view==='lists'&&!UI.lid?' on':''}" data-act="openlist" data-id=""><span>All lists</span><span>${S.lists.length}</span></button>
-      ${sortedLists().map(L=>{ const on=UI.view==='lists'&&UI.lid===L.id; return `<button class="ni${on?' on':''}" data-act="openlist" data-id="${esc(L.id)}"><span>${esc(L.name)}</span><span>${itemsOf(L.id).filter(i=>!i.done).length}</span></button>` }).join('')}
+      <button class="ni${UI.view==='lists'&&!UI.lid&&!UI.lfav?' on':''}" data-act="openlist" data-id=""><span>All lists</span><span>${S.lists.length}</span></button>
+      <button class="ni${UI.view==='lists'&&!UI.lid&&UI.lfav?' on':''}" data-act="listfavs"><span>Favourites</span><span>${S.lists.filter(x=>x.fav).length}</span></button>
+      <div style="height:12px"></div>
+      ${sortedLists().map(L=>{ const on=UI.view==='lists'&&UI.lid===L.id; const dr=canWrite(); return `<button class="ni${on?' on':''}" data-act="openlist" data-id="${esc(L.id)}"${dr?` data-lstid="${esc(L.id)}" title="Drag to reorder"`:''}><span>${dr?`<span class="cgrip">${ic('grip')}</span>`:''}${esc(L.name)}${L.fav?` <span class="lheart">${ic('heart')}</span>`:''}</span><span>${itemsOf(L.id).filter(i=>!i.done).length}</span></button>` }).join('')}
       ${canWrite()?(UI.addingList?`<form class="addcol" data-form="sidelist">${ic('plus')}<input id="sidelist" placeholder="List name" autocomplete="off"></form>`:`<button class="addcol" data-act="addlist">${ic('plus')} New list</button>`):''}`,home:`
       ${li('all','All recipes',S.recipes.length)}${li('totry','To try',n('totry'))}${li('fav','Favourites',n('fav'))}
       <div style="height:18px"></div>
@@ -920,18 +932,19 @@ function listBodyHTML(L,todo,its){ const w=canWrite(); const secs=secsOf(L); con
   return out }
 function viewLists(){
   const L=UI.lid&&S.lists.find(x=>x.id===UI.lid);
-  if(!L){ UI.lid=null; const ls=sortedLists(); const used=new Set(ls.map(x=>x.name.toLowerCase())); const ideas=LIST_IDEAS.filter(x=>!used.has(x.toLowerCase()));
-    return `<div class="head"><div class="tg"><div class="kick">Milton Manor</div><h1 class="h1">Lists</h1><div class="sub">${ls.length} list${ls.length===1?'':'s'}</div></div></div>
+  if(!L){ UI.lid=null; const allLs=sortedLists(); const ls=UI.lfav?allLs.filter(x=>x.fav):allLs; const used=new Set(ls.map(x=>x.name.toLowerCase())); const ideas=LIST_IDEAS.filter(x=>!used.has(x.toLowerCase()));
+    return `<div class="head"><div class="tg"><div class="kick">Milton Manor</div><h1 class="h1">${UI.lfav?'Favourite lists':'Lists'}</h1><div class="sub">${ls.length} list${ls.length===1?'':'s'}</div></div>
+      <div class="seg"><button class="${UI.lfav?'':'on'}" data-act="openlist" data-id="">All  ${allLs.length}</button><button class="${UI.lfav?'on':''}" data-act="listfavs">Favourites  ${allLs.filter(x=>x.fav).length}</button></div></div>
       <div class="lwrap" style="max-width:none">
       ${canWrite()?`<form class="row" data-form="newlist" style="flex-wrap:nowrap;max-width:620px"><label class="search" style="border-radius:6px">${ic('plus')}<input id="newlist" placeholder="Start a new list, e.g. Vouchers to use" autocomplete="off"></label><button class="btn solid" type="submit">Add</button></form>`:''}
       ${ls.length?`<div class="lcards">${ls.map(l=>{ const its=itemsOf(l.id); const todo=its.filter(i=>!i.done);
-        return `<button class="lcard" data-act="openlist" data-id="${esc(l.id)}"><span class="lm">${todo.length} to do${its.length-todo.length?`  ·  ${its.length-todo.length} done`:''}</span><span class="ln">${esc(l.name)}</span>${todo.length?`<ul>${todo.slice(0,4).map(i=>`<li>${esc(i.name)}</li>`).join('')}${todo.length>4?`<li style="list-style:none">+ ${todo.length-4} more</li>`:''}</ul>`:`<span class="muted" style="font-size:12px">${its.length?'All done.':'Nothing on it yet.'}</span>`}</button>` }).join('')}</div>`:`<p class="muted" style="margin:0">No lists yet. Start one above.</p>`}
+        return `<button class="lcard" data-act="openlist" data-id="${esc(l.id)}"${canWrite()?` data-lstid="${esc(l.id)}"`:''}><span class="lm">${l.fav?`<span class="lheart">${ic('heart')}</span>`:''}${todo.length} to do${its.length-todo.length?`  ·  ${its.length-todo.length} done`:''}</span><span class="ln">${esc(l.name)}</span>${todo.length?`<ul>${todo.slice(0,4).map(i=>`<li>${esc(i.name)}</li>`).join('')}${todo.length>4?`<li style="list-style:none">+ ${todo.length-4} more</li>`:''}</ul>`:`<span class="muted" style="font-size:12px">${its.length?'All done.':'Nothing on it yet.'}</span>`}</button>` }).join('')}</div>`:`<p class="muted" style="margin:0">${UI.lfav?'No favourite lists yet. Open a list and tap Favourite.':'No lists yet. Start one above.'}</p>`}
       </div>`; }
   const its=itemsOf(L.id), todo=its.filter(i=>!i.done), done=its.filter(i=>i.done); const pct=its.length?Math.round(done.length/its.length*100):0;
   return `<div class="head"><div class="tg"><button class="back" data-act="openlist" data-id="" style="margin-bottom:10px">${ic('back')} All lists</button>
       ${UI.lrename?`<form class="row" data-form="renlist" style="flex-wrap:nowrap"><input class="in" id="renlist" value="${esc(L.name)}" autocomplete="off" style="font-family:var(--serif);font-size:30px;padding:6px 14px;max-width:420px"><button class="btn solid" type="submit">Save</button><button class="link" type="button" data-act="renlistcancel">Cancel</button></form>`:`<h1 class="h1">${esc(L.name)}</h1>`}
       <div class="sub">Total: ${todo.length} item${todo.length===1?'':'s'}${done.length?`  ·  ${done.length} done`:''}</div></div>
-      <div class="row lacts">${canWrite()&&!UI.lrename?`<button class="link" data-act="renlist">Rename</button><button class="link" data-act="asklistdel">Delete list</button>`:''}<button class="btn" data-act="copylist">${ic('share')} Copy list</button></div></div>
+      <div class="row lacts">${canWrite()&&!UI.lrename?`<button class="link" data-act="renlist">Rename</button><button class="link" data-act="asklistdel">Delete list</button>`:''}<button class="btn${L.fav?' solid':''}" data-act="lfav">${ic('heart')} Favourite</button><button class="btn" data-act="copylist">${ic('share')} Copy list</button></div></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
     <div class="lwrap">
       ${canWrite()?`<form class="row" data-form="litem" style="flex-wrap:nowrap"><label class="search" style="border-radius:6px">${ic('plus')}<input id="litem" placeholder="Add to ${esc(L.name)}" autocomplete="off"></label><button class="btn solid" type="submit">Add</button></form>`:''}
@@ -1026,7 +1039,9 @@ document.addEventListener('click',async e=>{
     case 'rensecx': UI.secRename=null; render(); break;
     case 'asksecdel': { const L=S.lists.find(x=>x.id===UI.lid); const sc=L&&secsOf(L).find(x=>x.id===t.dataset.sec); if(sc){ UI.sheet={type:'delsec',lid:L.id,sec:sc.id} ; render() } break }
     case 'delsec': { const L=S.lists.find(x=>x.id===UI.sheet.lid); if(L){ const sid=UI.sheet.sec; const sc=secsOf(L).find(x=>x.id===sid); S.litems.filter(i=>i.list===L.id&&i.sec===sid).forEach(i=>Store.del('litems',i.id)); S.litems=S.litems.filter(i=>!(i.list===L.id&&i.sec===sid)); L.secs=secsOf(L).filter(x=>x.id!==sid); Store.set('lists',L.id,L); toast(`Deleted ${sc?sc.name:'the heading'}.`) } UI.sheet=null; render(); break }
-    case 'openlist': UI.addingSec=false; UI.secRename=null; UI.lrename=false; go('lists',{lid:id||null}); break;
+    case 'listfavs': UI.lfav=true; UI.lrename=false; go('lists',{lid:null}); break;
+    case 'lfav': { const L=S.lists.find(x=>x.id===UI.lid); if(!L) break; L.fav=!L.fav; render(); Store.set('lists',L.id,L); toast(L.fav?'Added to favourites.':'Removed from favourites.'); break }
+    case 'openlist': if(!id) UI.lfav=false; UI.addingSec=false; UI.secRename=null; UI.lrename=false; go('lists',{lid:id||null}); break;
     case 'menu': document.body.classList.toggle('menuopen'); break;
     case 'fold': { const k=t.dataset.k; const op=!FOLD[k]; for(const x of Object.keys(FOLD)) FOLD[x]=false; FOLD[k]=op; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
     case 'idealist': newList(t.dataset.name); break;
@@ -1161,8 +1176,8 @@ document.addEventListener('submit',async e=>{
 function saveColOrder(ids){ ids.forEach((id,i)=>{ const c=S.cols.find(x=>x.id===id); if(c&&(c.order||0)!==i){ c.order=i; Store.set('collections',c.id,{name:c.name,order:i}) } }); render() }
 function sortedColIds(){ return S.cols.slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(c=>c.id) }
 let colDrag=null, suppressClick=false;
-document.addEventListener('pointerdown',e=>{ const n=e.target.closest&&e.target.closest('.ni[data-colid]'); if(!n||e.button!==0) return;
-  colDrag={id:n.dataset.colid,el:n,x:e.clientX,y:e.clientY,active:false,touch:e.pointerType!=='mouse',t:Date.now(),pid:e.pointerId} });
+document.addEventListener('pointerdown',e=>{ const n=e.target.closest&&e.target.closest('.ni[data-colid],[data-lstid]'); if(!n||e.button!==0) return;
+  colDrag={kind:n.dataset.lstid?'list':'col',id:n.dataset.colid||n.dataset.lstid,el:n,x:e.clientX,y:e.clientY,active:false,touch:e.pointerType!=='mouse',t:Date.now(),pid:e.pointerId} });
 document.addEventListener('pointermove',e=>{ if(!colDrag||e.pointerId!==colDrag.pid) return;
   const dist=Math.abs(e.clientY-colDrag.y)+Math.abs(e.clientX-colDrag.x);
   if(!colDrag.active){
@@ -1171,9 +1186,14 @@ document.addEventListener('pointermove',e=>{ if(!colDrag||e.pointerId!==colDrag.
     colDrag.active=true; colDrag.el.classList.add('dragging'); document.body.classList.add('colsorting'); try{ colDrag.el.setPointerCapture(e.pointerId) }catch(x){} }
   e.preventDefault();
   document.querySelectorAll('.drop-before,.drop-after').forEach(x=>x.classList.remove('drop-before','drop-after'));
-  const rows=[...document.querySelectorAll('#side .ni[data-colid]')].filter(r=>r.dataset.colid!==colDrag.id); let target=null, before=true;
-  for(const r of rows){ const b=r.getBoundingClientRect(); if(e.clientY<b.top+b.height/2){ target=r; before=true; break } target=r; before=false }
-  colDrag.target=target?target.dataset.colid:null; colDrag.before=before; if(target) target.classList.add(before?'drop-before':'drop-after') },{passive:false});
+  let target=null, before=true;
+  if(colDrag.kind==='list'){ const zone=colDrag.el.parentElement; const rows=[...zone.querySelectorAll(':scope > [data-lstid]')].filter(r=>r.dataset.lstid!==colDrag.id);
+    let best=null,bd=1e9; for(const r of rows){ const b=r.getBoundingClientRect(); const cx=b.left+b.width/2, cy=b.top+b.height/2; const dd=Math.hypot(e.clientX-cx,e.clientY-cy); if(dd<bd){ bd=dd; best=r } }
+    if(best){ target=best; const b=best.getBoundingClientRect(); const zw=zone.getBoundingClientRect().width; before=(b.width<zw*0.6)?e.clientX<b.left+b.width/2:e.clientY<b.top+b.height/2 }
+    if(e.clientY<60) window.scrollBy(0,-12); else if(e.clientY>window.innerHeight-90) window.scrollBy(0,12) }
+  else { const rows=[...document.querySelectorAll('#side .ni[data-colid]')].filter(r=>r.dataset.colid!==colDrag.id);
+  for(const r of rows){ const b=r.getBoundingClientRect(); if(e.clientY<b.top+b.height/2){ target=r; before=true; break } target=r; before=false } }
+  colDrag.target=target?(target.dataset.colid||target.dataset.lstid):null; colDrag.before=before; if(target) target.classList.add(before?'drop-before':'drop-after') },{passive:false});
 let secDrag=null;
 document.addEventListener('pointerdown',e=>{ const g=e.target.closest&&e.target.closest('.sgrip'); if(!g) return; e.preventDefault();
   secDrag={id:g.dataset.sec,el:g.closest('.lsec'),pid:e.pointerId}; secDrag.el.classList.add('sdragging'); document.body.classList.add('secsorting'); try{ g.setPointerCapture(e.pointerId) }catch(x){} });
@@ -1192,7 +1212,9 @@ document.addEventListener('pointerup',endSecDrag); document.addEventListener('po
 function endColDrag(e){ if(!colDrag) return; const d=colDrag; colDrag=null; document.body.classList.remove('colsorting');
   document.querySelectorAll('.dragging,.drop-before,.drop-after').forEach(x=>x.classList.remove('dragging','drop-before','drop-after'));
   if(!d.active) return; suppressClick=true; setTimeout(()=>suppressClick=false,50);
-  if(!d.target||e.type==='pointercancel') return; const ids=sortedColIds().filter(x=>x!==d.id); let i=ids.indexOf(d.target); if(!d.before) i++; ids.splice(i,0,d.id); saveColOrder(ids) }
+  if(!d.target||e.type==='pointercancel') return;
+  if(d.kind==='list'){ const ids=sortedLists().map(x=>x.id).filter(x=>x!==d.id); let i=ids.indexOf(d.target); if(i<0) return; if(!d.before) i++; ids.splice(i,0,d.id); ids.forEach((lid,n)=>{ const L=S.lists.find(x=>x.id===lid); if(L&&(L.order||0)!==n){ L.order=n; Store.set('lists',L.id,L) } }); render(); return }
+  const ids=sortedColIds().filter(x=>x!==d.id); let i=ids.indexOf(d.target); if(!d.before) i++; ids.splice(i,0,d.id); saveColOrder(ids) }
 document.addEventListener('pointerup',endColDrag); document.addEventListener('pointercancel',endColDrag);
 document.addEventListener('click',e=>{ if(suppressClick){ e.stopPropagation(); e.preventDefault(); suppressClick=false } },true);
 /* drag to swap (desktop) */
