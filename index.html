@@ -453,6 +453,7 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
 const $=(s,r=document)=>r.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const IC={
+  apple:'<path d="M12 8c-1.4-1-3.6-1.4-5.2-.2C4.6 9.4 4.5 12.9 5.6 15.5c1 2.4 2.8 4.8 4.6 4.8 1 0 1.2-.5 1.8-.5s.8.5 1.8.5c1.8 0 3.6-2.4 4.6-4.8 1.1-2.6 1-6.1-1.2-7.7-1.6-1.2-3.8-.8-5.2.2Z"/><path d="M12 8V5.6"/><path d="M12 5.6c.4-1.7 1.8-2.7 3.7-2.6-.4 1.7-1.8 2.7-3.7 2.6Z"/>',
   menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
   list:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17"/>',
   search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
@@ -681,7 +682,7 @@ function renderSide(){ setTimeout(()=>{ UI.justOpened=null },0);
   const FK={lists:'lists',home:'recipes'};
   $('#side').innerHTML=`
     <button class="logo" data-act="go" data-view="dash">Milton Manor</button>
-    <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Groceries','bag',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn]].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
+    <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Groceries','apple',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn]].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
       return `<div class="secg${open?' open':''}"><div class="secrow"><button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>${k?`<button class="fx" data-act="fold" data-k="${k}" aria-expanded="${!!open}" aria-label="${open?'Hide':'Show'} ${x[1]}">${ic('down')}</button>`:''}</div>${open?`<div class="nav subnav${UI.justOpened===k?' anim':''}">${SUB[x[0]]}</div>`:''}</div>` }).join('')}</div>`;
 }
 function renderTop(){
@@ -690,7 +691,7 @@ function renderTop(){
   $('#mtop').innerHTML=`<span class="row" style="gap:10px;flex-wrap:nowrap"><button class="btn icon mburger" data-act="menu" aria-label="Menu">${ic('menu')}</button><button class="logo" data-act="go" data-view="dash">Milton Manor</button></span>
     ${UI.view==='lists'&&UI.lid?`<button class="btn icon" data-act="copylist" aria-label="Copy list">${ic('share')}</button>`:share?`<button class="btn icon" data-act="sharelist" aria-label="Copy list">${ic('share')}</button>`:UI.view==='home'?`<button class="btn icon" data-act="surprise" aria-label="Surprise me">${ic('shuffle')}</button>`:''}`;
   const t=(v,label,icon)=>`<button class="${UI.view===v||(v==='home'&&UI.view==='recipe')?'on':''}" data-act="${v==='search'?'msearch':'go'}" data-view="${v}">${ic(icon)}<span>${label}</span></button>`;
-  $('#tabbar').innerHTML=t('lists','Lists','list')+t('shopping','Groceries','bag')+(canWrite()?`<button class="fab" data-act="new" aria-label="New recipe">${ic('plus')}</button>`:'')+t('home','Recipes','book')+t('planner','Meals','cal');
+  $('#tabbar').innerHTML=t('lists','Lists','list')+t('shopping','Groceries','apple')+(canWrite()?`<button class="fab" data-act="new" aria-label="New recipe">${ic('plus')}</button>`:'')+t('home','Recipes','book')+t('planner','Meals','cal');
 }
 
 /* ---------- render: views ---------- */
