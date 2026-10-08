@@ -584,8 +584,8 @@ function openList(kind,id){ UI.list={kind,id}; UI.status='all'; go('home') }
 
 /* ---------- render: chrome ---------- */
 function canWrite(){ return !S.readOnly }
-const FOLD=(()=>{ try{ return JSON.parse(localStorage.getItem('milton-fold')||'{}')||{} }catch(e){ return {} } })();
-function fold(k,label,inner){ const shut=!!FOLD[k]; return `<div class="nav fold${shut?' shut':''}"><button class="fhd" data-act="fold" data-k="${k}" aria-expanded="${!shut}"><span class="lbl">${label}</span>${ic('down')}</button>${shut?'':inner}</div>` }
+const FOLD=(()=>{ try{ return JSON.parse(localStorage.getItem('milton-open')||'{}')||{} }catch(e){ return {} } })();
+function fold(k,label,inner){ const shut=!FOLD[k]; return `<div class="nav fold${shut?' shut':''}"><button class="fhd" data-act="fold" data-k="${k}" aria-expanded="${!shut}"><span class="lbl">${label}</span>${ic('down')}</button>${shut?'':inner}</div>` }
 function renderSide(){
   const n=k=>listRecipes(k).length;
   const li=(kind,label,count,id)=>{ const on=UI.view==='home'&&UI.list.kind===kind&&(kind!=='col'||UI.list.id===id); const dr=kind==='col'&&canWrite(); return `<button class="ni${on?' on':''}" data-act="list" data-kind="${kind}" data-id="${esc(id||'')}"${dr?` data-colid="${esc(id)}" title="Drag to reorder"`:''}><span>${dr?`<span class="cgrip">${ic('grip')}</span>`:''}${esc(label)}</span><span>${count}</span></button>` };
@@ -923,7 +923,7 @@ document.addEventListener('click',async e=>{
     case 'list': UI.q=''; openList(t.dataset.kind,t.dataset.id||undefined); break;
     case 'go': if(t.dataset.view==='home'){UI.list={kind:'all'}} if(t.dataset.view==='lists'){UI.lid=null;UI.lrename=false} go(t.dataset.view); break;
     case 'openlist': UI.lrename=false; go('lists',{lid:id||null}); break;
-    case 'fold': { const k=t.dataset.k; FOLD[k]=!FOLD[k]; try{ localStorage.setItem('milton-fold',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
+    case 'fold': { const k=t.dataset.k; FOLD[k]=!FOLD[k]; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
     case 'idealist': newList(t.dataset.name); break;
     case 'addlist': UI.addingList=true; render(); setTimeout(()=>{ const i=$('#sidelist'); if(i) i.focus() },20); break;
     case 'ltick': { const i=S.litems.find(x=>x.id===id); if(!i) break; i.done=!i.done; i.doneAt=i.done?Date.now():null; render(); saveLItem(i); break }
