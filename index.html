@@ -242,6 +242,23 @@ textarea.in{resize:vertical;line-height:1.55}
 .lit .itmain{flex:0 1 auto;max-width:45%}
 .lit .lnote{flex:1;width:auto;min-width:140px;text-align:left;margin-left:16px}
 .lacts{gap:20px}
+.dgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+.wg{border:1px solid var(--line);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:16px;min-width:0;background:var(--bg)}
+.wg .wh{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.wg h2{font-family:var(--serif);font-weight:400;font-size:30px;line-height:1;margin:6px 0 0}
+.wg .wl{white-space:nowrap}
+.wrow{display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1px solid var(--line);width:100%;text-align:left;font-size:12px;min-width:0}
+.wrow .wd{width:74px;flex:none;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.wrow .wd.today{color:var(--fg);font-weight:500}
+.wrow .wt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wrow .wn{color:var(--muted);font-size:11px;white-space:nowrap}
+.wthumbs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.wthumb{display:flex;flex-direction:column;gap:8px;text-align:left;min-width:0}
+.wthumb .pic{aspect-ratio:1/1}
+.wthumb .t{font-family:var(--serif);font-size:16px;line-height:1.15;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.wstat{display:flex;gap:28px}
+.wstat b{display:block;font-family:var(--serif);font-weight:400;font-size:34px;line-height:1}
+.wstat span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .lwrap{max-width:760px;display:flex;flex-direction:column;gap:24px}
 .progress{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin:6px 0 20px}
 .progress i{display:block;height:100%;background:var(--fg)}
@@ -350,6 +367,10 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .lnote{width:110px;font-size:11px !important}
   .lit .itmain{flex:1;max-width:none}
   .lacts{gap:10px}
+  .dgrid{grid-template-columns:1fr;gap:14px}
+  .wg{padding:18px}
+  .wg h2{font-size:26px}
+  .wthumb .t{font-size:14px}
   .dnew{display:none}
   .lit .lnote{flex:none;width:110px;min-width:0;margin-left:0;text-align:right}
   .lcards{grid-template-columns:1fr;gap:12px}
@@ -429,7 +450,7 @@ function fmtMins(m){if(!m)return'';if(m<60)return m+' min';const h=Math.floor(m/
 
 /* ---------- state ---------- */
 const S={lists:[],litems:[],recipes:[],cols:[],plan:{},ticks:{},extras:[],regs:[],qty:{},qtyLocal:{},readOnly:false,mode:'loading',loaded:{}};
-const UI={view:'home',list:{kind:'all'},status:'all',sort:'new',q:'',rid:null,editId:null,pmode:'week',week:mondayOf(TODAY),day:TODAY,month:TODAY.slice(0,8)+'01',extraCols:[],extraDay:[],swap:null,sheet:null,cook:{},trolley:true,regEdit:false,regGroup:'Food',draft:null,addingCol:false,lid:null,ldone:true,lrename:false};
+const UI={view:'dash',list:{kind:'all'},status:'all',sort:'new',q:'',rid:null,editId:null,pmode:'week',week:mondayOf(TODAY),day:TODAY,month:TODAY.slice(0,8)+'01',extraCols:[],extraDay:[],swap:null,sheet:null,cook:{},trolley:true,regEdit:false,regGroup:'Food',draft:null,addingCol:false,lid:null,ldone:true,lrename:false};
 let sample=null;
 const photosHere=()=>true;
 const SB_URL='https://ppqrphmaixfzzlkpibjt.supabase.co';
@@ -611,14 +632,14 @@ function renderSide(){
       ${canWrite()?(UI.addingCol?`<form class="addcol" data-form="col">${ic('plus')}<input id="newcol" placeholder="Collection name" autocomplete="off"></form>`:`<button class="addcol" data-act="addcol">${ic('plus')} New collection</button>`):''}`};
   const FK={lists:'lists',home:'recipes'};
   $('#side').innerHTML=`
-    <button class="logo" data-act="list" data-kind="all">Milton Manor</button>
+    <button class="logo" data-act="go" data-view="dash">Milton Manor</button>
     <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Shopping list','bag',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn]].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
       return `<div class="secg${open?' open':''}"><div class="secrow"><button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>${k?`<button class="fx" data-act="fold" data-k="${k}" aria-expanded="${!!open}" aria-label="${open?'Hide':'Show'} ${x[1]}">${ic('down')}</button>`:''}</div>${open?`<div class="nav subnav">${SUB[x[0]]}</div>`:''}</div>` }).join('')}</div>`;
 }
 function renderTop(){
   $('#top').innerHTML=`<label class="search">${ic('search')}<input id="q" type="search" placeholder="Search recipes or ingredients…" value="${esc(UI.q)}" autocomplete="off"></label>`;
   const share=UI.view==='shopping';
-  $('#mtop').innerHTML=`<button class="logo" data-act="list" data-kind="all">Milton Manor</button>
+  $('#mtop').innerHTML=`<button class="logo" data-act="go" data-view="dash">Milton Manor</button>
     ${UI.view==='lists'&&UI.lid?`<button class="btn icon" data-act="copylist" aria-label="Copy list">${ic('share')}</button>`:share?`<button class="btn icon" data-act="sharelist" aria-label="Copy list">${ic('share')}</button>`:UI.view==='home'?`<button class="btn icon" data-act="surprise" aria-label="Surprise me">${ic('shuffle')}</button>`:''}`;
   const t=(v,label,icon)=>`<button class="${UI.view===v||(v==='home'&&UI.view==='recipe')?'on':''}" data-act="${v==='search'?'msearch':'go'}" data-view="${v}">${ic(icon)}<span>${label}</span></button>`;
   $('#tabbar').innerHTML=t('lists','Lists','list')+t('shopping','Shopping','bag')+(canWrite()?`<button class="fab" data-act="new" aria-label="New recipe">${ic('plus')}</button>`:'')+t('home','Recipes','book')+t('planner','Planner','cal');
@@ -826,6 +847,31 @@ function viewShopping(){
     </aside></div>`;
 }
 
+/* ---------- home ---------- */
+function viewDash(){
+  const wk=mondayOf(TODAY); const hr=new Date().getHours(); const hello=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
+  const wh=(kick,title,view,link,extra)=>`<div class="wh"><div><div class="kick">${kick}</div><h2>${title}</h2></div><button class="link wl" data-act="go" data-view="${view}"${extra||''}>${link}</button></div>`;
+  // meals this week
+  let mealRows=''; for(let i=0;i<7;i++){ const d=addDays(wk,i); const p=S.plan[d]||{}; const ms=MEALS.filter(m=>p[m[0]]&&R(p[m[0]]));
+    if(!ms.length&&d!==TODAY) continue;
+    const dd=parse(d); mealRows+=`<button class="wrow" data-act="dashday" data-date="${d}"><span class="wd${d===TODAY?' today':''}">${d===TODAY?'Today':DAYS_LONG[dd.getDay()].slice(0,3)+' '+dd.getDate()}</span><span class="wt">${ms.length?ms.map(m=>esc(R(p[m[0]]).title)).join('  ·  '):'<span class="muted">Nothing planned</span>'}</span></button>` }
+  const meals=`<div class="wg">${wh(weekLabel(wk),'This week','planner','Meal planner')}<div>${mealRows||'<p class="muted" style="margin:0">Nothing planned yet.</p>'}</div></div>`;
+  // shopping
+  const items=shoppingItems(wk); const todo=items.filter(i=>!i.done);
+  const shop=`<div class="wg">${wh(`Total: ${todo.length} item${todo.length===1?'':'s'}`,'Shopping list','shopping','Open list')}<div>${todo.slice(0,6).map(i=>`<button class="wrow" data-act="go" data-view="shopping"><span class="cb"></span><span class="wt">${esc(i.name)}</span><span class="wn">${esc(i.qty||'')}</span></button>`).join('')||'<p class="muted" style="margin:0">Nothing on the list yet.</p>'}${todo.length>6?`<div class="wrow muted" style="font-size:11px">+ ${todo.length-6} more</div>`:''}</div></div>`;
+  // lists
+  const ls=sortedLists();
+  const lists=`<div class="wg">${wh(`${ls.length} list${ls.length===1?'':'s'}`,'Lists','lists','All lists',' data-lid=""')}<div>${ls.map(L=>{ const its=itemsOf(L.id), t=its.filter(i=>!i.done); return `<button class="wrow" data-act="openlist" data-id="${esc(L.id)}"><span class="wt">${esc(L.name)}</span><span class="wn">${t.length} to do</span></button>` }).join('')||'<p class="muted" style="margin:0">No lists yet.</p>'}</div></div>`;
+  // recipes
+  const recent=S.recipes.slice().sort((a,b)=>(b.created||0)-(a.created||0)).slice(0,3); const totry=S.recipes.filter(r=>r.status!=='tried').length;
+  const recipes=`<div class="wg">${wh('Recently added','Recipes','home','All recipes')}
+    <div class="wstat"><div><b>${S.recipes.length}</b><span>Recipes</span></div><div><b>${totry}</b><span>To try</span></div><div><b>${S.recipes.filter(r=>r.tm).length}</b><span>Thermomix</span></div></div>
+    ${recent.length?`<div class="wthumbs">${recent.map(r=>`<button class="wthumb" data-act="open" data-id="${r.id}"><span class="pic">${r.photo?`<img src="${r.photo}" alt="">`:`<span class="ph">${esc((r.title||'?').charAt(0))}</span>`}</span><span class="t">${esc(r.title)}</span></button>`).join('')}</div>`:''}
+    <div class="row"><button class="btn" data-act="surprise">${ic('shuffle')} Surprise me</button>${canWrite()?`<button class="btn" data-act="new">${ic('plus')} New recipe</button>`:''}</div></div>`;
+  return `<div class="head"><div class="tg"><div class="kick">${esc(longDate(TODAY))}</div><h1 class="h1">${hello}</h1></div></div>
+    <div class="dgrid"><div class="stack" style="gap:20px">${meals}${shop}</div><div class="stack" style="gap:20px">${lists}${recipes}</div></div>`;
+}
+
 /* ---------- household lists ---------- */
 const LIST_IDEAS=['Vouchers to use','Household jobs','Things to fix','Bills to pay','Gift ideas','Birthdays','Packing list','Before the baby'];
 function sortedLists(){ return S.lists.slice().sort((a,b)=>(a.order||0)-(b.order||0)||(a.at||0)-(b.at||0)) }
@@ -899,7 +945,7 @@ function render(){
   const locked=S.mode==='nokey'||S.mode==='badkey'; document.body.classList.toggle('locked',locked);
   if(locked){ $('#gate').innerHTML=`<div class="box"><div class="kick">Milton Manor</div><div class="serif">${S.mode==='nokey'?'Open Milton Manor from the family link':'This link no longer opens Milton Manor'}</div><p class="muted" style="margin:0;font-size:14px">${S.mode==='nokey'?'Ask May to send you the link. Once you open it on this device, it will remember you.':'Ask May for the current family link.'}</p></div>`; return }
   renderSide(); renderTop();
-  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():viewShopping();
+  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():UI.view==='dash'?viewDash():viewShopping();
   $('#view').innerHTML=v;
   for(const id in keepVals){ const el=document.getElementById(id); if(el) el.value=keepVals[id] }
   $('#sheet').innerHTML=sheetHTML();
@@ -930,6 +976,7 @@ document.addEventListener('click',async e=>{
   switch(a){
     case 'list': UI.q=''; openList(t.dataset.kind,t.dataset.id||undefined); break;
     case 'go': if(t.dataset.view==='home'){UI.list={kind:'all'}} if(t.dataset.view==='lists'){UI.lid=null;UI.lrename=false} go(t.dataset.view); break;
+    case 'dashday': UI.pmode='day'; UI.day=t.dataset.date; go('planner'); break;
     case 'openlist': UI.lrename=false; go('lists',{lid:id||null}); break;
     case 'fold': { const k=t.dataset.k; FOLD[k]=!FOLD[k]; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
     case 'idealist': newList(t.dataset.name); break;
