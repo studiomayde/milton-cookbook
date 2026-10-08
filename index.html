@@ -997,7 +997,7 @@ document.addEventListener('click',async e=>{
   if(a==='scrim'){ if(e.target===t){ UI.sheet=null; render() } return }
   switch(a){
     case 'list': UI.q=''; openList(t.dataset.kind,t.dataset.id||undefined); break;
-    case 'go': if(t.dataset.view==='home'){UI.list={kind:'all'}} if(t.dataset.view==='lists'){UI.lid=null;UI.lrename=false} go(t.dataset.view); break;
+    case 'go': if(t.closest('#side')&&(t.dataset.view==='lists'||t.dataset.view==='home')){ const k=t.dataset.view==='lists'?'lists':'recipes'; FOLD[k]=true; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} } if(t.dataset.view==='home'){UI.list={kind:'all'}} if(t.dataset.view==='lists'){UI.lid=null;UI.lrename=false} go(t.dataset.view); break;
     case 'dashday': UI.pmode='day'; UI.day=t.dataset.date; go('planner'); break;
     case 'addsec': UI.addingSec=true; render(); setTimeout(()=>{ const i=$('#newsec'); if(i) i.focus() },20); break;
     case 'addsecx': UI.addingSec=false; render(); break;
