@@ -261,6 +261,14 @@ textarea.in{resize:vertical;line-height:1.55}
 .wstat{display:flex;gap:28px}
 .wstat b{display:block;font-family:var(--serif);font-weight:400;font-size:34px;line-height:1}
 .wstat span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lsec{display:flex;flex-direction:column}
+.lsh{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:4px 0 10px}
+.lsh h3{font-family:var(--serif);font-weight:400;font-size:24px;line-height:1.1;margin:0;display:flex;align-items:baseline;gap:10px}
+.lsh .count{font-family:var(--sans,inherit);font-size:11px;color:var(--muted)}
+.secadd{display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1px solid var(--line);color:var(--muted)}
+.secadd svg.i{width:16px;height:16px;flex:none;margin:0 1px}
+.secadd input{border:0;background:transparent;outline:none;width:100%;font-size:12px;padding:4px 0;color:var(--fg)}
+.secadd input::placeholder{color:var(--muted);opacity:.6}
 .lwrap{max-width:760px;display:flex;flex-direction:column;gap:24px}
 .progress{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin:6px 0 20px}
 .progress i{display:block;height:100%;background:var(--fg)}
@@ -878,7 +886,17 @@ const LIST_IDEAS=['Vouchers to use','Household jobs','Things to fix','Bills to p
 function sortedLists(){ return S.lists.slice().sort((a,b)=>(a.order||0)-(b.order||0)||(a.at||0)-(b.at||0)) }
 function itemsOf(lid){ return S.litems.filter(i=>i.list===lid).sort((a,b)=>(a.at||0)-(b.at||0)) }
 function liHTML(i){ const w=canWrite();
-  return `<div class="it lit"><button class="itmain" data-act="ltick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span></span></button>${w&&!i.done?`<input class="lnote" id="ln-${esc(i.id)}" data-id="${esc(i.id)}" value="${esc(i.note||'')}" placeholder="Note" aria-label="Note for ${esc(i.name)}" autocomplete="off">`:i.note?`<span class="q">${esc(i.note)}</span>`:''}${w?`<button class="xbtn" data-act="rmlitem" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
+  return `<div class="it lit"><button class="itmain" data-act="ltick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span>${i.done&&i.sec?(()=>{ const L=S.lists.find(x=>x.id===i.list); const sc=L&&secsOf(L).find(x=>x.id===i.sec); return sc?`<span class="rt">${esc(sc.name)}</span>`:'' })():''}</span></button>${w&&!i.done?`<input class="lnote" id="ln-${esc(i.id)}" data-id="${esc(i.id)}" value="${esc(i.note||'')}" placeholder="Note" aria-label="Note for ${esc(i.name)}" autocomplete="off">`:i.note?`<span class="q">${esc(i.note)}</span>`:''}${w?`<button class="xbtn" data-act="rmlitem" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
+function secsOf(L){ return Array.isArray(L.secs)?L.secs:[] }
+function listBodyHTML(L,todo,its){ const w=canWrite(); const secs=secsOf(L); const ids=new Set(secs.map(x=>x.id));
+  const loose=todo.filter(i=>!i.sec||!ids.has(i.sec));
+  let out=loose.length||!secs.length?`<div>${loose.length?loose.map(liHTML).join(''):`<p class="muted" style="margin:0">${its.length?'Everything is ticked off.':'Nothing on this list yet.'}</p>`}</div>`:'';
+  for(const sc of secs){ const g=todo.filter(i=>i.sec===sc.id); const all=its.filter(i=>i.sec===sc.id);
+    out+=`<div class="lsec"><div class="lsh">${UI.secRename===sc.id?`<form class="row" data-form="rensec" data-sec="${esc(sc.id)}" style="flex-wrap:nowrap;flex:1"><input class="in" id="rensec" value="${esc(sc.name)}" autocomplete="off" style="font-family:var(--serif);font-size:20px;padding:4px 12px"><button class="btn solid sm" type="submit">Save</button><button class="link" type="button" data-act="rensecx">Cancel</button></form>`:`<h3>${esc(sc.name)}<span class="count">${g.length}${all.length-g.length?` / ${all.length}`:''}</span></h3>${w?`<span class="row" style="gap:16px"><button class="link" data-act="rensec" data-sec="${esc(sc.id)}">Rename</button><button class="link" data-act="asksecdel" data-sec="${esc(sc.id)}">Delete</button></span>`:''}`}</div>
+      ${g.map(liHTML).join('')}
+      ${w?`<form class="secadd" data-form="secitem" data-sec="${esc(sc.id)}">${ic('plus')}<input id="si-${esc(sc.id)}" placeholder="Add to ${esc(sc.name)}" autocomplete="off"></form>`:''}</div>` }
+  if(w) out+=UI.addingSec?`<form class="row" data-form="newsec" style="flex-wrap:nowrap"><input class="in" id="newsec" placeholder="Heading name, e.g. Gift cards" autocomplete="off" style="padding:10px 14px"><button class="btn solid" type="submit">Add</button><button class="link" type="button" data-act="addsecx">Cancel</button></form>`:`<button class="btn" data-act="addsec" style="align-self:flex-start">${ic('plus')} Add heading</button>`;
+  return out }
 function viewLists(){
   const L=UI.lid&&S.lists.find(x=>x.id===UI.lid);
   if(!L){ UI.lid=null; const ls=sortedLists(); const used=new Set(ls.map(x=>x.name.toLowerCase())); const ideas=LIST_IDEAS.filter(x=>!used.has(x.toLowerCase()));
@@ -896,7 +914,7 @@ function viewLists(){
     <div class="progress"><i style="width:${pct}%"></i></div>
     <div class="lwrap">
       ${canWrite()?`<form class="row" data-form="litem" style="flex-wrap:nowrap"><label class="search" style="border-radius:6px">${ic('plus')}<input id="litem" placeholder="Add to ${esc(L.name)}" autocomplete="off"></label><button class="btn solid" type="submit">Add</button></form>`:''}
-      <div>${todo.length?todo.map(liHTML).join(''):`<p class="muted" style="margin:0">${its.length?'Everything is ticked off.':'Nothing on this list yet.'}</p>`}</div>
+      ${listBodyHTML(L,todo,its)}
       ${done.length?`<div class="trolley"><div class="between" style="padding-bottom:8px"><span class="row" style="gap:8px">${ic('check')}<span class="lbl" style="color:var(--fg)">Done</span><span class="count">${done.length}</span></span><button class="link" style="color:var(--muted)" data-act="ldonetoggle">${UI.ldone?'Hide':'Show'}</button></div>${UI.ldone?done.map(liHTML).join(''):''}</div>
       ${canWrite()?`<div class="row" style="gap:24px"><button class="link" data-act="lcleardone">Clear done</button><button class="link" data-act="luntick">Untick all</button></div>`:''}`:''}
     </div>`;
@@ -908,7 +926,10 @@ function saveLItem(i){ Store.set('litems',i.id,i) }
 function sheetHTML(){
   const s=UI.sheet; if(!s) return '';
   let inner='',img=false;
-  if(s.type==='dellist'){ const L=S.lists.find(x=>x.id===s.lid)||{}; const n=itemsOf(s.lid).length;
+  if(s.type==='delsec'){ const L=S.lists.find(x=>x.id===s.lid)||{}; const sc=secsOf(L).find(x=>x.id===s.sec)||{}; const n=itemsOf(s.lid).filter(i=>i.sec===s.sec).length;
+    inner=`<div class="sb"><span class="grab"></span><h3>Delete this heading?</h3><p class="muted" style="margin:0">${esc(sc.name||'This heading')}${n?` and its ${n} item${n===1?'':'s'}`:''} will be removed for everyone in the house. This can't be undone.</p>
+      <div class="stack"><button class="btn dangerous wide" data-act="delsec">${ic('trash')} Delete heading</button><button class="btn wide" data-act="close">Keep it</button></div></div>` }
+  else if(s.type==='dellist'){ const L=S.lists.find(x=>x.id===s.lid)||{}; const n=itemsOf(s.lid).length;
     inner=`<div class="sb"><span class="grab"></span><h3>Delete this list?</h3><p class="muted" style="margin:0">${esc(L.name||'This list')}${n?` and its ${n} item${n===1?'':'s'}`:''} will be removed for everyone in the house. This can't be undone.</p>
       <div class="stack"><button class="btn dangerous wide" data-act="dellist" data-id="${esc(s.lid)}">${ic('trash')} Delete list</button><button class="btn wide" data-act="close">Keep it</button></div></div>` }
   else if(s.type==='delete'){ const r=R(s.rid)||{};
@@ -978,7 +999,13 @@ document.addEventListener('click',async e=>{
     case 'list': UI.q=''; openList(t.dataset.kind,t.dataset.id||undefined); break;
     case 'go': if(t.dataset.view==='home'){UI.list={kind:'all'}} if(t.dataset.view==='lists'){UI.lid=null;UI.lrename=false} go(t.dataset.view); break;
     case 'dashday': UI.pmode='day'; UI.day=t.dataset.date; go('planner'); break;
-    case 'openlist': UI.lrename=false; go('lists',{lid:id||null}); break;
+    case 'addsec': UI.addingSec=true; render(); setTimeout(()=>{ const i=$('#newsec'); if(i) i.focus() },20); break;
+    case 'addsecx': UI.addingSec=false; render(); break;
+    case 'rensec': UI.secRename=t.dataset.sec; render(); setTimeout(()=>{ const i=$('#rensec'); if(i){ i.focus(); i.select() } },20); break;
+    case 'rensecx': UI.secRename=null; render(); break;
+    case 'asksecdel': { const L=S.lists.find(x=>x.id===UI.lid); const sc=L&&secsOf(L).find(x=>x.id===t.dataset.sec); if(sc){ UI.sheet={type:'delsec',lid:L.id,sec:sc.id} ; render() } break }
+    case 'delsec': { const L=S.lists.find(x=>x.id===UI.sheet.lid); if(L){ const sid=UI.sheet.sec; const sc=secsOf(L).find(x=>x.id===sid); S.litems.filter(i=>i.list===L.id&&i.sec===sid).forEach(i=>Store.del('litems',i.id)); S.litems=S.litems.filter(i=>!(i.list===L.id&&i.sec===sid)); L.secs=secsOf(L).filter(x=>x.id!==sid); Store.set('lists',L.id,L); toast(`Deleted ${sc?sc.name:'the heading'}.`) } UI.sheet=null; render(); break }
+    case 'openlist': UI.addingSec=false; UI.secRename=null; UI.lrename=false; go('lists',{lid:id||null}); break;
     case 'fold': { const k=t.dataset.k; FOLD[k]=!FOLD[k]; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
     case 'idealist': newList(t.dataset.name); break;
     case 'addlist': UI.addingList=true; render(); setTimeout(()=>{ const i=$('#sidelist'); if(i) i.focus() },20); break;
@@ -991,7 +1018,7 @@ document.addEventListener('click',async e=>{
     case 'renlistcancel': UI.lrename=false; render(); break;
     case 'asklistdel': UI.sheet={type:'dellist',lid:UI.lid}; render(); break;
     case 'dellist': { const L=S.lists.find(x=>x.id===id); itemsOf(id).forEach(i=>Store.del('litems',i.id)); S.litems=S.litems.filter(x=>x.list!==id); S.lists=S.lists.filter(x=>x.id!==id); Store.del('lists',id); UI.sheet=null; UI.lid=null; toast(`Deleted ${L?L.name:'the list'}.`); go('lists'); break }
-    case 'copylist': { const L=S.lists.find(x=>x.id===UI.lid); if(!L) break; const todo=itemsOf(L.id).filter(i=>!i.done); const txt=`${L.name}\n`+todo.map(i=>`- ${i.name}${i.note?` (${i.note})`:''}`).join('\n'); try{ await navigator.clipboard.writeText(txt); toast('List copied. Paste it into a message.') }catch(err){ toast("Couldn't copy here. Try again.") } break }
+    case 'copylist': { const L=S.lists.find(x=>x.id===UI.lid); if(!L) break; const todo=itemsOf(L.id).filter(i=>!i.done); const line=i=>`- ${i.name}${i.note?` (${i.note})`:''}`; const ids=new Set(secsOf(L).map(x=>x.id)); let txt=`${L.name}\n`+todo.filter(i=>!i.sec||!ids.has(i.sec)).map(line).join('\n'); for(const sc of secsOf(L)){ const g=todo.filter(i=>i.sec===sc.id); if(g.length) txt+=`\n\n${sc.name}\n`+g.map(line).join('\n') } txt=txt.trim(); try{ await navigator.clipboard.writeText(txt); toast('List copied. Paste it into a message.') }catch(err){ toast("Couldn't copy here. Try again.") } break }
     case 'msearch': go('search'); setTimeout(()=>{ const q=$('#sq'); if(q) q.focus() },50); break;
     case 'status': UI.status=t.dataset.s; render(); break;
     case 'clearq': UI.q=''; render(); break;
@@ -1096,6 +1123,9 @@ document.addEventListener('submit',async e=>{
   if(f==='sidelist'){ const v=$('#sidelist').value.trim(); UI.addingList=false; if(v) newList(v); else render(); return }
   if(f==='newlist'){ const v=$('#newlist').value.trim(); if(!v) return; $('#newlist').value=''; newList(v); return }
   if(f==='renlist'){ const v=$('#renlist').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); UI.lrename=false; if(L&&v&&v!==L.name){ L.name=v; Store.set('lists',L.id,L); toast(`Renamed to ${v}.`) } render(); return }
+  if(f==='newsec'){ const v=$('#newsec').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); UI.addingSec=false; if(L&&v){ L.secs=secsOf(L).concat([{id:rid().slice(-8),name:v.charAt(0).toUpperCase()+v.slice(1)}]); Store.set('lists',L.id,L); const sid=L.secs[L.secs.length-1].id; render(); setTimeout(()=>{ const i=document.getElementById('si-'+sid); if(i) i.focus() },30) } else render(); return }
+  if(f==='rensec'){ const v=$('#rensec').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); const sc=L&&secsOf(L).find(x=>x.id===e.target.dataset.sec); UI.secRename=null; if(sc&&v&&v!==sc.name){ sc.name=v; Store.set('lists',L.id,L) } render(); return }
+  if(f==='secitem'){ const sid=e.target.dataset.sec; const inp=e.target.querySelector('input'); const v=inp.value.trim(); if(!v||!UI.lid) return; const iid=Store.newId('litems'); const doc={list:UI.lid,sec:sid,name:v.charAt(0).toUpperCase()+v.slice(1),note:'',done:false,at:Date.now()}; S.litems.push(Object.assign({id:iid},doc)); inp.value=''; render(); Store.set('litems',iid,doc); setTimeout(()=>{ const i=document.getElementById('si-'+sid); if(i) i.focus() },20); return }
   if(f==='litem'){ const v=$('#litem').value.trim(); if(!v||!UI.lid) return; const iid=Store.newId('litems'); const doc={list:UI.lid,name:v.charAt(0).toUpperCase()+v.slice(1),note:'',done:false,at:Date.now()}; S.litems.push(Object.assign({id:iid},doc)); $('#litem').value=''; render(); Store.set('litems',iid,doc); return }
   if(f==='extra'){ const v=$('#extra').value.trim(); if(!v) return; const x=parseLine(v)||{name:v,qty:''}; const eid=Store.newId('extras'); const doc={name:x.name,qty:x.qty,done:false,at:Date.now()}; S.extras.push(Object.assign({id:eid},doc)); $('#extra').value=''; render(); Store.set('extras',eid,doc) }
   if(f==='reg'){ const v=$('#newreg').value.trim(); if(!v) return; const gid=slug(v); if(S.regs.some(r=>r.id===gid)){ toast(`${v} is already a regular.`); return } const doc={name:v.charAt(0).toUpperCase()+v.slice(1),group:UI.regGroup,on:false}; S.regs.push(Object.assign({id:gid},doc)); $('#newreg').value=''; render(); Store.set('regulars',gid,doc) }
