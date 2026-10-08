@@ -644,7 +644,7 @@ function renderTop(){
   $('#mtop').innerHTML=`<button class="logo" data-act="go" data-view="dash">Milton Manor</button>
     ${UI.view==='lists'&&UI.lid?`<button class="btn icon" data-act="copylist" aria-label="Copy list">${ic('share')}</button>`:share?`<button class="btn icon" data-act="sharelist" aria-label="Copy list">${ic('share')}</button>`:UI.view==='home'?`<button class="btn icon" data-act="surprise" aria-label="Surprise me">${ic('shuffle')}</button>`:''}`;
   const t=(v,label,icon)=>`<button class="${UI.view===v||(v==='home'&&UI.view==='recipe')?'on':''}" data-act="${v==='search'?'msearch':'go'}" data-view="${v}">${ic(icon)}<span>${label}</span></button>`;
-  $('#tabbar').innerHTML=t('lists','Lists','list')+t('shopping','Shopping','bag')+(canWrite()?`<button class="fab" data-act="new" aria-label="New recipe">${ic('plus')}</button>`:'')+t('home','Recipes','book')+t('planner','Planner','cal');
+  $('#tabbar').innerHTML=t('lists','Lists','list')+t('shopping','Shopping','bag')+(canWrite()?`<button class="fab" data-act="new" aria-label="New recipe">${ic('plus')}</button>`:'')+t('home','Recipes','book')+t('planner','Meals','cal');
 }
 
 /* ---------- render: views ---------- */
