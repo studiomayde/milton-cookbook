@@ -44,6 +44,12 @@ a{color:inherit}
 .logo{font-size:18px;letter-spacing:-.02em;padding:0 12px;background:none;text-align:left}
 .logo small{display:block;font-family:var(--serif);font-style:italic;font-size:12px;color:var(--muted);letter-spacing:0}
 .stack{display:flex;flex-direction:column;gap:8px}
+.secnav{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.sec{display:flex;align-items:center;gap:12px;padding:13px 12px;border-bottom:1px solid var(--line);font-family:var(--serif);font-size:22px;line-height:1;color:var(--muted);text-align:left;width:100%}
+.sec svg.i{width:17px;height:17px;flex:none}
+.sec:hover{color:var(--fg)}
+.sec.on{color:var(--fg)}
+.sec.on::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--fg);margin-left:auto}
 .nav{display:flex;flex-direction:column;gap:2px}
 .nav .lbl{padding:0 12px 8px}
 .ni{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-radius:4px;font-size:12px;text-align:left;width:100%}
@@ -580,10 +586,7 @@ function renderSide(){
   const plannerOn=UI.view==='planner', shopOn=UI.view==='shopping';
   $('#side').innerHTML=`
     <button class="logo" data-act="list" data-kind="all">Milton Manor</button>
-    <div class="stack">
-      <button class="btn ${plannerOn?'solid':'ink'}" data-act="go" data-view="planner" ${plannerOn?'aria-current="page"':''}>Meal planner</button>
-      <button class="btn ${shopOn?'solid':'ink'}" data-act="go" data-view="shopping" ${shopOn?'aria-current="page"':''}>Shopping list</button>
-    </div>
+    <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Shopping list','bag',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn]].map(x=>`<button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>`).join('')}</div>
     <div class="nav"><div class="lbl">Lists</div>
       ${sortedLists().map(L=>{ const on=UI.view==='lists'&&UI.lid===L.id; return `<button class="ni${on?' on':''}" data-act="openlist" data-id="${esc(L.id)}"><span>${esc(L.name)}</span><span>${itemsOf(L.id).filter(i=>!i.done).length}</span></button>` }).join('')}
       <button class="ni${UI.view==='lists'&&!UI.lid?' on':''}" data-act="openlist" data-id=""><span>${ic('list')} All lists</span><span>${S.lists.length}</span></button>
