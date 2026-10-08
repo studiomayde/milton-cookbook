@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Cookbook">
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='38' text-anchor='middle' fill='%23fff'%3EM%3C/text%3E%3C/svg%3E">
-<title>The Milton Cookbook</title>
+<title>Milton Manor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap">
@@ -208,6 +208,20 @@ textarea.in{resize:vertical;line-height:1.55}
 .trolley .it{padding:8px 0;min-height:0;font-size:11px}
 .trolley .it .nm{font-size:11px}
 .count{background:var(--fg);color:var(--on-fg);border-radius:999px;padding:1px 7px;font-size:8px;font-weight:500}
+.lcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.lcard{display:flex;flex-direction:column;gap:10px;text-align:left;border:1px solid var(--line);border-radius:8px;padding:20px 20px 16px;background:var(--bg);min-height:150px}
+.lcard:hover{border-color:var(--fg)}
+.lcard .ln{font-family:var(--serif);font-size:26px;line-height:1.05}
+.lcard .lm{font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.lcard ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
+.lcard li{display:flex;gap:8px;align-items:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.lcard li::before{content:"";width:9px;height:9px;border:1px solid var(--faint);border-radius:2px;flex:none}
+.lnew{border-style:dashed;align-items:flex-start;justify-content:center;color:var(--muted)}
+.lnote{width:150px;flex:none;border:1px solid transparent;border-bottom-color:var(--line);background:transparent;padding:5px 6px;font-size:11px;text-align:right;color:var(--muted);border-radius:4px;outline:none}
+.lnote::placeholder{color:var(--muted);opacity:.45}
+.lnote:hover{border-color:var(--line)}
+.lnote:focus{border-color:var(--fg);background:var(--bg);text-align:left;color:var(--fg)}
+.lwrap{max-width:760px;display:flex;flex-direction:column;gap:24px}
 .progress{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin:6px 0 20px}
 .progress i{display:block;height:100%;background:var(--fg)}
 .shop{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:32px;align-items:start}
@@ -312,6 +326,9 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   select.sort{font-size:9px}
   input::placeholder,textarea::placeholder{font-size:11px}
   .qin{width:84px;font-size:11px !important}
+  .lnote{width:110px;font-size:11px !important}
+  .lcards{grid-template-columns:1fr;gap:12px}
+  .lcard{min-height:0}
   .swapbar{top:64px}
 }
 .mbtns{display:none}
@@ -345,6 +362,7 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
 const $=(s,r=document)=>r.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const IC={
+  list:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17"/>',
   search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   shuffle:'<path d="M4 7h3.5c4 0 5 10 9 10H20M4 17h3.5c1.6 0 2.7-1.6 3.6-3.6M13 9.6C13.9 8.2 14.9 7 16.5 7H20M17.5 4.5 20 7l-2.5 2.5M17.5 14.5 20 17l-2.5 2.5"/>',
   plus:'<path d="M12 5v14M5 12h14"/>', check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
@@ -384,8 +402,8 @@ function mins(s){if(!s)return 0;s=String(s).toLowerCase();let m=0;const h=s.matc
 function fmtMins(m){if(!m)return'';if(m<60)return m+' min';const h=Math.floor(m/60),r=m%60;return h+' hr'+(r?' '+r:'')}
 
 /* ---------- state ---------- */
-const S={recipes:[],cols:[],plan:{},ticks:{},extras:[],regs:[],qty:{},qtyLocal:{},readOnly:false,mode:'loading',loaded:{}};
-const UI={view:'home',list:{kind:'all'},status:'all',sort:'new',q:'',rid:null,editId:null,pmode:'week',week:mondayOf(TODAY),day:TODAY,month:TODAY.slice(0,8)+'01',extraCols:[],extraDay:[],swap:null,sheet:null,cook:{},trolley:true,regEdit:false,regGroup:'Food',draft:null,addingCol:false};
+const S={lists:[],litems:[],recipes:[],cols:[],plan:{},ticks:{},extras:[],regs:[],qty:{},qtyLocal:{},readOnly:false,mode:'loading',loaded:{}};
+const UI={view:'home',list:{kind:'all'},status:'all',sort:'new',q:'',rid:null,editId:null,pmode:'week',week:mondayOf(TODAY),day:TODAY,month:TODAY.slice(0,8)+'01',extraCols:[],extraDay:[],swap:null,sheet:null,cook:{},trolley:true,regEdit:false,regGroup:'Food',draft:null,addingCol:false,lid:null,ldone:true,lrename:false};
 let sample=null;
 const photosHere=()=>true;
 const SB_URL='https://ppqrphmaixfzzlkpibjt.supabase.co';
@@ -555,10 +573,14 @@ function renderSide(){
   const cols=S.cols.slice().sort((a,b)=>(a.order||0)-(b.order||0));
   const plannerOn=UI.view==='planner', shopOn=UI.view==='shopping';
   $('#side').innerHTML=`
-    <button class="logo" data-act="list" data-kind="all">The Milton Cookbook</button>
+    <button class="logo" data-act="list" data-kind="all">Milton Manor</button>
     <div class="stack">
       <button class="btn ${plannerOn?'solid':'ink'}" data-act="go" data-view="planner" ${plannerOn?'aria-current="page"':''}>Meal planner</button>
       <button class="btn ${shopOn?'solid':'ink'}" data-act="go" data-view="shopping" ${shopOn?'aria-current="page"':''}>Shopping list</button>
+    </div>
+    <div class="nav"><div class="lbl">Lists</div>
+      ${sortedLists().map(L=>{ const on=UI.view==='lists'&&UI.lid===L.id; return `<button class="ni${on?' on':''}" data-act="openlist" data-id="${esc(L.id)}"><span>${esc(L.name)}</span><span>${itemsOf(L.id).filter(i=>!i.done).length}</span></button>` }).join('')}
+      <button class="ni${UI.view==='lists'&&!UI.lid?' on':''}" data-act="openlist" data-id=""><span>${ic('list')} All lists</span><span>${S.lists.length}</span></button>
     </div>
     <div class="nav">
       ${li('all','All recipes',S.recipes.length)}${li('totry','To try',n('totry'))}${li('fav','Favourites',n('fav'))}
@@ -574,10 +596,10 @@ function renderTop(){
   $('#top').innerHTML=`<label class="search">${ic('search')}<input id="q" type="search" placeholder="Search recipes or ingredients…" value="${esc(UI.q)}" autocomplete="off"></label>
     <button class="btn ink" data-act="surprise">${ic('shuffle')} Surprise me</button>`;
   const share=UI.view==='shopping';
-  $('#mtop').innerHTML=`<button class="logo" data-act="list" data-kind="all">The Milton Cookbook</button>
-    ${share?`<button class="btn icon" data-act="sharelist" aria-label="Copy list">${ic('share')}</button>`:`<button class="btn icon" data-act="surprise" aria-label="Surprise me">${ic('shuffle')}</button>`}`;
+  $('#mtop').innerHTML=`<button class="logo" data-act="list" data-kind="all">Milton Manor</button>
+    ${UI.view==='lists'&&UI.lid?`<button class="btn icon" data-act="copylist" aria-label="Copy list">${ic('share')}</button>`:share?`<button class="btn icon" data-act="sharelist" aria-label="Copy list">${ic('share')}</button>`:`<button class="btn icon" data-act="surprise" aria-label="Surprise me">${ic('shuffle')}</button>`}`;
   const t=(v,label,icon)=>`<button class="${UI.view===v||(v==='home'&&UI.view==='recipe')?'on':''}" data-act="${v==='search'?'msearch':'go'}" data-view="${v}">${ic(icon)}<span>${label}</span></button>`;
-  $('#tabbar').innerHTML=t('home','Recipes','book')+t('planner','Planner','cal')+(canWrite()?`<button class="fab" data-act="new" aria-label="New recipe">${ic('plus')}</button>`:'')+t('shopping','Shopping','bag')+t('search','Search','search');
+  $('#tabbar').innerHTML=t('home','Recipes','book')+t('planner','Planner','cal')+(canWrite()?`<button class="fab" data-act="new" aria-label="New recipe">${ic('plus')}</button>`:'')+t('shopping','Shopping','bag')+t('lists','Lists','list');
 }
 
 /* ---------- render: views ---------- */
@@ -782,11 +804,46 @@ function viewShopping(){
     </aside></div>`;
 }
 
+/* ---------- household lists ---------- */
+const LIST_IDEAS=['Vouchers to use','Household jobs','Things to fix','Bills to pay','Gift ideas','Birthdays','Packing list','Before the baby'];
+function sortedLists(){ return S.lists.slice().sort((a,b)=>(a.order||0)-(b.order||0)||(a.at||0)-(b.at||0)) }
+function itemsOf(lid){ return S.litems.filter(i=>i.list===lid).sort((a,b)=>(a.at||0)-(b.at||0)) }
+function liHTML(i){ const w=canWrite();
+  return `<div class="it"><button class="itmain" data-act="ltick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span></span></button>${w&&!i.done?`<input class="lnote" id="ln-${esc(i.id)}" data-id="${esc(i.id)}" value="${esc(i.note||'')}" placeholder="Note" aria-label="Note for ${esc(i.name)}" autocomplete="off">`:i.note?`<span class="q">${esc(i.note)}</span>`:''}${w?`<button class="xbtn" data-act="rmlitem" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
+function viewLists(){
+  const L=UI.lid&&S.lists.find(x=>x.id===UI.lid);
+  if(!L){ UI.lid=null; const ls=sortedLists(); const used=new Set(ls.map(x=>x.name.toLowerCase())); const ideas=LIST_IDEAS.filter(x=>!used.has(x.toLowerCase()));
+    return `<div class="head"><div class="tg"><div class="kick">Milton Manor</div><h1 class="h1">Lists</h1><div class="sub">${ls.length} list${ls.length===1?'':'s'}</div></div></div>
+      <div class="lwrap" style="max-width:none">
+      ${canWrite()?`<form class="row" data-form="newlist" style="flex-wrap:nowrap;max-width:620px"><label class="search" style="border-radius:6px">${ic('plus')}<input id="newlist" placeholder="Start a new list, e.g. Vouchers to use" autocomplete="off"></label><button class="btn solid" type="submit">Add</button></form>
+      ${ideas.length?`<div class="row" style="gap:8px"><span class="lbl">Ideas</span>${ideas.slice(0,6).map(x=>`<button class="chip" data-act="idealist" data-name="${esc(x)}">${ic('plus')} ${esc(x)}</button>`).join('')}</div>`:''}`:''}
+      ${ls.length?`<div class="lcards">${ls.map(l=>{ const its=itemsOf(l.id); const todo=its.filter(i=>!i.done);
+        return `<button class="lcard" data-act="openlist" data-id="${esc(l.id)}"><span class="lm">${todo.length} to do${its.length-todo.length?`  ·  ${its.length-todo.length} done`:''}</span><span class="ln">${esc(l.name)}</span>${todo.length?`<ul>${todo.slice(0,4).map(i=>`<li>${esc(i.name)}</li>`).join('')}${todo.length>4?`<li style="list-style:none">+ ${todo.length-4} more</li>`:''}</ul>`:`<span class="muted" style="font-size:12px">${its.length?'All done.':'Nothing on it yet.'}</span>`}</button>` }).join('')}</div>`:`<p class="muted" style="margin:0">No lists yet. Start one above, or tap an idea.</p>`}
+      </div>`; }
+  const its=itemsOf(L.id), todo=its.filter(i=>!i.done), done=its.filter(i=>i.done); const pct=its.length?Math.round(done.length/its.length*100):0;
+  return `<div class="head"><div class="tg"><button class="back" data-act="openlist" data-id="" style="margin-bottom:10px">${ic('back')} All lists</button>
+      ${UI.lrename?`<form class="row" data-form="renlist" style="flex-wrap:nowrap"><input class="in" id="renlist" value="${esc(L.name)}" autocomplete="off" style="font-family:var(--serif);font-size:30px;padding:6px 14px;max-width:420px"><button class="btn solid" type="submit">Save</button><button class="link" type="button" data-act="renlistcancel">Cancel</button></form>`:`<h1 class="h1">${esc(L.name)}</h1>`}
+      <div class="sub">Total: ${todo.length} item${todo.length===1?'':'s'}${done.length?`  ·  ${done.length} done`:''}</div></div>
+      <div class="row">${canWrite()&&!UI.lrename?`<button class="link" data-act="renlist">Rename</button><button class="link" data-act="asklistdel">Delete list</button>`:''}<button class="btn" data-act="copylist">${ic('share')} Copy list</button></div></div>
+    <div class="progress"><i style="width:${pct}%"></i></div>
+    <div class="lwrap">
+      ${canWrite()?`<form class="row" data-form="litem" style="flex-wrap:nowrap"><label class="search" style="border-radius:6px">${ic('plus')}<input id="litem" placeholder="Add to ${esc(L.name)}" autocomplete="off"></label><button class="btn solid" type="submit">Add</button></form>`:''}
+      <div>${todo.length?todo.map(liHTML).join(''):`<p class="muted" style="margin:0">${its.length?'Everything is ticked off.':'Nothing on this list yet.'}</p>`}</div>
+      ${done.length?`<div class="trolley"><div class="between" style="padding-bottom:8px"><span class="row" style="gap:8px">${ic('check')}<span class="lbl" style="color:var(--fg)">Done</span><span class="count">${done.length}</span></span><button class="link" style="color:var(--muted)" data-act="ldonetoggle">${UI.ldone?'Hide':'Show'}</button></div>${UI.ldone?done.map(liHTML).join(''):''}</div>
+      ${canWrite()?`<div class="row" style="gap:24px"><button class="link" data-act="lcleardone">Clear done</button><button class="link" data-act="luntick">Untick all</button></div>`:''}`:''}
+    </div>`;
+}
+function newList(name){ name=String(name||'').trim(); if(!name) return; const id=slug(name)+'-'+rid().slice(-4); const doc={name,order:S.lists.length,at:Date.now()}; S.lists.push(Object.assign({id},doc)); Store.set('lists',id,doc); UI.lrename=false; go('lists',{lid:id}); setTimeout(()=>{ const i=$('#litem'); if(i) i.focus() },40) }
+function saveLItem(i){ Store.set('litems',i.id,i) }
+
 /* ---------- sheets ---------- */
 function sheetHTML(){
   const s=UI.sheet; if(!s) return '';
   let inner='',img=false;
-  if(s.type==='delete'){ const r=R(s.rid)||{};
+  if(s.type==='dellist'){ const L=S.lists.find(x=>x.id===s.lid)||{}; const n=itemsOf(s.lid).length;
+    inner=`<div class="sb"><span class="grab"></span><h3>Delete this list?</h3><p class="muted" style="margin:0">${esc(L.name||'This list')}${n?` and its ${n} item${n===1?'':'s'}`:''} will be removed for everyone in the house. This can't be undone.</p>
+      <div class="stack"><button class="btn dangerous wide" data-act="dellist" data-id="${esc(s.lid)}">${ic('trash')} Delete list</button><button class="btn wide" data-act="close">Keep it</button></div></div>` }
+  else if(s.type==='delete'){ const r=R(s.rid)||{};
     inner=`<div class="sb"><span class="grab"></span><h3>Delete this recipe?</h3><p class="muted" style="margin:0">${esc(r.title)} will be removed for everyone in the house, along with your notes. This can't be undone.</p>
       <div class="stack"><button class="btn dangerous wide" data-act="dodel" data-id="${r.id}">${ic('trash')} Delete recipe</button><button class="btn wide" data-act="close">Keep it</button></div></div>` }
   if(s.type==='surprise'){ const r=s.pick&&R(s.pick); img=!!r; const cols=S.cols.slice().sort((a,b)=>(a.order||0)-(b.order||0));
@@ -817,11 +874,11 @@ function sheetHTML(){
 /* ---------- render with focus preservation ---------- */
 function render(){
   const a=document.activeElement; const fid=a&&a.id; let sel=null; try{ if(fid&&a.selectionStart!=null) sel=[a.selectionStart,a.selectionEnd] }catch(e){}
-  const keepVals={}; document.querySelectorAll('#view input[id], #view textarea[id]').forEach(el=>{ if(!DRAFT_IDS[el.id]&&el.type!=='file'&&!el.classList.contains('qin')) keepVals[el.id]=el.value });
+  const keepVals={}; document.querySelectorAll('#view input[id], #view textarea[id]').forEach(el=>{ if(!DRAFT_IDS[el.id]&&el.type!=='file'&&!el.classList.contains('qin')&&!el.classList.contains('lnote')) keepVals[el.id]=el.value });
   const locked=S.mode==='nokey'||S.mode==='badkey'; document.body.classList.toggle('locked',locked);
-  if(locked){ $('#gate').innerHTML=`<div class="box"><div class="kick">The Milton Cookbook</div><div class="serif">${S.mode==='nokey'?'Open the cookbook from the family link':'This link no longer opens the cookbook'}</div><p class="muted" style="margin:0;font-size:14px">${S.mode==='nokey'?'Ask May to send you the link. Once you open it on this device, it will remember you.':'Ask May for the current family link.'}</p></div>`; return }
+  if(locked){ $('#gate').innerHTML=`<div class="box"><div class="kick">Milton Manor</div><div class="serif">${S.mode==='nokey'?'Open Milton Manor from the family link':'This link no longer opens Milton Manor'}</div><p class="muted" style="margin:0;font-size:14px">${S.mode==='nokey'?'Ask May to send you the link. Once you open it on this device, it will remember you.':'Ask May for the current family link.'}</p></div>`; return }
   renderSide(); renderTop();
-  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():viewShopping();
+  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():viewShopping();
   $('#view').innerHTML=v;
   for(const id in keepVals){ const el=document.getElementById(id); if(el) el.value=keepVals[id] }
   $('#sheet').innerHTML=sheetHTML();
@@ -851,7 +908,19 @@ document.addEventListener('click',async e=>{
   if(a==='scrim'){ if(e.target===t){ UI.sheet=null; render() } return }
   switch(a){
     case 'list': UI.q=''; openList(t.dataset.kind,t.dataset.id||undefined); break;
-    case 'go': if(t.dataset.view==='home'){UI.list={kind:'all'}} go(t.dataset.view); break;
+    case 'go': if(t.dataset.view==='home'){UI.list={kind:'all'}} if(t.dataset.view==='lists'){UI.lid=null;UI.lrename=false} go(t.dataset.view); break;
+    case 'openlist': UI.lrename=false; go('lists',{lid:id||null}); break;
+    case 'idealist': newList(t.dataset.name); break;
+    case 'ltick': { const i=S.litems.find(x=>x.id===id); if(!i) break; i.done=!i.done; i.doneAt=i.done?Date.now():null; render(); saveLItem(i); break }
+    case 'rmlitem': { e.stopPropagation(); S.litems=S.litems.filter(x=>x.id!==id); render(); Store.del('litems',id); break }
+    case 'ldonetoggle': UI.ldone=!UI.ldone; render(); break;
+    case 'lcleardone': { const gone=itemsOf(UI.lid).filter(i=>i.done); S.litems=S.litems.filter(x=>!gone.includes(x)); gone.forEach(i=>Store.del('litems',i.id)); render(); toast(`Cleared ${gone.length} done item${gone.length===1?'':'s'}.`); break }
+    case 'luntick': { itemsOf(UI.lid).filter(i=>i.done).forEach(i=>{ i.done=false; i.doneAt=null; saveLItem(i) }); render(); break }
+    case 'renlist': UI.lrename=true; render(); setTimeout(()=>{ const i=$('#renlist'); if(i){ i.focus(); i.select() } },20); break;
+    case 'renlistcancel': UI.lrename=false; render(); break;
+    case 'asklistdel': UI.sheet={type:'dellist',lid:UI.lid}; render(); break;
+    case 'dellist': { const L=S.lists.find(x=>x.id===id); itemsOf(id).forEach(i=>Store.del('litems',i.id)); S.litems=S.litems.filter(x=>x.list!==id); S.lists=S.lists.filter(x=>x.id!==id); Store.del('lists',id); UI.sheet=null; UI.lid=null; toast(`Deleted ${L?L.name:'the list'}.`); go('lists'); break }
+    case 'copylist': { const L=S.lists.find(x=>x.id===UI.lid); if(!L) break; const todo=itemsOf(L.id).filter(i=>!i.done); const txt=`${L.name}\n`+todo.map(i=>`- ${i.name}${i.note?` (${i.note})`:''}`).join('\n'); try{ await navigator.clipboard.writeText(txt); toast('List copied. Paste it into a message.') }catch(err){ toast("Couldn't copy here. Try again.") } break }
     case 'msearch': go('search'); setTimeout(()=>{ const q=$('#sq'); if(q) q.focus() },50); break;
     case 'status': UI.status=t.dataset.s; render(); break;
     case 'clearq': UI.q=''; render(); break;
@@ -936,6 +1005,7 @@ document.addEventListener('input',e=>{
   if(id==='sq'){ UI.q=e.target.value; clearTimeout(qT); qT=setTimeout(render,120) }
   if(id==='q'||id==='mq'){ UI.q=e.target.value; clearTimeout(qT); qT=setTimeout(()=>{ if(UI.view!=='home'){ UI.list={kind:'all'}; UI.view='home' } render() },160) }
   if(id==='pq'){ UI.sheet.q=e.target.value; render() }
+  if(e.target.classList&&e.target.classList.contains('lnote')){ const i=S.litems.find(x=>x.id===e.target.dataset.id); if(i) i.note=e.target.value }
   if(e.target.classList&&e.target.classList.contains('qin')){ const it=currentItems().find(i=>i.key===e.target.dataset.qkey); if(it) S.qtyLocal[it.qkey]=e.target.value }
   if(UI.view==='edit'&&UI.draft&&DRAFT_IDS[id]) UI.draft[DRAFT_IDS[id]]=e.target.value;
 });
@@ -943,6 +1013,7 @@ document.addEventListener('change',async e=>{
   const id=e.target.id;
   if(id==='sort'){ UI.sort=e.target.value; render() }
   if(e.target.classList&&e.target.classList.contains('qin')) saveQty(e.target.dataset.qkey,e.target.value.trim());
+  if(e.target.classList&&e.target.classList.contains('lnote')){ const i=S.litems.find(x=>x.id===e.target.dataset.id); if(i){ i.note=e.target.value.trim(); saveLItem(i) } }
   if(id==='daynote'){ setPlan(UI.day,{notes:e.target.value.trim()}) }
   if(id==='rimg'&&e.target.files&&e.target.files.length){ importImages(e.target.files) }
   if(id==='photo'&&e.target.files&&e.target.files[0]){ const f=e.target.files[0]; readDraft(); try{ UI.draft.photo=await compress(f); render() }catch(err){ toast("That photo couldn't be used. Try a JPG or PNG."); return } scanPhoto(f) }
@@ -951,6 +1022,9 @@ document.addEventListener('submit',async e=>{
   e.preventDefault(); const f=e.target.dataset.form;
   if(f==='rencol'){ const v=$('#rencol').value.trim(); const c=S.cols.find(x=>x.id===UI.renaming); UI.renaming=null; if(c&&v&&v!==c.name){ c.name=v; const doc={name:v,order:c.order||0}; Store.set('collections',c.id,doc); toast(`Renamed to ${v}.`) } render(); return }
   if(f==='col'){ const v=$('#newcol').value.trim(); UI.addingCol=false; if(v){ const cid=slug(v)+'-'+rid().slice(-4); const c={name:v,order:S.cols.length}; S.cols.push(Object.assign({id:cid},c)); Store.set('collections',cid,c); openList('col',cid) } else render() }
+  if(f==='newlist'){ const v=$('#newlist').value.trim(); if(!v) return; $('#newlist').value=''; newList(v); return }
+  if(f==='renlist'){ const v=$('#renlist').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); UI.lrename=false; if(L&&v&&v!==L.name){ L.name=v; Store.set('lists',L.id,L); toast(`Renamed to ${v}.`) } render(); return }
+  if(f==='litem'){ const v=$('#litem').value.trim(); if(!v||!UI.lid) return; const iid=Store.newId('litems'); const doc={list:UI.lid,name:v.charAt(0).toUpperCase()+v.slice(1),note:'',done:false,at:Date.now()}; S.litems.push(Object.assign({id:iid},doc)); $('#litem').value=''; render(); Store.set('litems',iid,doc); return }
   if(f==='extra'){ const v=$('#extra').value.trim(); if(!v) return; const x=parseLine(v)||{name:v,qty:''}; const eid=Store.newId('extras'); const doc={name:x.name,qty:x.qty,done:false,at:Date.now()}; S.extras.push(Object.assign({id:eid},doc)); $('#extra').value=''; render(); Store.set('extras',eid,doc) }
   if(f==='reg'){ const v=$('#newreg').value.trim(); if(!v) return; const gid=slug(v); if(S.regs.some(r=>r.id===gid)){ toast(`${v} is already a regular.`); return } const doc={name:v.charAt(0).toUpperCase()+v.slice(1),group:UI.regGroup,on:false}; S.regs.push(Object.assign({id:gid},doc)); $('#newreg').value=''; render(); Store.set('regulars',gid,doc) }
   if(f==='recipe'){ readDraft(); const d=UI.draft; if(!d.title.trim()){ toast('Give the recipe a name first.'); $('#f-title').focus(); return }
@@ -1125,6 +1199,8 @@ Store.init().then(()=>{
   Store.sub('plan',d=>{ S.plan={}; d.forEach(p=>S.plan[p.id]=p); if(UI.view!=='edit') soon() });
   Store.sub('ticks',d=>{ S.ticks={}; d.forEach(t=>S.ticks[t.id]=t); if(UI.view!=='edit') soon() });
   Store.sub('extras',d=>{ S.extras=d; if(UI.view!=='edit') soon() });
+  Store.sub('lists',d=>{ S.lists=d; if(UI.view!=='edit') soon(); else renderSide() });
+  Store.sub('litems',d=>{ S.litems=d; if(UI.view!=='edit') soon() });
   Store.sub('regulars',d=>{ S.regs=d; if(UI.view!=='edit') soon() });
   Store.sub('qty',d=>{ S.qty={}; d.forEach(q=>S.qty[q.id]=q); if(UI.view!=='edit') soon() });
 });

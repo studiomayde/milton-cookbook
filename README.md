@@ -1,6 +1,6 @@
-# The Milton Cookbook
+# Milton Manor
 
-Our family recipe book, meal planner and shopping list.
+Our household home base: recipes, meal planner, shopping list and household lists (vouchers, jobs and anything else to tick off).
 
 - The app is a single page, `index.html`, hosted on GitHub Pages.
 - Recipes, the meal plan and the shopping list live in Supabase and sync between devices every few seconds.
