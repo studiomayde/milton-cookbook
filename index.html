@@ -303,6 +303,7 @@ body.secsorting{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .progress{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin:6px 0 20px}
 .progress i{display:block;height:100%;background:var(--fg)}
 .shop{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:32px;align-items:start}
+.shop>.panel{position:sticky;top:24px;max-height:calc(100vh - 48px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .shopcol{display:flex;flex-direction:column;gap:26px;min-width:0}
 .reg{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:12px;gap:10px}
 .rbtn{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:var(--bg);display:grid;place-items:center;flex:none}
@@ -343,6 +344,7 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
 .ni.dragging{opacity:.4}
 @media (max-width:1100px){
   .pl,.shop{grid-template-columns:1fr}
+  .shop>.panel{position:static;max-height:none;overflow:visible}
   .hero{grid-template-columns:1fr}
   .body2{grid-template-columns:1fr;gap:32px}
 }
