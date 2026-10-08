@@ -600,8 +600,8 @@ function renderSide(){
       ${sortedLists().map(L=>{ const on=UI.view==='lists'&&UI.lid===L.id; return `<button class="ni${on?' on':''}" data-act="openlist" data-id="${esc(L.id)}"><span>${esc(L.name)}</span><span>${itemsOf(L.id).filter(i=>!i.done).length}</span></button>` }).join('')}
       ${canWrite()?(UI.addingList?`<form class="addcol" data-form="sidelist">${ic('plus')}<input id="sidelist" placeholder="List name" autocomplete="off"></form>`:`<button class="addcol" data-act="addlist">${ic('plus')} New list</button>`):''}`)}
     ${fold('recipes','Recipes',`
-      ${li('all','All recipes',S.recipes.length)}${li('totry','To try',n('totry'))}${li('fav','Favourites',n('fav'))}`)}
-    ${fold('cols','Collections',`
+      ${li('all','All recipes',S.recipes.length)}${li('totry','To try',n('totry'))}${li('fav','Favourites',n('fav'))}
+      <div style="height:18px"></div>
       ${cols.map(c=>li('col',c.name,listRecipes('col',c.id).length,c.id)).join('')}
       ${li('tm','Thermomix',n('tm'))}
       ${canWrite()?(UI.addingCol?`<form class="addcol" data-form="col">${ic('plus')}<input id="newcol" placeholder="Collection name" autocomplete="off"></form>`:`<button class="addcol" data-act="addcol">${ic('plus')} New collection</button>`):''}`)}
