@@ -585,6 +585,7 @@ function renderSide(){
     <div class="nav"><div class="lbl">Lists</div>
       ${sortedLists().map(L=>{ const on=UI.view==='lists'&&UI.lid===L.id; return `<button class="ni${on?' on':''}" data-act="openlist" data-id="${esc(L.id)}"><span>${esc(L.name)}</span><span>${itemsOf(L.id).filter(i=>!i.done).length}</span></button>` }).join('')}
       <button class="ni${UI.view==='lists'&&!UI.lid?' on':''}" data-act="openlist" data-id=""><span>${ic('list')} All lists</span><span>${S.lists.length}</span></button>
+      ${canWrite()?(UI.addingList?`<form class="addcol" data-form="sidelist">${ic('plus')}<input id="sidelist" placeholder="List name" autocomplete="off"></form>`:`<button class="addcol" data-act="addlist">${ic('plus')} New list</button>`):''}
     </div>
     <div class="nav">
       ${li('all','All recipes',S.recipes.length)}${li('totry','To try',n('totry'))}${li('fav','Favourites',n('fav'))}
@@ -915,6 +916,7 @@ document.addEventListener('click',async e=>{
     case 'go': if(t.dataset.view==='home'){UI.list={kind:'all'}} if(t.dataset.view==='lists'){UI.lid=null;UI.lrename=false} go(t.dataset.view); break;
     case 'openlist': UI.lrename=false; go('lists',{lid:id||null}); break;
     case 'idealist': newList(t.dataset.name); break;
+    case 'addlist': UI.addingList=true; render(); setTimeout(()=>{ const i=$('#sidelist'); if(i) i.focus() },20); break;
     case 'ltick': { const i=S.litems.find(x=>x.id===id); if(!i) break; i.done=!i.done; i.doneAt=i.done?Date.now():null; render(); saveLItem(i); break }
     case 'rmlitem': { e.stopPropagation(); S.litems=S.litems.filter(x=>x.id!==id); render(); Store.del('litems',id); break }
     case 'ldonetoggle': UI.ldone=!UI.ldone; render(); break;
@@ -1026,6 +1028,7 @@ document.addEventListener('submit',async e=>{
   e.preventDefault(); const f=e.target.dataset.form;
   if(f==='rencol'){ const v=$('#rencol').value.trim(); const c=S.cols.find(x=>x.id===UI.renaming); UI.renaming=null; if(c&&v&&v!==c.name){ c.name=v; const doc={name:v,order:c.order||0}; Store.set('collections',c.id,doc); toast(`Renamed to ${v}.`) } render(); return }
   if(f==='col'){ const v=$('#newcol').value.trim(); UI.addingCol=false; if(v){ const cid=slug(v)+'-'+rid().slice(-4); const c={name:v,order:S.cols.length}; S.cols.push(Object.assign({id:cid},c)); Store.set('collections',cid,c); openList('col',cid) } else render() }
+  if(f==='sidelist'){ const v=$('#sidelist').value.trim(); UI.addingList=false; if(v) newList(v); else render(); return }
   if(f==='newlist'){ const v=$('#newlist').value.trim(); if(!v) return; $('#newlist').value=''; newList(v); return }
   if(f==='renlist'){ const v=$('#renlist').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); UI.lrename=false; if(L&&v&&v!==L.name){ L.name=v; Store.set('lists',L.id,L); toast(`Renamed to ${v}.`) } render(); return }
   if(f==='litem'){ const v=$('#litem').value.trim(); if(!v||!UI.lid) return; const iid=Store.newId('litems'); const doc={list:UI.lid,name:v.charAt(0).toUpperCase()+v.slice(1),note:'',done:false,at:Date.now()}; S.litems.push(Object.assign({id:iid},doc)); $('#litem').value=''; render(); Store.set('litems',iid,doc); return }
