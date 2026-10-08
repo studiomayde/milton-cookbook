@@ -688,7 +688,7 @@ function renderTop(){
   $('#top').innerHTML=`<label class="search">${ic('search')}<input id="q" type="search" placeholder="Search recipes or ingredients…" value="${esc(UI.q)}" autocomplete="off"></label>`;
   const share=UI.view==='shopping';
   $('#mtop').innerHTML=`<span class="row" style="gap:10px;flex-wrap:nowrap"><button class="btn icon mburger" data-act="menu" aria-label="Menu">${ic('menu')}</button><button class="logo" data-act="go" data-view="dash">Milton Manor</button></span>
-    ${UI.view==='lists'&&UI.lid?`<button class="btn icon" data-act="copylist" aria-label="Copy list">${ic('share')}</button>`:share?`<button class="btn icon" data-act="sharelist" aria-label="Copy list">${ic('share')}</button>`:UI.view==='home'?`<button class="btn icon" data-act="surprise" aria-label="Surprise me">${ic('shuffle')}</button>`:''}`;
+    ${UI.view==='lists'&&UI.lid?`<button class="btn icon" data-act="copylist" aria-label="Copy list">${ic('share')}</button>`:share?`<button class="btn icon" data-act="sharelist" aria-label="Copy list">${ic('share')}</button>`:''}`;
   const t=(v,label,icon)=>`<button class="${UI.view===v||(v==='home'&&UI.view==='recipe')?'on':''}" data-act="${v==='search'?'msearch':'go'}" data-view="${v}">${ic(icon)}<span>${label}</span></button>`;
   $('#tabbar').innerHTML=t('lists','Lists','list')+t('shopping','Groceries','apple')+(canWrite()?`<button class="fab" data-act="new" aria-label="New recipe">${ic('plus')}</button>`:'')+t('home','Recipes','book')+t('planner','Meals','cal');
 }
