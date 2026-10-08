@@ -223,6 +223,7 @@ textarea.in{resize:vertical;line-height:1.55}
 .lnote:focus{border-color:var(--fg);background:var(--bg);text-align:left;color:var(--fg)}
 .lit .itmain{flex:0 1 auto;max-width:45%}
 .lit .lnote{flex:1;width:auto;min-width:140px;text-align:left;margin-left:16px}
+.lacts{gap:20px}
 .lwrap{max-width:760px;display:flex;flex-direction:column;gap:24px}
 .progress{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin:6px 0 20px}
 .progress i{display:block;height:100%;background:var(--fg)}
@@ -330,6 +331,7 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .qin{width:84px;font-size:11px !important}
   .lnote{width:110px;font-size:11px !important}
   .lit .itmain{flex:1;max-width:none}
+  .lacts{gap:10px}
   .lit .lnote{flex:none;width:110px;min-width:0;margin-left:0;text-align:right}
   .lcards{grid-template-columns:1fr;gap:12px}
   .lcard{min-height:0}
@@ -828,7 +830,7 @@ function viewLists(){
   return `<div class="head"><div class="tg"><button class="back" data-act="openlist" data-id="" style="margin-bottom:10px">${ic('back')} All lists</button>
       ${UI.lrename?`<form class="row" data-form="renlist" style="flex-wrap:nowrap"><input class="in" id="renlist" value="${esc(L.name)}" autocomplete="off" style="font-family:var(--serif);font-size:30px;padding:6px 14px;max-width:420px"><button class="btn solid" type="submit">Save</button><button class="link" type="button" data-act="renlistcancel">Cancel</button></form>`:`<h1 class="h1">${esc(L.name)}</h1>`}
       <div class="sub">Total: ${todo.length} item${todo.length===1?'':'s'}${done.length?`  ·  ${done.length} done`:''}</div></div>
-      <div class="row">${canWrite()&&!UI.lrename?`<button class="link" data-act="renlist">Rename</button><button class="link" data-act="asklistdel">Delete list</button>`:''}<button class="btn" data-act="copylist">${ic('share')} Copy list</button></div></div>
+      <div class="row lacts">${canWrite()&&!UI.lrename?`<button class="link" data-act="renlist">Rename</button><button class="link" data-act="asklistdel">Delete list</button>`:''}<button class="btn" data-act="copylist">${ic('share')} Copy list</button></div></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
     <div class="lwrap">
       ${canWrite()?`<form class="row" data-form="litem" style="flex-wrap:nowrap"><label class="search" style="border-radius:6px">${ic('plus')}<input id="litem" placeholder="Add to ${esc(L.name)}" autocomplete="off"></label><button class="btn solid" type="submit">Add</button></form>`:''}
