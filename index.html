@@ -643,7 +643,7 @@ function renderSide(){
   const FK={lists:'lists',home:'recipes'};
   $('#side').innerHTML=`
     <button class="logo" data-act="go" data-view="dash">Milton Manor</button>
-    <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Shopping list','bag',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn]].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
+    <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Groceries','bag',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn]].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
       return `<div class="secg${open?' open':''}"><div class="secrow"><button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>${k?`<button class="fx" data-act="fold" data-k="${k}" aria-expanded="${!!open}" aria-label="${open?'Hide':'Show'} ${x[1]}">${ic('down')}</button>`:''}</div>${open?`<div class="nav subnav">${SUB[x[0]]}</div>`:''}</div>` }).join('')}</div>`;
 }
 function renderTop(){
@@ -652,7 +652,7 @@ function renderTop(){
   $('#mtop').innerHTML=`<button class="logo" data-act="go" data-view="dash">Milton Manor</button>
     ${UI.view==='lists'&&UI.lid?`<button class="btn icon" data-act="copylist" aria-label="Copy list">${ic('share')}</button>`:share?`<button class="btn icon" data-act="sharelist" aria-label="Copy list">${ic('share')}</button>`:UI.view==='home'?`<button class="btn icon" data-act="surprise" aria-label="Surprise me">${ic('shuffle')}</button>`:''}`;
   const t=(v,label,icon)=>`<button class="${UI.view===v||(v==='home'&&UI.view==='recipe')?'on':''}" data-act="${v==='search'?'msearch':'go'}" data-view="${v}">${ic(icon)}<span>${label}</span></button>`;
-  $('#tabbar').innerHTML=t('lists','Lists','list')+t('shopping','Shopping','bag')+(canWrite()?`<button class="fab" data-act="new" aria-label="New recipe">${ic('plus')}</button>`:'')+t('home','Recipes','book')+t('planner','Meals','cal');
+  $('#tabbar').innerHTML=t('lists','Lists','list')+t('shopping','Groceries','bag')+(canWrite()?`<button class="fab" data-act="new" aria-label="New recipe">${ic('plus')}</button>`:'')+t('home','Recipes','book')+t('planner','Meals','cal');
 }
 
 /* ---------- render: views ---------- */
@@ -685,7 +685,7 @@ function viewHome(){
     </div>
     ${l.kind==='all'||l.kind==='col'||l.kind==='tm'?`<div class="chips scroll" style="margin-top:18px">${chip('all','','All meals')}${cols.map(c=>chip('col',c.id,c.name)).join('')}${chip('tm','','Thermomix')}</div>`:''}
     ${shown.length?`<div class="grid">${shown.map(cardHTML).join('')}${canWrite()&&!UI.q?`<button class="addtile" data-act="new"><span class="plus">${ic('plus')}</span><span class="t">Add a recipe</span><span class="f muted" style="font-size:10px">Paste one in or type it up</span></button>`:''}</div>`
-      :`<div class="empty"><div class="serif">${UI.q?'Nothing matches that search.':S.loaded.recipes?'No recipes here yet.':'Opening Milton Manor…'}</div><p class="muted">${UI.q?'Try a different ingredient or recipe name.':canWrite()?'Add your first one with New recipe. Ingredients you add flow straight into the shopping list.':''}</p>${canWrite()&&!UI.q&&S.loaded.recipes?`<button class="btn solid" data-act="new">${ic('plus')} New recipe</button>`:''}</div>`}`;
+      :`<div class="empty"><div class="serif">${UI.q?'Nothing matches that search.':S.loaded.recipes?'No recipes here yet.':'Opening Milton Manor…'}</div><p class="muted">${UI.q?'Try a different ingredient or recipe name.':canWrite()?'Add your first one with New recipe. Ingredients you add flow straight into the groceries list.':''}</p>${canWrite()&&!UI.q&&S.loaded.recipes?`<button class="btn solid" data-act="new">${ic('plus')} New recipe</button>`:''}</div>`}`;
 }
 function viewSearch(){
   const q=UI.q.trim(); const hits=q?sortRecipes(S.recipes.filter(r=>searchHit(r,q))):[];
@@ -836,13 +836,13 @@ function viewPlanner(){
   const body=UI.pmode==='week'?viewWeek():UI.pmode==='day'?viewDay():viewMonth();
   const items=shoppingItems(mondayOf(UI.pmode==='week'?UI.week:UI.day)); const left=items.filter(i=>!i.done).length;
   return plannerHead(esc(title))+`<div class="pl"><div style="min-width:0">${body}</div>
-    <aside class="panel mini"><div class="phead"><h2>Shopping list</h2><div class="muted" style="font-size:11px;margin-top:4px">${weekLabel(mondayOf(UI.pmode==='week'?UI.week:UI.day))}  ·  Total: ${left} item${left===1?'':'s'}</div></div>
-      ${shopListHTML(items,{mini:true,tags:false})}<button class="btn ink" data-act="go" data-view="shopping">Open shopping list</button></aside></div>`;
+    <aside class="panel mini"><div class="phead"><h2>Groceries</h2><div class="muted" style="font-size:11px;margin-top:4px">${weekLabel(mondayOf(UI.pmode==='week'?UI.week:UI.day))}  ·  Total: ${left} item${left===1?'':'s'}</div></div>
+      ${shopListHTML(items,{mini:true,tags:false})}<button class="btn ink" data-act="go" data-view="shopping">Open groceries</button></aside></div>`;
 }
 function viewShopping(){
   const wk=UI.week; const items=shoppingItems(wk); const done=items.filter(i=>i.done).length; const pct=items.length?Math.round(done/items.length*100):0;
   const groups=['Food','Snacks','Drinks','Frozen','Household'];
-  return `<div class="head"><div class="tg"><div class="kick">${weekLabel(wk)}</div><h1 class="h1">Shopping list</h1><div class="sub">Total: ${items.length-done} item${items.length-done===1?'':'s'}${done?`  ·  ${done} in the trolley`:''}</div></div>
+  return `<div class="head"><div class="tg"><div class="kick">${weekLabel(wk)}</div><h1 class="h1">Groceries</h1><div class="sub">Total: ${items.length-done} item${items.length-done===1?'':'s'}${done?`  ·  ${done} in the trolley`:''}</div></div>
       <div class="row"><div class="seg"><button data-act="snav" data-d="-1" aria-label="Previous week">${ic('back')}</button><button data-act="stoday">${UI.week===mondayOf(TODAY)?'This week':'Back to this week'}</button><button data-act="snav" data-d="1" aria-label="Next week">${ic('right')}</button></div><button class="btn" data-act="sharelist">${ic('share')} Copy list</button></div></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
     <div class="shop"><div class="shopcol">
@@ -868,7 +868,7 @@ function viewDash(){
   const meals=`<div class="wg">${wh(weekLabel(wk),'This week','planner','Meal planner')}<div>${mealRows||'<p class="muted" style="margin:0">Nothing planned yet.</p>'}</div></div>`;
   // shopping
   const items=shoppingItems(wk); const todo=items.filter(i=>!i.done);
-  const shop=`<div class="wg">${wh(`Total: ${todo.length} item${todo.length===1?'':'s'}`,'Shopping list','shopping','Open list')}<div>${todo.slice(0,6).map(i=>`<button class="wrow" data-act="go" data-view="shopping"><span class="cb"></span><span class="wt">${esc(i.name)}</span><span class="wn">${esc(i.qty||'')}</span></button>`).join('')||'<p class="muted" style="margin:0">Nothing on the list yet.</p>'}${todo.length>6?`<div class="wrow muted" style="font-size:11px">+ ${todo.length-6} more</div>`:''}</div></div>`;
+  const shop=`<div class="wg">${wh(`Total: ${todo.length} item${todo.length===1?'':'s'}`,'Groceries','shopping','Open list')}<div>${todo.slice(0,6).map(i=>`<button class="wrow" data-act="go" data-view="shopping"><span class="cb"></span><span class="wt">${esc(i.name)}</span><span class="wn">${esc(i.qty||'')}</span></button>`).join('')||'<p class="muted" style="margin:0">Nothing on the list yet.</p>'}${todo.length>6?`<div class="wrow muted" style="font-size:11px">+ ${todo.length-6} more</div>`:''}</div></div>`;
   // lists
   const ls=sortedLists();
   const lists=`<div class="wg">${wh(`${ls.length} list${ls.length===1?'':'s'}`,'Lists','lists','All lists',' data-lid=""')}<div>${ls.map(L=>{ const its=itemsOf(L.id), t=its.filter(i=>!i.done); return `<button class="wrow wbig" data-act="openlist" data-id="${esc(L.id)}"><span class="wt">${esc(L.name)}</span><span class="wn">${t.length} to do</span></button>` }).join('')||'<p class="muted" style="margin:0">No lists yet.</p>'}</div></div>`;
@@ -1177,9 +1177,9 @@ function pickSurprise(force){ const s=UI.sheet; let pool=S.recipes;
   if(s.onlyNew) pool=pool.filter(r=>r.status!=='tried');
   if(force&&pool.length>1) pool=pool.filter(r=>r.id!==s.pick);
   s.pick=pool.length?pool[Math.floor(Math.random()*pool.length)].id:null }
-async function copyList(){ const items=shoppingItems(UI.week).filter(i=>!i.done); let txt=`Shopping list, ${weekLabel(UI.week)}\n`;
+async function copyList(){ const items=shoppingItems(UI.week).filter(i=>!i.done); let txt=`Groceries, ${weekLabel(UI.week)}\n`;
   for(const a of AISLES){ const g=items.filter(i=>i.aisle===a); if(!g.length) continue; txt+=`\n${a}\n`+g.map(i=>`- ${i.name}${i.qty?' ('+i.qty+')':''}`).join('\n')+'\n' }
-  try{ await navigator.clipboard.writeText(txt); toast('Shopping list copied. Paste it into a message.') }catch(e){ toast("Couldn't copy here. Try again from the shopping list.") } }
+  try{ await navigator.clipboard.writeText(txt); toast('Groceries list copied. Paste it into a message.') }catch(e){ toast("Couldn't copy here. Try again from the shopping list.") } }
 /* ---------- free recipe reading: pasted text, photos (on-device text recognition) and links ---------- */
 const QTY_START=/^\s*(?:[-•*·]\s*)?(?:\d|[½¼¾⅓⅔⅛]|a\s|an\s|one\s|two\s|three\s|half\s|pinch|handful|splash|dash|few\s)/i;
 const ING_WORDS=/\b(g|kg|ml|l|tsp|tbsp|cups?|teaspoons?|tablespoons?|grams?|cloves?|bunch|cans?|tins?|pinch|handful|sprigs?|slices?|large|small|medium)\b/i;
