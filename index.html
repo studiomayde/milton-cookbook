@@ -45,7 +45,14 @@ a{color:inherit}
 .logo small{display:block;font-family:var(--serif);font-style:italic;font-size:12px;color:var(--muted);letter-spacing:0}
 .stack{display:flex;flex-direction:column;gap:8px}
 .secnav{display:flex;flex-direction:column;border-top:1px solid var(--line)}
-.sec{display:flex;align-items:center;gap:12px;padding:13px 12px;border-bottom:1px solid var(--line);font-family:var(--serif);font-size:22px;line-height:1;color:var(--muted);text-align:left;width:100%}
+.secg{border-bottom:1px solid var(--line)}
+.secrow{display:flex;align-items:center}
+.fx{padding:10px 12px;color:var(--muted);flex:none}
+.fx svg.i{width:14px;height:14px;transition:transform .2s;transform:rotate(-90deg)}
+.secg.open .fx svg.i{transform:none}
+.fx:hover{color:var(--fg)}
+.subnav{padding:0 0 14px 29px}
+.sec{display:flex;align-items:center;gap:12px;padding:13px 12px;flex:1;min-width:0;font-family:var(--serif);font-size:22px;line-height:1;color:var(--muted);text-align:left;width:100%}
 .sec svg.i{width:17px;height:17px;flex:none}
 .sec:hover{color:var(--fg)}
 .sec.on{color:var(--fg)}
@@ -592,20 +599,20 @@ function renderSide(){
   const li=(kind,label,count,id)=>{ const on=UI.view==='home'&&UI.list.kind===kind&&(kind!=='col'||UI.list.id===id); const dr=kind==='col'&&canWrite(); return `<button class="ni${on?' on':''}" data-act="list" data-kind="${kind}" data-id="${esc(id||'')}"${dr?` data-colid="${esc(id)}" title="Drag to reorder"`:''}><span>${dr?`<span class="cgrip">${ic('grip')}</span>`:''}${esc(label)}</span><span>${count}</span></button>` };
   const cols=S.cols.slice().sort((a,b)=>(a.order||0)-(b.order||0));
   const plannerOn=UI.view==='planner', shopOn=UI.view==='shopping';
-  $('#side').innerHTML=`
-    <button class="logo" data-act="list" data-kind="all">Milton Manor</button>
-    <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Shopping list','bag',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn]].map(x=>`<button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>`).join('')}</div>
-    ${fold('lists','Lists',`
+  const SUB={lists:`
       <button class="ni${UI.view==='lists'&&!UI.lid?' on':''}" data-act="openlist" data-id=""><span>${ic('list')} All lists</span><span>${S.lists.length}</span></button>
       ${sortedLists().map(L=>{ const on=UI.view==='lists'&&UI.lid===L.id; return `<button class="ni${on?' on':''}" data-act="openlist" data-id="${esc(L.id)}"><span>${esc(L.name)}</span><span>${itemsOf(L.id).filter(i=>!i.done).length}</span></button>` }).join('')}
-      ${canWrite()?(UI.addingList?`<form class="addcol" data-form="sidelist">${ic('plus')}<input id="sidelist" placeholder="List name" autocomplete="off"></form>`:`<button class="addcol" data-act="addlist">${ic('plus')} New list</button>`):''}`)}
-    ${fold('recipes','Recipes',`
+      ${canWrite()?(UI.addingList?`<form class="addcol" data-form="sidelist">${ic('plus')}<input id="sidelist" placeholder="List name" autocomplete="off"></form>`:`<button class="addcol" data-act="addlist">${ic('plus')} New list</button>`):''}`,home:`
       ${li('all','All recipes',S.recipes.length)}${li('totry','To try',n('totry'))}${li('fav','Favourites',n('fav'))}
       <div style="height:18px"></div>
       ${cols.map(c=>li('col',c.name,listRecipes('col',c.id).length,c.id)).join('')}
       ${li('tm','Thermomix',n('tm'))}
-      ${canWrite()?(UI.addingCol?`<form class="addcol" data-form="col">${ic('plus')}<input id="newcol" placeholder="Collection name" autocomplete="off"></form>`:`<button class="addcol" data-act="addcol">${ic('plus')} New collection</button>`):''}`)}
-`;
+      ${canWrite()?(UI.addingCol?`<form class="addcol" data-form="col">${ic('plus')}<input id="newcol" placeholder="Collection name" autocomplete="off"></form>`:`<button class="addcol" data-act="addcol">${ic('plus')} New collection</button>`):''}`};
+  const FK={lists:'lists',home:'recipes'};
+  $('#side').innerHTML=`
+    <button class="logo" data-act="list" data-kind="all">Milton Manor</button>
+    <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Shopping list','bag',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn]].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
+      return `<div class="secg${open?' open':''}"><div class="secrow"><button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>${k?`<button class="fx" data-act="fold" data-k="${k}" aria-expanded="${!!open}" aria-label="${open?'Hide':'Show'} ${x[1]}">${ic('down')}</button>`:''}</div>${open?`<div class="nav subnav">${SUB[x[0]]}</div>`:''}</div>` }).join('')}</div>`;
 }
 function renderTop(){
   $('#top').innerHTML=`<label class="search">${ic('search')}<input id="q" type="search" placeholder="Search recipes or ingredients…" value="${esc(UI.q)}" autocomplete="off"></label>
