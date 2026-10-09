@@ -658,8 +658,19 @@ function setPlan(date,patch){ const cur=Object.assign({},S.plan[date]||{}); dele
   return Object.keys(cur).length? Store.set('plan',date,cur) : Store.del('plan',date) }
 function saveRecipe(r){ const i=S.recipes.findIndex(x=>x.id===r.id); if(i>=0)S.recipes[i]=r; else S.recipes.push(r); return Store.set('recipes',r.id,r) }
 function patchRecipe(id,patch){ const r=R(id); if(!r) return; const n=Object.assign({},r,patch,{updated:Date.now()}); return saveRecipe(n) }
+function clearTrolleyItems(items){
+  for(const i of items){ if(i.kind==='extra'){ S.extras=S.extras.filter(x=>x.id!==i.extraId); Store.del('extras',i.extraId) }
+    else if(i.kind==='reg'){ const r=S.regs.find(x=>x.id===i.regId); if(r){ r.on=false; Store.set('regulars',r.id,r) } delete S.ticks[i.tick]; Store.del('ticks',i.tick) }
+    else { S.ticks[i.tick]={at:Date.now(),cleared:true}; Store.set('ticks',i.tick,S.ticks[i.tick]) } } }
+const TROLLEY_MS=12*60*60*1000;
+function autoClearTrolley(){ if(S.mode!=='cloud'||!S.loaded.recipes||S.readOnly) return; const now=Date.now(); const weeks=new Set([mondayOf(TODAY),UI.week]); const old=[];
+  for(const wk of weeks) for(const i of shoppingItems(wk)){ if(!i.done) continue;
+    let at=null; if(i.kind==='extra'){ const e=S.extras.find(x=>x.id===i.extraId); if(e){ if(!e.doneAt){ e.doneAt=now; Store.set('extras',e.id,e) } at=e.doneAt } } else { const t=S.ticks[i.tick]; at=t&&t.at }
+    if(at&&now-at>TROLLEY_MS&&!old.some(o=>o.key===i.key)) old.push(i) }
+  if(old.length){ clearTrolleyItems(old); if(UI.view!=='edit') render() } }
+setInterval(autoClearTrolley,5*60*1000); setTimeout(autoClearTrolley,4000);
 function toggleTick(it){
-  if(it.kind==='extra'){ const e=S.extras.find(x=>x.id===it.extraId); if(!e)return; e.done=!e.done; render(); return Store.set('extras',e.id,e) }
+  if(it.kind==='extra'){ const e=S.extras.find(x=>x.id===it.extraId); if(!e)return; e.done=!e.done; e.doneAt=e.done?Date.now():null; render(); return Store.set('extras',e.id,e) }
   if(S.ticks[it.tick]){ delete S.ticks[it.tick]; render(); return Store.del('ticks',it.tick) }
   S.ticks[it.tick]={at:Date.now()}; render(); return Store.set('ticks',it.tick,{at:Date.now()}) }
 
@@ -1125,11 +1136,7 @@ document.addEventListener('click',async e=>{
     case 'tick': { if(e.target.closest('[data-act="rmextra"]')) break; if(!canWrite()) break; const it=currentItems().find(i=>i.key===t.dataset.key); if(it) toggleTick(it); break }
     case 'rmextra': { e.stopPropagation(); S.extras=S.extras.filter(x=>x.id!==id); render(); Store.del('extras',id); break }
     case 'trolley': UI.trolley=!UI.trolley; render(); break;
-    case 'cleartrolley': { const items=shoppingItems(UI.week).filter(i=>i.done);
-      for(const i of items){ if(i.kind==='extra'){ S.extras=S.extras.filter(x=>x.id!==i.extraId); Store.del('extras',i.extraId) }
-        else if(i.kind==='reg'){ const r=S.regs.find(x=>x.id===i.regId); if(r){ r.on=false; Store.set('regulars',r.id,r) } delete S.ticks[i.tick]; Store.del('ticks',i.tick) }
-        else { S.ticks[i.tick]={at:Date.now(),cleared:true}; Store.set('ticks',i.tick,S.ticks[i.tick]) } }
-      render(); toast('Trolley cleared.'); break }
+    case 'cleartrolley': { clearTrolleyItems(shoppingItems(UI.week).filter(i=>i.done)); render(); toast('Trolley cleared.'); break }
     case 'untick': { const items=shoppingItems(UI.week).filter(i=>i.done);
       for(const i of items){ if(i.kind==='extra'){ const x=S.extras.find(y=>y.id===i.extraId); if(x){ x.done=false; Store.set('extras',x.id,x) } } else { delete S.ticks[i.tick]; Store.del('ticks',i.tick) } } render(); break }
     case 'snav': UI.week=addDays(UI.week,7*(+t.dataset.d)); render(); break;
