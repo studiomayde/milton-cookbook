@@ -313,6 +313,8 @@ body.secsorting{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .ev .el{font-size:11px;color:var(--muted);margin-left:15px}
 .cd .m.ev2{font-size:9px}
 .cd .m.ev2:before{background:var(--dot,var(--fg))}
+.cd .m .tm{color:var(--muted);flex:none}
+.cd .m .tt2{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .calset{background:var(--soft);border-radius:8px;padding:22px 24px;display:flex;flex-direction:column;gap:14px;max-width:860px;margin-bottom:26px}
 .calset h2{font-family:var(--serif);font-weight:400;font-size:26px;margin:0}
 .calrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px}
@@ -964,6 +966,7 @@ function parseICS(text,cal){ const lines=icsUnfold(text).split('\n'); const evs=
     else if(name==='RECURRENCE-ID'){ const r=icsDate(val,params); if(r) cur.recur=r.d.getTime() }
     else if(name==='STATUS') cur.status=val.trim() }
   return evs.filter(e=>e.start&&e.status!=='CANCELLED') }
+const isPublicCal=u=>/\/ical\/[^/]+\/public\//i.test(String(u||''));
 const WDAY={SU:0,MO:1,TU:2,WE:3,TH:4,FR:5,SA:6};
 function expandEvent(e,from,to){ const s=e.start.d, dur=e.end?Math.max(0,e.end.d-s):(e.start.allDay?864e5:36e5); const out=[]; const push=d=>{ if(e.exdates.includes(d.getTime())) return; const en=new Date(d.getTime()+dur); if(en>from&&d<to) out.push({...e,s:d,e:en,allDay:e.start.allDay}) };
   const r=e.rrule; if(!r){ push(s); return out }
@@ -1001,18 +1004,18 @@ function evHTML(e,ds){ const multi=e.allDay&&(e.e-e.s)>864e5; const t=e.allDay?'
 function calSettingsHTML(){ const used=new Set(S.calCfg.map(c=>c.color)); const next=CAL_COLOURS.find(c=>!used.has(c))||CAL_COLOURS[0]; const pick=UI.calColour||next;
   return `<div class="calset"><div class="between"><h2>Calendars</h2>${S.calCfg.length?`<button class="link" data-act="calset">Done</button>`:''}</div>
     <p class="muted" style="margin:0;font-size:12px;line-height:1.6">In Google Calendar on a computer, open <b>Settings</b>, choose the calendar on the left, then copy <b>Secret address in iCal format</b> (under Integrate calendar). Paste it below. It stays private to the family link.</p>
-    ${S.calCfg.map(c=>`<div class="calrow"><i style="background:${c.color}"></i><b style="font-weight:500">${esc(c.name)}</b><span class="muted">${S.calErr[c.id]?'Couldn’t read this calendar. Check the address.':'Connected'}</span><button class="xbtn" data-act="calrm" data-id="${esc(c.id)}" aria-label="Remove ${esc(c.name)}">${ic('x')}</button></div>`).join('')}
+    ${S.calCfg.map(c=>`<div class="calrow"><i style="background:${c.color}"></i><b style="font-weight:500">${esc(c.name)}</b><span class="muted">${S.calErr[c.id]?'Couldn’t read this calendar. Check the address.':isPublicCal(c.url)?'Public address. Some events won’t show; swap in the secret address.':'Connected'}</span><button class="xbtn" data-act="calrm" data-id="${esc(c.id)}" aria-label="Remove ${esc(c.name)}">${ic('x')}</button></div>`).join('')}
     ${canWrite()?`<form class="stack" data-form="caladd" style="gap:10px"><input class="in" id="calname" placeholder="Name, e.g. Family" autocomplete="off" style="padding:10px 14px"><input class="in" id="calurl" placeholder="Paste the secret address (https://calendar.google.com/…/basic.ics)" autocomplete="off" style="padding:10px 14px">
       <div class="row" style="gap:8px"><span class="lbl">Colour</span>${CAL_COLOURS.map(c=>`<button type="button" class="swatch${c===pick?' on':''}" style="background:${c}" data-act="calcolour" data-c="${c}" aria-label="Colour"></button>`).join('')}</div>
       <button class="btn solid" type="submit" style="align-self:flex-start">${ic('plus')} Add calendar</button></form>`:''}</div>` }
-function viewCal(){ const has=S.calCfg.length; const show=UI.calSet||!has;
+function viewCal(){ const has=S.calCfg.length; const show=UI.calSet||!has; const pub=S.calCfg.filter(c=>isPublicCal(c.url));
   const head=`<div class="head"><div class="tg"><div class="kick">${esc(longDate(TODAY))}</div><h1 class="h1">Calendar</h1>${has?`<div class="sub">${S.calBusy&&!S.calAt?'Loading…':S.calCfg.map(c=>`<span style="display:inline-flex;align-items:center;gap:6px;margin-right:14px"><i style="width:8px;height:8px;border-radius:50%;background:${c.color};display:inline-block"></i>${esc(c.name)}</span>`).join('')}</div>`:''}</div>
     ${has?`<div class="row" style="gap:12px"><div class="seg"><button class="${UI.calMode==='upcoming'?'on':''}" data-act="calmode" data-m="upcoming">Upcoming</button><button class="${UI.calMode==='month'?'on':''}" data-act="calmode" data-m="month">Month</button></div><a class="btn" href="https://calendar.google.com/calendar/r/eventedit" target="_blank" rel="noopener">${ic('plus')} Add event</a><button class="btn icon" data-act="calset" aria-label="Calendar settings">${ic('cog')}</button></div>`:''}</div>`;
   if(!has) return head+calSettingsHTML();
   let body='';
   if(UI.calMode==='month'){ const first=parse(UI.calMonth), mth=first.getMonth(); let d=mondayOf(UI.calMonth), cells='';
     for(let i=0;i<42;i++){ const dd=parse(d); if(i>=35&&dd.getMonth()!==mth) break; const evs=evOn(d);
-      cells+=`<button class="cd${dd.getMonth()!==mth?' out':''}${d===UI.calDay?' sel':''}" data-act="calpick" data-date="${d}"><span class="n${d===TODAY?' today':''}">${dd.getDate()}</span>${evs.slice(0,3).map(e=>`<span class="m ev2" style="--dot:${calColour(e.cal)}">${esc(e.title||'')}</span>`).join('')}${evs.length>3?`<span class="m" style="color:var(--muted)">+${evs.length-3} more</span>`:''}${evs.length?`<span class="dots">${evs.slice(0,4).map(e=>`<i style="background:${calColour(e.cal)}"></i>`).join('')}</span>`:''}</button>`; d=addDays(d,1) }
+      cells+=`<button class="cd${dd.getMonth()!==mth?' out':''}${d===UI.calDay?' sel':''}" data-act="calpick" data-date="${d}"><span class="n${d===TODAY?' today':''}">${dd.getDate()}</span>${evs.slice(0,3).map(e=>`<span class="m ev2" style="--dot:${calColour(e.cal)}">${!e.allDay&&ymd(e.s)===d?`<span class="tm">${tfmt(e.s)}</span>`:''}<span class="tt2">${esc(e.title||'')}</span></span>`).join('')}${evs.length>3?`<span class="m" style="color:var(--muted)">+${evs.length-3} more</span>`:''}${evs.length?`<span class="dots">${evs.slice(0,4).map(e=>`<i style="background:${calColour(e.cal)}"></i>`).join('')}</span>`:''}</button>`; d=addDays(d,1) }
     const sel=evOn(UI.calDay);
     body=`<div class="between" style="margin-bottom:14px"><div class="seg"><button data-act="calmnav" data-d="-1" aria-label="Previous month">${ic('back')}</button><button data-act="calmtoday">${MONTHS[mth]} ${first.getFullYear()}</button><button data-act="calmnav" data-d="1" aria-label="Next month">${ic('right')}</button></div></div>
       <div class="cal">${['M','T','W','T','F','S','S'].map(x=>`<span class="wd">${x}</span>`).join('')}${cells}</div>
@@ -1020,7 +1023,8 @@ function viewCal(){ const has=S.calCfg.length; const show=UI.calSet||!has;
   else { let rows=''; for(let i=0;i<60;i++){ const d=addDays(TODAY,i); const evs=evOn(d); if(!evs.length&&i) continue; const dd=parse(d);
       rows+=`<div class="agd${d===TODAY?' today':''}"><div class="dl"><b>${dd.getDate()}</b><span>${d===TODAY?'Today':DAYS_LONG[dd.getDay()].slice(0,3)}<br>${MONTHS[dd.getMonth()].slice(0,3)}</span></div><div class="agev">${evs.length?evs.map(e=>evHTML(e,d)).join(''):'<span class="muted" style="font-size:12px;padding:5px 0">Nothing on today.</span>'}</div></div>` }
     body=`<div class="ag">${rows}${S.calBusy&&!S.calAt?'<p class="muted">Loading your calendars…</p>':''}</div>` }
-  return head+(show?calSettingsHTML():'')+body }
+  const note=pub.length&&!show?`<p class="muted" style="margin:0 0 18px;font-size:12px;line-height:1.6">${pub.map(c=>esc(c.name)).join(', ')} is using Google’s public address, so some events are missing. Open <button class="link" data-act="calset">calendar settings</button>, remove it, and add the <b>Secret address in iCal format</b> instead.</p>`:'';
+  return head+(show?calSettingsHTML():'')+note+body }
 function calWidget(){ if(!S.calCfg.length) return ''; const rows=[]; for(let i=0;i<14&&rows.length<6;i++){ const d=addDays(TODAY,i); for(const e of evOn(d)){ if(rows.length>=6) break; if(i>0&&e.s<parse(d)) continue; rows.push({d,e}) } }
   return `<div class="wg wcal"><div class="wh"><div><div class="kick">Next two weeks</div><h2>Coming up</h2></div><button class="link wl" data-act="go" data-view="cal">Calendar</button></div><div>${rows.length?rows.map(({d,e})=>{ const dd=parse(d); return `<button class="wrow wbig" data-act="caldash" data-date="${d}"><span class="wd${d===TODAY?' today':''}">${d===TODAY?'Today':DAYS_LONG[dd.getDay()].slice(0,3)+' '+dd.getDate()}</span><span class="wt"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${calColour(e.cal)};margin-right:8px"></span>${esc(e.title||'(No title)')}</span><span class="wn">${e.allDay?'All day':tfmt(e.s)}</span></button>` }).join(''):`<p class="muted" style="margin:0">${S.calBusy&&!S.calAt?'Loading…':'Nothing on in the next two weeks.'}</p>`}</div></div>` }
 
@@ -1299,6 +1303,7 @@ document.addEventListener('submit',async e=>{
   if(f==='col'){ const v=$('#newcol').value.trim(); UI.addingCol=false; if(v){ const cid=slug(v)+'-'+rid().slice(-4); const c={name:v,order:S.cols.length}; S.cols.push(Object.assign({id:cid},c)); Store.set('collections',cid,c); openList('col',cid) } else render() }
   if(f==='sidelist'){ const v=$('#sidelist').value.trim(); UI.addingList=false; if(v) newList(v); else render(); return }
   if(f==='caladd'){ const name=$('#calname').value.trim(), url=$('#calurl').value.trim(); if(!/^(https?|webcal):\/\//i.test(url)){ toast('Paste the secret address that starts with https://'); return }
+    if(isPublicCal(url)){ toast('That’s the public address, which leaves events out. Copy “Secret address in iCal format” instead.'); return }
     const used=new Set(S.calCfg.map(c=>c.color)); const color=UI.calColour||CAL_COLOURS.find(c=>!used.has(c))||CAL_COLOURS[0]; const c={id:rid().slice(-8),name:name||'Calendar',url,color};
     S.calCfg=S.calCfg.concat([c]); UI.calColour=null; Store.set('settings','calendars',{cals:S.calCfg}); $('#calname').value=''; $('#calurl').value=''; UI.calSet=false; toast('Calendar added. Loading events…'); render(); await loadCalendars(true); if(S.calErr[c.id]){ UI.calSet=true; toast("Couldn't read that calendar. Check you copied the secret iCal address."); render() } return }
   if(f==='newlist'){ const v=$('#newlist').value.trim(); if(!v) return; $('#newlist').value=''; newList(v); return }
