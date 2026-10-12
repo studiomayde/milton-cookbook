@@ -299,31 +299,8 @@ body.secsorting{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .lcard.dragging{opacity:.4}
 .lcard.drop-before{box-shadow:-4px 0 0 var(--fg)}
 .lcard.drop-after{box-shadow:4px 0 0 var(--fg)}
-.ag{display:flex;flex-direction:column;max-width:860px}
-.agd{display:grid;grid-template-columns:120px minmax(0,1fr);gap:18px;padding:16px 0;border-top:1px solid var(--line)}
-.agd .dl{display:flex;align-items:baseline;gap:10px}
-.agd .dl b{font-family:var(--serif);font-weight:400;font-size:32px;line-height:.9}
-.agd .dl span{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);line-height:1.3}
-.agd.today .dl span{color:var(--fg);font-weight:500}
-.agev{display:flex;flex-direction:column;gap:2px}
-.ev{display:grid;grid-template-columns:86px minmax(0,1fr);gap:12px;align-items:baseline;padding:5px 0;font-size:13px}
-.ev .et{font-size:11px;color:var(--muted);white-space:nowrap}
-.ev .en{display:flex;align-items:baseline;gap:8px;min-width:0}
-.ev .en i{width:7px;height:7px;border-radius:50%;flex:none;transform:translateY(-1px)}
-.ev .el{font-size:11px;color:var(--muted);margin-left:15px}
-.cd .m.ev2{font-size:9px}
-.cd .m.ev2:before{background:var(--dot,var(--fg))}
-.cd .m .tm{color:var(--muted);flex:none}
-.cd .m .tt2{overflow:hidden;text-overflow:ellipsis;min-width:0}
-.calset{background:var(--soft);border-radius:8px;padding:22px 24px;display:flex;flex-direction:column;gap:14px;max-width:860px;margin-bottom:26px}
-.calset h2{font-family:var(--serif);font-weight:400;font-size:26px;margin:0}
-.calrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px}
-.calrow i{width:10px;height:10px;border-radius:50%;flex:none}
-.calrow .muted{font-size:11px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .swatch{width:22px;height:22px;border-radius:50%;border:2px solid transparent;flex:none}
 .swatch.on{border-color:var(--fg);box-shadow:inset 0 0 0 2px var(--bg)}
-.wcal{margin-bottom:20px}
-.wcal .wrow .wd{width:92px}
 .lwrap{max-width:760px;display:flex;flex-direction:column;gap:24px}
 .progress{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin:6px 0 20px}
 .progress i{display:block;height:100%;background:var(--fg)}
@@ -440,11 +417,6 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .lnote{width:110px;font-size:12px !important}
   .lit .itmain{flex:0 1 auto;max-width:55%}
   .lacts{gap:20px}
-  .agd{grid-template-columns:1fr;gap:6px;padding:14px 0}
-  .agd .dl b{font-size:26px}
-  .ev{grid-template-columns:70px minmax(0,1fr);font-size:13px}
-  .calset{padding:16px}
-  .wcal .wrow .wd{width:74px}
   .lsec{padding:16px 16px 8px}
   .dgrid{grid-template-columns:1fr;grid-auto-rows:auto;gap:14px}
   .wg{padding:18px}
@@ -536,8 +508,8 @@ function mins(s){if(!s)return 0;s=String(s).toLowerCase();let m=0;const h=s.matc
 function fmtMins(m){if(!m)return'';if(m<60)return m+' min';const h=Math.floor(m/60),r=m%60;return h+' hr'+(r?' '+r:'')}
 
 /* ---------- state ---------- */
-const S={calCfg:[],calEv:[],calAt:0,calBusy:false,calErr:{},lists:[],litems:[],recipes:[],cols:[],plan:{},ticks:{},extras:[],regs:[],qty:{},qtyLocal:{},readOnly:false,mode:'loading',loaded:{}};
-const UI={view:'dash',list:{kind:'all'},status:'all',sort:'new',q:'',rid:null,editId:null,pmode:'week',week:mondayOf(TODAY),day:TODAY,month:TODAY.slice(0,8)+'01',extraCols:[],extraDay:[],swap:null,sheet:null,cook:{},trolley:true,regEdit:false,regGroup:'Food',draft:null,addingCol:false,calMode:'upcoming',calMonth:TODAY.slice(0,8)+'01',calDay:TODAY,calSet:false,lid:null,ldone:true,lrename:false};
+const S={lists:[],litems:[],recipes:[],cols:[],plan:{},ticks:{},extras:[],regs:[],qty:{},qtyLocal:{},readOnly:false,mode:'loading',loaded:{}};
+const UI={view:'dash',list:{kind:'all'},status:'all',sort:'new',q:'',rid:null,editId:null,pmode:'week',week:mondayOf(TODAY),day:TODAY,month:TODAY.slice(0,8)+'01',extraCols:[],extraDay:[],swap:null,sheet:null,cook:{},trolley:true,regEdit:false,regGroup:'Food',draft:null,addingCol:false,lid:null,ldone:true,lrename:false};
 let sample=null;
 const photosHere=()=>true;
 const SB_URL='https://ppqrphmaixfzzlkpibjt.supabase.co';
@@ -707,7 +679,7 @@ function toggleTick(it){
   S.ticks[it.tick]={at:Date.now()}; render(); return Store.set('ticks',it.tick,{at:Date.now()}) }
 
 /* ---------- navigation ---------- */
-function go(view,extra){ if(view==='cal'||view==='dash') loadCalendars(); document.body.classList.remove('menuopen'); UI.view=view; Object.assign(UI,extra||{}); UI.sheet=null; UI.swap=view==='planner'?UI.swap:null; render(); window.scrollTo(0,0) }
+function go(view,extra){ document.body.classList.remove('menuopen'); UI.view=view; Object.assign(UI,extra||{}); UI.sheet=null; UI.swap=view==='planner'?UI.swap:null; render(); window.scrollTo(0,0) }
 function openList(kind,id){ UI.list={kind,id}; UI.status='all'; go('home') }
 
 /* ---------- render: chrome ---------- */
@@ -734,7 +706,7 @@ function renderSide(){ setTimeout(()=>{ UI.justOpened=null },0);
   const FK={lists:'lists',home:'recipes'};
   $('#side').innerHTML=`
     <button class="logo" data-act="go" data-view="dash">Milton Manor</button>
-    <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Groceries','apple',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn],['cal','Calendar','clock',UI.view==='cal']].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
+    <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Groceries','apple',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn]].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
       return `<div class="secg${open?' open':''}"><div class="secrow"><button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>${k?`<button class="fx" data-act="fold" data-k="${k}" aria-expanded="${!!open}" aria-label="${open?'Hide':'Show'} ${x[1]}">${ic('down')}</button>`:''}</div>${open?`<div class="nav subnav${UI.justOpened===k?' anim':''}">${SUB[x[0]]}</div>`:''}</div>` }).join('')}</div>`;
 }
 function renderTop(){
@@ -948,86 +920,6 @@ function viewShopping(){
     </aside></div>`;
 }
 
-/* ---------- calendar (read from Google Calendar's private address) ---------- */
-const CAL_COLOURS=['#111111','#9a7b62','#5f8067','#6a6f99','#b0675f','#8b6b94'];
-function icsUnfold(t){ return String(t).replace(/\r\n/g,'\n').replace(/\n[ \t]/g,'') }
-function icsVal(v){ return String(v||'').replace(/\\n/gi,'\n').replace(/\\([,;\\])/g,'$1').trim() }
-function icsDate(v,params){ v=String(v||'').trim(); const allDay=/VALUE=DATE(?!-)/i.test(params||'')||/^\d{8}$/.test(v);
-  const m=v.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z)?)?/); if(!m) return null;
-  let d; if(m[7]) d=new Date(Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6])); else d=new Date(+m[1],+m[2]-1,+m[3],+(m[4]||0),+(m[5]||0),+(m[6]||0));
-  return {d,allDay:allDay&&!m[4]} }
-function parseICS(text,cal){ const lines=icsUnfold(text).split('\n'); const evs=[]; let cur=null;
-  for(const ln of lines){ if(ln==='BEGIN:VEVENT'){ cur={cal:cal.id,exdates:[]}; continue } if(ln==='END:VEVENT'){ if(cur) evs.push(cur); cur=null; continue } if(!cur) continue;
-    const i=ln.indexOf(':'); if(i<0) continue; const head=ln.slice(0,i), val=ln.slice(i+1); const [name,...ps]=head.split(';'); const params=ps.join(';');
-    if(name==='SUMMARY') cur.title=icsVal(val); else if(name==='LOCATION') cur.loc=icsVal(val); else if(name==='UID') cur.uid=val.trim();
-    else if(name==='DTSTART') cur.start=icsDate(val,params); else if(name==='DTEND') cur.end=icsDate(val,params);
-    else if(name==='RRULE') cur.rrule=Object.fromEntries(val.split(';').map(x=>x.split('=')));
-    else if(name==='EXDATE') val.split(',').forEach(x=>{ const e=icsDate(x,params); if(e) cur.exdates.push(e.d.getTime()) });
-    else if(name==='RECURRENCE-ID'){ const r=icsDate(val,params); if(r) cur.recur=r.d.getTime() }
-    else if(name==='STATUS') cur.status=val.trim() }
-  return evs.filter(e=>e.start&&e.status!=='CANCELLED') }
-const isPublicCal=u=>/\/ical\/[^/]+\/public\//i.test(String(u||''));
-const WDAY={SU:0,MO:1,TU:2,WE:3,TH:4,FR:5,SA:6};
-function expandEvent(e,from,to){ const s=e.start.d, dur=e.end?Math.max(0,e.end.d-s):(e.start.allDay?864e5:36e5); const out=[]; const push=d=>{ if(e.exdates.includes(d.getTime())) return; const en=new Date(d.getTime()+dur); if(en>from&&d<to) out.push({...e,s:d,e:en,allDay:e.start.allDay}) };
-  const r=e.rrule; if(!r){ push(s); return out }
-  const freq=r.FREQ, iv=Math.max(1,+(r.INTERVAL||1)), count=r.COUNT?+r.COUNT:Infinity; const until=r.UNTIL?(icsDate(r.UNTIL)||{}).d:null; let n=0;
-  const ok=d=>{ if(until&&d>until) return false; if(n>=count) return false; return true };
-  const at=(y,mo,da)=>new Date(y,mo,da,s.getHours(),s.getMinutes(),s.getSeconds());
-  const days=r.BYDAY?r.BYDAY.split(','):null;
-  let k0=0; if(!isFinite(count)&&from>s){ const span=(from-s)/864e5; const per=freq==='DAILY'?iv:freq==='WEEKLY'?7*iv:freq==='MONTHLY'?31*iv:366*iv; k0=Math.max(0,Math.floor(span/per)-2) }
-  for(let k=k0;k<k0+1500;k++){ let batch=[];
-    if(freq==='DAILY') batch=[at(s.getFullYear(),s.getMonth(),s.getDate()+k*iv)];
-    else if(freq==='WEEKLY'){ const ws=at(s.getFullYear(),s.getMonth(),s.getDate()-((s.getDay()+6)%7)+k*7*iv); batch=(days||[Object.keys(WDAY).find(x=>WDAY[x]===s.getDay())]).map(x=>{ const w=WDAY[x.slice(-2)]; return at(ws.getFullYear(),ws.getMonth(),ws.getDate()+((w+6)%7)) }).sort((a,b)=>a-b) }
-    else if(freq==='MONTHLY'){ const y=s.getFullYear(), mo=s.getMonth()+k*iv;
-      if(days){ batch=days.map(x=>{ const mm=x.match(/^(-?\d+)?([A-Z]{2})$/); const w=WDAY[mm[2]], nth=+(mm[1]||1); if(nth>0){ const f=new Date(y,mo,1); let dd=1+((w-f.getDay()+7)%7)+(nth-1)*7; return at(y,mo,dd) } const l=new Date(y,mo+1,0); let dd=l.getDate()-((l.getDay()-w+7)%7); return at(y,mo,dd) }).filter(d=>d.getMonth()===((mo%12)+12)%12) }
-      else { const dm=r.BYMONTHDAY?+r.BYMONTHDAY:s.getDate(); const d=at(y,mo,dm); if(d.getDate()===dm) batch=[d] } }
-    else if(freq==='YEARLY'){ const d=at(s.getFullYear()+k*iv,s.getMonth(),s.getDate()); if(d.getDate()===s.getDate()) batch=[d] }
-    else { push(s); return out }
-    let stop=false; for(const d of batch){ if(d<s) continue; if(!ok(d)||d>=to){ stop=true; break } n++; push(d) } if(stop) break }
-  return out }
-function buildEvents(raw,from,to){ const over={}; raw.filter(e=>e.recur!=null).forEach(e=>{ (over[e.uid]=over[e.uid]||new Set()).add(e.recur) });
-  let out=[]; for(const e of raw){ if(e.recur!=null){ out=out.concat(expandEvent({...e,rrule:null},from,to)); continue }
-    let occ=expandEvent(e,from,to); if(over[e.uid]) occ=occ.filter(o=>!over[e.uid].has(o.s.getTime())); out=out.concat(occ) }
-  return out.sort((a,b)=>(b.allDay-a.allDay)||(a.s-b.s)) }
-let calRaw={};
-async function loadCalendars(force){ if(S.mode!=='cloud'||!S.calCfg.length){ S.calEv=[]; return } if(S.calBusy) return; if(!force&&Date.now()-S.calAt<10*60*1000) return;
-  S.calBusy=true; const from=new Date(parse(TODAY).getTime()-45*864e5), to=new Date(parse(TODAY).getTime()+400*864e5);
-  await Promise.all(S.calCfg.map(async c=>{ try{ const r=await fetch(FN_URL,{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({key:KEY,url:c.url,raw:true})}); const o=await r.json().catch(()=>null);
-      if(!r.ok||!o||!o.text){ S.calErr[c.id]=o&&o.error||('status '+r.status); return } delete S.calErr[c.id]; calRaw[c.id]=parseICS(o.text,c) }catch(err){ S.calErr[c.id]='offline' } }));
-  const ids=new Set(S.calCfg.map(c=>c.id)); S.calEv=buildEvents([].concat(...Object.keys(calRaw).filter(k=>ids.has(k)).map(k=>calRaw[k])),from,to); S.calAt=Date.now(); S.calBusy=false; if(UI.view!=='edit') render() }
-setInterval(()=>loadCalendars(),10*60*1000);
-const calColour=id=>{ const c=S.calCfg.find(x=>x.id===id); return c&&c.color||'#111' };
-function evOn(ds){ const a=parse(ds), b=new Date(a.getTime()+864e5); return S.calEv.filter(e=>e.s<b&&e.e>a) }
-const tfmt=d=>{ let h=d.getHours(), m=d.getMinutes(); const ap=h<12?'am':'pm'; h=h%12||12; return h+(m?':'+String(m).padStart(2,'0'):'')+ap };
-function evHTML(e,ds){ const multi=e.allDay&&(e.e-e.s)>864e5; const t=e.allDay?'All day':(ymd(e.s)===ds?tfmt(e.s):'Cont.')+(e.allDay?'':' – '+tfmt(e.e));
-  return `<div class="ev"><span class="et">${e.allDay?'All day':tfmt(e.s)}</span><span><span class="en"><i style="background:${calColour(e.cal)}"></i><span>${esc(e.title||'(No title)')}</span></span>${e.loc?`<div class="el">${esc(e.loc)}</div>`:''}</span></div>` }
-function calSettingsHTML(){ const used=new Set(S.calCfg.map(c=>c.color)); const next=CAL_COLOURS.find(c=>!used.has(c))||CAL_COLOURS[0]; const pick=UI.calColour||next;
-  return `<div class="calset"><div class="between"><h2>Calendars</h2>${S.calCfg.length?`<button class="link" data-act="calset">Done</button>`:''}</div>
-    <p class="muted" style="margin:0;font-size:12px;line-height:1.6">In Google Calendar on a computer, open <b>Settings</b>, choose the calendar on the left, then copy <b>Secret address in iCal format</b> (under Integrate calendar). Paste it below. It stays private to the family link.</p>
-    ${S.calCfg.map(c=>`<div class="calrow"><i style="background:${c.color}"></i><b style="font-weight:500">${esc(c.name)}</b><span class="muted">${S.calErr[c.id]?'Couldn’t read this calendar. Check the address.':isPublicCal(c.url)?'Public address. Some events won’t show; swap in the secret address.':'Connected'}</span><button class="xbtn" data-act="calrm" data-id="${esc(c.id)}" aria-label="Remove ${esc(c.name)}">${ic('x')}</button></div>`).join('')}
-    ${canWrite()?`<form class="stack" data-form="caladd" style="gap:10px"><input class="in" id="calname" placeholder="Name, e.g. Family" autocomplete="off" style="padding:10px 14px"><input class="in" id="calurl" placeholder="Paste the secret address (https://calendar.google.com/…/basic.ics)" autocomplete="off" style="padding:10px 14px">
-      <div class="row" style="gap:8px"><span class="lbl">Colour</span>${CAL_COLOURS.map(c=>`<button type="button" class="swatch${c===pick?' on':''}" style="background:${c}" data-act="calcolour" data-c="${c}" aria-label="Colour"></button>`).join('')}</div>
-      <button class="btn solid" type="submit" style="align-self:flex-start">${ic('plus')} Add calendar</button></form>`:''}</div>` }
-function viewCal(){ const has=S.calCfg.length; const show=UI.calSet||!has; const pub=S.calCfg.filter(c=>isPublicCal(c.url));
-  const head=`<div class="head"><div class="tg"><div class="kick">${esc(longDate(TODAY))}</div><h1 class="h1">Calendar</h1>${has?`<div class="sub">${S.calBusy&&!S.calAt?'Loading…':S.calCfg.map(c=>`<span style="display:inline-flex;align-items:center;gap:6px;margin-right:14px"><i style="width:8px;height:8px;border-radius:50%;background:${c.color};display:inline-block"></i>${esc(c.name)}</span>`).join('')}</div>`:''}</div>
-    ${has?`<div class="row" style="gap:12px"><div class="seg"><button class="${UI.calMode==='upcoming'?'on':''}" data-act="calmode" data-m="upcoming">Upcoming</button><button class="${UI.calMode==='month'?'on':''}" data-act="calmode" data-m="month">Month</button></div><a class="btn" href="https://calendar.google.com/calendar/r/eventedit" target="_blank" rel="noopener">${ic('plus')} Add event</a><button class="btn icon" data-act="calset" aria-label="Calendar settings">${ic('cog')}</button></div>`:''}</div>`;
-  if(!has) return head+calSettingsHTML();
-  let body='';
-  if(UI.calMode==='month'){ const first=parse(UI.calMonth), mth=first.getMonth(); let d=mondayOf(UI.calMonth), cells='';
-    for(let i=0;i<42;i++){ const dd=parse(d); if(i>=35&&dd.getMonth()!==mth) break; const evs=evOn(d);
-      cells+=`<button class="cd${dd.getMonth()!==mth?' out':''}${d===UI.calDay?' sel':''}" data-act="calpick" data-date="${d}"><span class="n${d===TODAY?' today':''}">${dd.getDate()}</span>${evs.slice(0,3).map(e=>`<span class="m ev2" style="--dot:${calColour(e.cal)}">${!e.allDay&&ymd(e.s)===d?`<span class="tm">${tfmt(e.s)}</span>`:''}<span class="tt2">${esc(e.title||'')}</span></span>`).join('')}${evs.length>3?`<span class="m" style="color:var(--muted)">+${evs.length-3} more</span>`:''}${evs.length?`<span class="dots">${evs.slice(0,4).map(e=>`<i style="background:${calColour(e.cal)}"></i>`).join('')}</span>`:''}</button>`; d=addDays(d,1) }
-    const sel=evOn(UI.calDay);
-    body=`<div class="between" style="margin-bottom:14px"><div class="seg"><button data-act="calmnav" data-d="-1" aria-label="Previous month">${ic('back')}</button><button data-act="calmtoday">${MONTHS[mth]} ${first.getFullYear()}</button><button data-act="calmnav" data-d="1" aria-label="Next month">${ic('right')}</button></div></div>
-      <div class="cal">${['M','T','W','T','F','S','S'].map(x=>`<span class="wd">${x}</span>`).join('')}${cells}</div>
-      <div class="ag" style="margin-top:22px"><div class="agd${UI.calDay===TODAY?' today':''}"><div class="dl"><b>${parse(UI.calDay).getDate()}</b><span>${DAYS_LONG[parse(UI.calDay).getDay()].slice(0,3)}<br>${MONTHS[parse(UI.calDay).getMonth()].slice(0,3)}</span></div><div class="agev">${sel.length?sel.map(e=>evHTML(e,UI.calDay)).join(''):'<span class="muted" style="font-size:12px;padding:5px 0">Nothing on.</span>'}</div></div></div>` }
-  else { let rows=''; for(let i=0;i<60;i++){ const d=addDays(TODAY,i); const evs=evOn(d); if(!evs.length&&i) continue; const dd=parse(d);
-      rows+=`<div class="agd${d===TODAY?' today':''}"><div class="dl"><b>${dd.getDate()}</b><span>${d===TODAY?'Today':DAYS_LONG[dd.getDay()].slice(0,3)}<br>${MONTHS[dd.getMonth()].slice(0,3)}</span></div><div class="agev">${evs.length?evs.map(e=>evHTML(e,d)).join(''):'<span class="muted" style="font-size:12px;padding:5px 0">Nothing on today.</span>'}</div></div>` }
-    body=`<div class="ag">${rows}${S.calBusy&&!S.calAt?'<p class="muted">Loading your calendars…</p>':''}</div>` }
-  const note=pub.length&&!show?`<p class="muted" style="margin:0 0 18px;font-size:12px;line-height:1.6">${pub.map(c=>esc(c.name)).join(', ')} is using Google’s public address, so some events are missing. Open <button class="link" data-act="calset">calendar settings</button>, remove it, and add the <b>Secret address in iCal format</b> instead.</p>`:'';
-  return head+(show?calSettingsHTML():'')+note+body }
-function calWidget(){ if(!S.calCfg.length) return ''; const rows=[]; for(let i=0;i<14&&rows.length<6;i++){ const d=addDays(TODAY,i); for(const e of evOn(d)){ if(rows.length>=6) break; if(i>0&&e.s<parse(d)) continue; rows.push({d,e}) } }
-  return `<div class="wg wcal"><div class="wh"><div><div class="kick">Next two weeks</div><h2>Coming up</h2></div><button class="link wl" data-act="go" data-view="cal">Calendar</button></div><div>${rows.length?rows.map(({d,e})=>{ const dd=parse(d); return `<button class="wrow wbig" data-act="caldash" data-date="${d}"><span class="wd${d===TODAY?' today':''}">${d===TODAY?'Today':DAYS_LONG[dd.getDay()].slice(0,3)+' '+dd.getDate()}</span><span class="wt"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${calColour(e.cal)};margin-right:8px"></span>${esc(e.title||'(No title)')}</span><span class="wn">${e.allDay?'All day':tfmt(e.s)}</span></button>` }).join(''):`<p class="muted" style="margin:0">${S.calBusy&&!S.calAt?'Loading…':'Nothing on in the next two weeks.'}</p>`}</div></div>` }
-
 /* ---------- home ---------- */
 function viewDash(){
   const wk=mondayOf(TODAY); const hr=new Date().getHours(); const hello=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
@@ -1049,7 +941,7 @@ function viewDash(){
     ${recent.length?`<div class="wthumbs">${recent.map(r=>`<button class="wthumb" data-act="open" data-id="${r.id}"><span class="pic">${r.photo?`<img src="${r.photo}" alt="">`:`<span class="ph">${esc((r.title||'?').charAt(0))}</span>`}</span><span class="t">${esc(r.title)}</span></button>`).join('')}</div>`:''}
     <div class="row"><button class="btn" data-act="surprise">${ic('shuffle')} Surprise me</button>${canWrite()?`<button class="btn" data-act="new">${ic('plus')} New recipe</button>`:''}</div></div>`;
   return `<div class="head"><div class="tg"><div class="kick">${esc(longDate(TODAY))}</div><h1 class="h1">${hello}</h1></div></div>
-    ${calWidget()}<div class="dgrid">${lists}${shop}${meals}${recipes}</div>`;
+    <div class="dgrid">${lists}${shop}${meals}${recipes}</div>`;
 }
 
 /* ---------- household lists ---------- */
@@ -1140,7 +1032,7 @@ function render(){
   const locked=S.mode==='nokey'||S.mode==='badkey'; document.body.classList.toggle('locked',locked);
   if(locked){ $('#gate').innerHTML=`<div class="box"><div class="kick">Milton Manor</div><div class="serif">${S.mode==='nokey'?'Open Milton Manor from the family link':'This link no longer opens Milton Manor'}</div><p class="muted" style="margin:0;font-size:14px">${S.mode==='nokey'?'Ask May to send you the link. Once you open it on this device, it will remember you.':'Ask May for the current family link.'}</p></div>`; return }
   renderSide(); renderTop();
-  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():UI.view==='dash'?viewDash():UI.view==='cal'?viewCal():viewShopping();
+  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():UI.view==='dash'?viewDash():viewShopping();
   $('#view').innerHTML=v;
   for(const id in keepVals){ const el=document.getElementById(id); if(el) el.value=keepVals[id] }
   $('#sheet').innerHTML=sheetHTML();
@@ -1181,14 +1073,6 @@ document.addEventListener('click',async e=>{
     case 'delsec': { const L=S.lists.find(x=>x.id===UI.sheet.lid); if(L){ const sid=UI.sheet.sec; const sc=secsOf(L).find(x=>x.id===sid); S.litems.filter(i=>i.list===L.id&&i.sec===sid).forEach(i=>Store.del('litems',i.id)); S.litems=S.litems.filter(i=>!(i.list===L.id&&i.sec===sid)); L.secs=secsOf(L).filter(x=>x.id!==sid); Store.set('lists',L.id,L); toast(`Deleted ${sc?sc.name:'the heading'}.`) } UI.sheet=null; render(); break }
     case 'listfavs': UI.lfav=true; UI.lrename=false; go('lists',{lid:null}); break;
     case 'lfav': { const L=S.lists.find(x=>x.id===UI.lid); if(!L) break; L.fav=!L.fav; render(); Store.set('lists',L.id,L); toast(L.fav?'Added to favourites.':'Removed from favourites.'); break }
-    case 'calmode': UI.calMode=t.dataset.m; render(); break;
-    case 'calset': UI.calSet=!UI.calSet; render(); break;
-    case 'calcolour': UI.calColour=t.dataset.c; render(); break;
-    case 'calpick': UI.calDay=t.dataset.date; render(); break;
-    case 'calmnav': { const d=parse(UI.calMonth); d.setMonth(d.getMonth()+(+t.dataset.d)); UI.calMonth=ymd(d).slice(0,8)+'01'; render(); break }
-    case 'calmtoday': UI.calMonth=TODAY.slice(0,8)+'01'; UI.calDay=TODAY; render(); break;
-    case 'caldash': UI.calMode='month'; UI.calDay=t.dataset.date; UI.calMonth=t.dataset.date.slice(0,8)+'01'; go('cal'); break;
-    case 'calrm': { S.calCfg=S.calCfg.filter(c=>c.id!==id); delete calRaw[id]; Store.set('settings','calendars',{cals:S.calCfg}); loadCalendars(true); render(); break }
     case 'openlist': if(!id) UI.lfav=false; UI.addingSec=false; UI.secRename=null; UI.lrename=false; go('lists',{lid:id||null}); break;
     case 'menu': document.body.classList.toggle('menuopen'); break;
     case 'fold': { const k=t.dataset.k; const op=!FOLD[k]; for(const x of Object.keys(FOLD)) FOLD[x]=false; FOLD[k]=op; if(op) UI.justOpened=k; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
@@ -1302,10 +1186,6 @@ document.addEventListener('submit',async e=>{
   if(f==='rencol'){ const v=$('#rencol').value.trim(); const c=S.cols.find(x=>x.id===UI.renaming); UI.renaming=null; if(c&&v&&v!==c.name){ c.name=v; const doc={name:v,order:c.order||0}; Store.set('collections',c.id,doc); toast(`Renamed to ${v}.`) } render(); return }
   if(f==='col'){ const v=$('#newcol').value.trim(); UI.addingCol=false; if(v){ const cid=slug(v)+'-'+rid().slice(-4); const c={name:v,order:S.cols.length}; S.cols.push(Object.assign({id:cid},c)); Store.set('collections',cid,c); openList('col',cid) } else render() }
   if(f==='sidelist'){ const v=$('#sidelist').value.trim(); UI.addingList=false; if(v) newList(v); else render(); return }
-  if(f==='caladd'){ const name=$('#calname').value.trim(), url=$('#calurl').value.trim(); if(!/^(https?|webcal):\/\//i.test(url)){ toast('Paste the secret address that starts with https://'); return }
-    if(isPublicCal(url)){ toast('That’s the public address, which leaves events out. Copy “Secret address in iCal format” instead.'); return }
-    const used=new Set(S.calCfg.map(c=>c.color)); const color=UI.calColour||CAL_COLOURS.find(c=>!used.has(c))||CAL_COLOURS[0]; const c={id:rid().slice(-8),name:name||'Calendar',url,color};
-    S.calCfg=S.calCfg.concat([c]); UI.calColour=null; Store.set('settings','calendars',{cals:S.calCfg}); $('#calname').value=''; $('#calurl').value=''; UI.calSet=false; toast('Calendar added. Loading events…'); render(); await loadCalendars(true); if(S.calErr[c.id]){ UI.calSet=true; toast("Couldn't read that calendar. Check you copied the secret iCal address."); render() } return }
   if(f==='newlist'){ const v=$('#newlist').value.trim(); if(!v) return; $('#newlist').value=''; newList(v); return }
   if(f==='renlist'){ const v=$('#renlist').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); UI.lrename=false; if(L&&v&&v!==L.name){ L.name=v; Store.set('lists',L.id,L); toast(`Renamed to ${v}.`) } render(); return }
   if(f==='newsec'){ const v=$('#newsec').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); UI.addingSec=false; if(L&&v){ L.secs=secsOf(L).concat([{id:rid().slice(-8),name:v.charAt(0).toUpperCase()+v.slice(1)}]); Store.set('lists',L.id,L); const sid=L.secs[L.secs.length-1].id; render(); setTimeout(()=>{ const i=document.getElementById('si-'+sid); if(i) i.focus() },30) } else render(); return }
@@ -1531,7 +1411,6 @@ Store.init().then(()=>{
   Store.sub('plan',d=>{ S.plan={}; d.forEach(p=>S.plan[p.id]=p); if(UI.view!=='edit') soon() });
   Store.sub('ticks',d=>{ S.ticks={}; d.forEach(t=>S.ticks[t.id]=t); if(UI.view!=='edit') soon() });
   Store.sub('extras',d=>{ S.extras=d; if(UI.view!=='edit') soon() });
-  Store.sub('settings',d=>{ const c=d.find(x=>x.id==='calendars'); const was=JSON.stringify(S.calCfg); S.calCfg=(c&&Array.isArray(c.cals))?c.cals:[]; if(was!==JSON.stringify(S.calCfg)) loadCalendars(true); if(UI.view!=='edit') soon() });
   Store.sub('lists',d=>{ S.lists=d; if(UI.view!=='edit') soon(); else renderSide() });
   Store.sub('litems',d=>{ S.litems=d; if(UI.view!=='edit') soon() });
   Store.sub('regulars',d=>{ S.regs=d; if(UI.view!=='edit') soon() });

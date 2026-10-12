@@ -97,8 +97,8 @@ async function imageAsDataUrl(url: string): Promise<string | null> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { key, url: rawUrl, raw } = await req.json();
-    const url = typeof rawUrl === "string" ? rawUrl.trim().replace(/^webcal:\/\//i, "https://") : rawUrl;
+    const { key, url: rawUrl } = await req.json();
+    const url = typeof rawUrl === "string" ? rawUrl.trim() : rawUrl;
     const sbUrl = Deno.env.get("SUPABASE_URL")!;
     const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
     const ok = await fetch(`${sbUrl}/rest/v1/rpc/cookbook_check`, {
@@ -108,17 +108,6 @@ Deno.serve(async (req) => {
     }).then((r) => r.json()).catch(() => false);
     if (ok !== true) return json({ error: "not_allowed" }, 403);
     if (!url) return json({ error: "no_url" }, 400);
-
-    // Calendar mode: return a calendar (.ics) file as plain text so the app can draw it.
-    if (raw) {
-      try {
-        const r = await fetch(url, { headers: { Accept: "text/calendar,text/plain,*/*" } });
-        if (!r.ok) return json({ error: "fetch_failed", status: r.status }, 502);
-        const text = await r.text();
-        if (!/BEGIN:VCALENDAR/i.test(text)) return json({ error: "not_calendar" }, 422);
-        return json({ text: text.slice(0, 3_000_000) });
-      } catch { return json({ error: "fetch_failed" }, 502); }
-    }
 
     let html = "";
     try {

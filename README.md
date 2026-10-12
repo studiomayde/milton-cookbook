@@ -22,9 +22,6 @@ Populate recipe reads pasted text and photos right in the browser, for free. To 
 
 No API keys or payment needed. Most recipe websites publish their recipe in a standard format, which this reads, along with the recipe's photo.
 
-### 4. Calendar (optional, free)
-The Calendar page shows Google Calendars in Milton Manor's style. It uses the same free link reader (step 3).
-In Google Calendar on a computer: **Settings → choose the calendar → Integrate calendar → Secret address in iCal format**. Copy it, then in Milton Manor open **Calendar** and paste it in. The address is saved in the family database, never in this repository. Events are read-only here; add or edit them in Google Calendar.
 
 ## Changing the family key
 Make a new random key, then in the SQL Editor run:
