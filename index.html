@@ -537,7 +537,7 @@ const Store={data:{},subs:{},chains:{},pending:{},since:null,
     if(!sb){ S.mode='offline'; return }
     if(/access_token=|error_description=/.test(location.hash)){ await new Promise(r=>setTimeout(r,400)) }
     await token();
-    if(!SESSION){ this.data={}; S.mode='signin'; return }
+    if(!SESSION){ this.data={}; try{ localStorage.removeItem('milton-cache') }catch(e){} S.mode='signin'; return }
     let me=null; try{ me=await rpc('cookbook_whoami',{}) }catch(e){ if(e.status===401||e.status===403){ this.data={}; S.mode='signin'; return } }
     if(me&&!me.role){ this.data={}; S.me=me; S.mode='notmember'; return }
     S.me=me||{email:SESSION.user&&SESSION.user.email,role:'member'};
