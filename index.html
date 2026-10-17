@@ -946,7 +946,7 @@ function viewPeople(){ const owner=S.me&&S.me.role==='owner';
     <div class="lwrap">
       <form class="row" data-form="addperson" style="flex-wrap:nowrap"><label class="search" style="border-radius:6px">${ic('plus')}<input id="newperson" type="email" inputmode="email" placeholder="Add someone's email" autocomplete="off"></label><button class="btn solid" type="submit">Add</button></form>
       <div class="lsec">${S.people==null?'<p class="muted" style="margin:0">Loading…</p>':ps.map(p=>`<div class="it lit"><span class="nm" style="flex:1"><span>${esc(p.email)}</span>${p.role==='owner'?'<span class="rt">Owner</span>':''}${p.email===(S.me&&S.me.email)?'<span class="rt">You</span>':''}</span>${p.role!=='owner'?`<button class="${peopleRm===p.email?'btn sm dangerous':'xbtn'}" data-act="rmperson" data-email="${esc(p.email)}" aria-label="Remove ${esc(p.email)}">${peopleRm===p.email?'Remove?':ic('x')}</button>`:''}</div>`).join('')}</div>
-      <p class="muted" style="margin:0;font-size:12px;line-height:1.6">People you add sign in with their email: they type it in, tap the link we email them, and stay signed in on that device. Removing someone stops them straight away.</p>
+      <p class="muted" style="margin:0;font-size:12px;line-height:1.6">After you add someone, they open Milton Manor, tap <b>First time here? Create your password</b>, and choose their own password. They stay signed in on that device. Removing someone stops them straight away.</p>
     </div>` }
 
 /* ---------- home ---------- */
@@ -1058,15 +1058,16 @@ function sheetHTML(){
 function gateHTML(){
   if(S.mode==='offline') return `<div class="box"><div class="kick">Milton Manor</div><div class="serif">Can't connect right now</div><p class="muted" style="margin:0;font-size:14px">Check your internet connection, then refresh the page.</p></div>`;
   if(S.mode==='notmember') return `<div class="box"><div class="kick">Milton Manor</div><div class="serif">You're not on the list yet</div><p class="muted" style="margin:0;font-size:14px">${esc((S.me&&S.me.email)||'This email')} doesn't have access. Ask May to add you on the People page.</p><button class="btn" data-act="signout">Sign out</button></div>`;
-  if(UI.sentTo) return `<div class="box"><div class="kick">Milton Manor</div><div class="serif">Check your email</div><p class="muted" style="margin:0;font-size:14px;line-height:1.6">We've emailed <b style="color:var(--fg)">${esc(UI.sentTo)}</b>. It can take a minute to arrive.</p>
-    <p class="muted" style="margin:0;font-size:13px;line-height:1.6;text-align:left"><b style="color:var(--fg)">Using Milton Manor from your home screen?</b> Don't tap the link. Press and hold <b style="color:var(--fg)">Sign in</b> in the email, choose <b style="color:var(--fg)">Copy Link</b>, then paste it below. Otherwise, just tap the link.</p>
-    <form class="stack" data-form="signincode" style="width:100%;gap:10px;margin-top:2px"><input class="in" id="signincode" autocomplete="one-time-code" autocapitalize="off" spellcheck="false" placeholder="Paste the link (or code) from the email" required style="padding:12px 16px;text-align:center"><button class="btn solid wide" type="submit"${UI.sending?' disabled':''}>${UI.sending?'Signing in…':'Sign in'}</button></form>
+  const up=UI.authMode==='create';
+  return `<div class="box"><div class="kick">Milton Manor</div><div class="serif">${up?'Create your password':'Welcome home'}</div><p class="muted" style="margin:0;font-size:14px;line-height:1.6">${up?"First time here? Use the email May added for you and choose a password. You'll stay signed in on this device.":"Sign in with your email and password. You'll stay signed in on this device."}</p>
+    <form class="stack" data-form="signin" style="width:100%;gap:10px;margin-top:6px">
+      <input class="in" id="signinemail" type="email" inputmode="email" autocomplete="username" autocapitalize="off" placeholder="Email" required style="padding:12px 16px;text-align:center" value="${esc(UI.signinEmail||'')}">
+      <input class="in" id="signinpass" type="password" autocomplete="${up?'new-password':'current-password'}" placeholder="${up?'Choose a password (8+ characters)':'Password'}" required style="padding:12px 16px;text-align:center">
+      ${up?'<input class="in" id="signinpass2" type="password" autocomplete="new-password" placeholder="Type it again" required style="padding:12px 16px;text-align:center">':''}
+      <button class="btn solid wide" type="submit"${UI.sending?' disabled':''}>${UI.sending?(up?'Creating…':'Signing in…'):(up?'Create password and sign in':'Sign in')}</button></form>
     ${UI.signinErr?`<p style="margin:0;font-size:13px;color:var(--danger)">${esc(UI.signinErr)}</p>`:''}
-    <button class="link" data-act="signinagain">Use a different email</button></div>`;
-  return `<div class="box"><div class="kick">Milton Manor</div><div class="serif">Welcome home</div><p class="muted" style="margin:0;font-size:14px;line-height:1.6">Enter your email and we'll send you a link to sign in. You'll stay signed in on this device.</p>
-    <form class="stack" data-form="signin" style="width:100%;gap:10px;margin-top:6px"><input class="in" id="signinemail" type="email" inputmode="email" autocomplete="email" placeholder="Your email" required style="padding:12px 16px;text-align:center"><button class="btn solid wide" type="submit"${UI.sending?' disabled':''}>${UI.sending?'Sending…':'Send me a link'}</button></form>
-    ${UI.signinErr?`<p style="margin:0;font-size:13px;color:var(--danger)">${esc(UI.signinErr)}</p>`:''}
-    <button class="link" data-act="havelink">Already have the email? Paste the link</button></div>` }
+    <button class="link" data-act="authmode">${up?'Already have a password? Sign in':'First time here? Create your password'}</button>
+    ${up?'':'<p class="muted" style="margin:0;font-size:12px">Forgotten your password? Ask May to reset it.</p>'}</div>` }
 function render(){
   const a=document.activeElement; const fid=a&&a.id; let sel=null; try{ if(fid&&a.selectionStart!=null) sel=[a.selectionStart,a.selectionEnd] }catch(e){}
   const keepVals={}; document.querySelectorAll('#view input[id], #view textarea[id]').forEach(el=>{ if(!DRAFT_IDS[el.id]&&el.type!=='file'&&!el.classList.contains('qin')&&!el.classList.contains('lnote')) keepVals[el.id]=el.value });
@@ -1117,8 +1118,7 @@ document.addEventListener('click',async e=>{
     case 'lfav': { const L=S.lists.find(x=>x.id===UI.lid); if(!L) break; L.fav=!L.fav; render(); Store.set('lists',L.id,L); toast(L.fav?'Added to favourites.':'Removed from favourites.'); break }
     case 'openlist': if(!id) UI.lfav=false; UI.addingSec=false; UI.secRename=null; UI.lrename=false; go('lists',{lid:id||null}); break;
     case 'signout': { try{ await sb.auth.signOut() }catch(err){} try{ localStorage.removeItem('milton-cache') }catch(err){} location.replace(location.pathname); break }
-    case 'havelink': { let em=''; try{ em=localStorage.getItem('milton-signin-email')||'' }catch(err){} UI.sentTo=em||'your inbox'; UI.signinErr=''; render(); break }
-    case 'signinagain': UI.sentTo=null; UI.signinErr=''; UI.sending=false; render(); break;
+    case 'authmode': UI.authMode=UI.authMode==='create'?'signin':'create'; UI.signinErr=''; render(); break;
     case 'rmperson': { const em=t.dataset.email; if(!confirmRm(em)) break; try{ await rpc('cookbook_member_remove',{p_email:em}); toast(`${em} can no longer sign in.`); loadPeople() }catch(err){ toast("Couldn't remove that person.") } break }
     case 'menu': document.body.classList.toggle('menuopen'); break;
     case 'fold': { const k=t.dataset.k; const op=!FOLD[k]; for(const x of Object.keys(FOLD)) FOLD[x]=false; FOLD[k]=op; if(op) UI.justOpened=k; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
@@ -1232,16 +1232,17 @@ document.addEventListener('submit',async e=>{
   if(f==='rencol'){ const v=$('#rencol').value.trim(); const c=S.cols.find(x=>x.id===UI.renaming); UI.renaming=null; if(c&&v&&v!==c.name){ c.name=v; const doc={name:v,order:c.order||0}; Store.set('collections',c.id,doc); toast(`Renamed to ${v}.`) } render(); return }
   if(f==='col'){ const v=$('#newcol').value.trim(); UI.addingCol=false; if(v){ const cid=slug(v)+'-'+rid().slice(-4); const c={name:v,order:S.cols.length}; S.cols.push(Object.assign({id:cid},c)); Store.set('collections',cid,c); openList('col',cid) } else render() }
   if(f==='sidelist'){ const v=$('#sidelist').value.trim(); UI.addingList=false; if(v) newList(v); else render(); return }
-  if(f==='signin'){ const email=$('#signinemail').value.trim().toLowerCase(); if(!email) return; UI.signinErr=''; UI.sending=true; render();
-    try{ const ok=await rpc('cookbook_can_join',{p_email:email}); if(!ok){ UI.sending=false; UI.signinErr="That email isn't on the Milton Manor list. Ask May to add you."; render(); return }
-      const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname,shouldCreateUser:true}});
-      UI.sending=false; if(error){ UI.signinErr=/rate|limit|seconds/i.test(error.message)?'Only 2 sign-in emails can be sent an hour for now. Use the link in your latest email (tap Already have the email below), or try again in an hour.':/not authorized|authorized/i.test(error.message)?"Milton Manor can't email that address yet. May needs to finish the email setup in Supabase.":'Something went wrong sending the link. Try again in a moment.'; render(); return }
-      UI.sentTo=email; try{ localStorage.setItem('milton-signin-email',email) }catch(e){} render() }catch(err){ UI.sending=false; UI.signinErr="Can't connect right now. Check your connection and try again."; render() } return }
-  if(f==='signincode'){ const raw=$('#signincode').value.trim(); let args=null;
-    const m=raw.match(/[?&]token=([^&#\s]+)/); if(m){ const tm=raw.match(/[?&]type=([a-z_]+)/i); args={token_hash:decodeURIComponent(m[1]),type:(tm&&tm[1].toLowerCase()==='signup')?'signup':'magiclink'} }
-    else { const code=raw.replace(/\D/g,''); if(code.length>=6) args={email:UI.sentTo,token:code,type:'email'} }
-    if(!args){ UI.signinErr='Paste the whole link from the email.'; render(); return } UI.signinErr=''; UI.sending=true; render();
-    try{ const {error}=await sb.auth.verifyOtp(args); UI.sending=false; if(error){ UI.signinErr="That link didn't work. It may have been used already or expired. Tap Use a different email to get a fresh one, then copy it without tapping it."; render(); return } location.replace(location.pathname) }catch(err){ UI.sending=false; UI.signinErr="Can't connect right now. Check your connection and try again."; render() } return }
+  if(f==='signin'){ const email=$('#signinemail').value.trim().toLowerCase(), pass=$('#signinpass').value; UI.signinEmail=email; if(!email||!pass) return; const up=UI.authMode==='create';
+    if(up){ if(pass.length<8){ UI.signinErr='Choose a password with at least 8 characters.'; render(); return } if(pass!==$('#signinpass2').value){ UI.signinErr="The two passwords don't match."; render(); return } }
+    UI.signinErr=''; UI.sending=true; render();
+    try{ if(up){ const ok=await rpc('cookbook_can_join',{p_email:email}); if(!ok){ UI.sending=false; UI.signinErr="That email isn't on the Milton Manor list. Ask May to add you."; render(); return }
+        const {data,error}=await sb.auth.signUp({email,password:pass}); UI.sending=false;
+        if(error){ UI.signinErr=/already|registered|exists/i.test(error.message)?'That email already has a password. Sign in instead.':/password/i.test(error.message)?error.message:"Couldn't create your password. Try again in a moment."; render(); return }
+        if(!data.session){ UI.signinErr="Your password is set, but Supabase still wants an email check. Ask May to turn off email confirmation."; render(); return }
+        location.replace(location.pathname); return }
+      const {error}=await sb.auth.signInWithPassword({email,password:pass}); UI.sending=false;
+      if(error){ UI.signinErr=/invalid|credentials/i.test(error.message)?'Wrong email or password. First time? Tap Create your password.':/confirm/i.test(error.message)?'This email still needs confirming. Ask May to turn off email confirmation.':"Couldn't sign in. Try again in a moment."; render(); return }
+      location.replace(location.pathname) }catch(err){ UI.sending=false; UI.signinErr="Can't connect right now. Check your connection and try again."; render() } return }
   if(f==='addperson'){ const v=$('#newperson').value.trim(); if(!v) return; try{ await rpc('cookbook_member_add',{p_email:v}); $('#newperson').value=''; toast(`${v} can now sign in.`); loadPeople() }catch(err){ toast("Couldn't add that email. Check it and try again.") } return }
   if(f==='newlist'){ const v=$('#newlist').value.trim(); if(!v) return; $('#newlist').value=''; newList(v); return }
   if(f==='renlist'){ const v=$('#renlist').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); UI.lrename=false; if(L&&v&&v!==L.name){ L.name=v; Store.set('lists',L.id,L); toast(`Renamed to ${v}.`) } render(); return }
