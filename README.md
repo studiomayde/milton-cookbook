@@ -4,7 +4,7 @@ Our household home base: recipes, meal planner, shopping list and household list
 
 - The app is a single page, `index.html`, hosted on GitHub Pages.
 - Recipes, the meal plan and the shopping list live in Supabase and sync between devices every few seconds.
-- Nobody signs in. The cookbook opens from the family link, which carries a private key after `#k=`. The key is never stored in this repository; only its fingerprint is kept in the database.
+- Everyone signs in with an email link (no password) and stays signed in on that device. Only emails on the People list can sign in; May manages the list in the app (People, at the bottom of the menu).
 
 ## One-time setup
 
@@ -23,7 +23,11 @@ Populate recipe reads pasted text and photos right in the browser, for free. To 
 No API keys or payment needed. Most recipe websites publish their recipe in a standard format, which this reads, along with the recipe's photo.
 
 
-## Changing the family key
+## Sign-in setup
+Run `supabase/auth.sql` once in the SQL Editor. In **Authentication → URL Configuration**, set Site URL to the site address.
+Supabase's built-in email only reaches members of the Supabase team (2 emails an hour). To let anyone else on the People list sign in, connect a free email service under **Authentication → Emails → SMTP Settings** (for example Brevo or Resend).
+
+## Changing the family key (old, no longer used)
 Make a new random key, then in the SQL Editor run:
 
 ```sql
