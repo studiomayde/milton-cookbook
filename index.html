@@ -44,6 +44,8 @@ a{color:inherit}
 .logo{font-size:18px;letter-spacing:-.02em;padding:0 12px;background:none;text-align:left}
 .logo small{display:block;font-family:var(--serif);font-style:italic;font-size:12px;color:var(--muted);letter-spacing:0}
 .stack{display:flex;flex-direction:column;gap:8px}
+.acct{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding:16px 12px 0;border-top:1px solid var(--line);font-size:11px}
+.acct .muted{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .secnav{display:flex;flex-direction:column;border-top:1px solid var(--line)}
 .secg{border-bottom:1px solid var(--line)}
 .secrow{display:flex;align-items:center}
@@ -457,6 +459,7 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
 <div id="sheet"></div>
 <div id="toast" class="toast" hidden></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 (function(){
 "use strict";
@@ -515,16 +518,30 @@ const photosHere=()=>true;
 const SB_URL='https://ppqrphmaixfzzlkpibjt.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwcXJwaG1haXhmenpsa3BpYmp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyNTIyMjQsImV4cCI6MjEwNjgyODIyNH0.FSlAobYEH-7cAmxPw-6q9wPkfK-kW5jZYv-Fe1G_N_w';
 const FN_URL=SB_URL+'/functions/v1/populate';
-const KEY=(()=>{ const m=(location.hash||'').match(/k=([A-Za-z0-9_-]{8,})/); let k=m?m[1]:null; try{ if(k) localStorage.setItem('milton-key',k); else k=localStorage.getItem('milton-key') }catch(e){} return k })();
+const KEY=null;
+try{ localStorage.removeItem('milton-key') }catch(e){}
+if(/(^|[#&])k=/.test(location.hash)) history.replaceState(null,'',location.pathname+location.search);
+const sb=window.supabase?window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'implicit',storageKey:'milton-auth'}}):null;
+let SESSION=null;
+if(sb) sb.auth.onAuthStateChange(ev=>{ if(ev==='SIGNED_OUT'&&S.mode==='cloud'){ S.mode='signin'; try{ localStorage.removeItem('milton-cache') }catch(e){} render() } });
+async function token(){ if(!sb) return SB_KEY; try{ const {data}=await sb.auth.getSession(); SESSION=data.session; return SESSION?SESSION.access_token:SB_KEY }catch(e){ return SB_KEY } }
+async function authHeaders(){ return {apikey:SB_KEY,Authorization:'Bearer '+(await token()),'Content-Type':'application/json'} }
 async function rpc(fn,args){
-  const r=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(args)});
+  const r=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:await authHeaders(),body:JSON.stringify(args||{})});
   const t=await r.text(); if(!r.ok){ const e=new Error(t); e.status=r.status; throw e } return t?JSON.parse(t):null }
 
 /* ---------- store: the family database, kept in sync every few seconds ---------- */
 const Store={data:{},subs:{},chains:{},pending:{},since:null,
   async init(){
     try{ const c=JSON.parse(localStorage.getItem('milton-cache')||'null'); if(c&&c.data){ this.data=c.data; this.since=c.since||null } }catch(e){}
-    if(!KEY){ S.mode='nokey'; return }
+    if(!sb){ S.mode='offline'; return }
+    if(/access_token=|error_description=/.test(location.hash)){ await new Promise(r=>setTimeout(r,400)) }
+    await token();
+    if(!SESSION){ this.data={}; S.mode='signin'; return }
+    let me=null; try{ me=await rpc('cookbook_whoami',{}) }catch(e){ if(e.status===401||e.status===403){ this.data={}; S.mode='signin'; return } }
+    if(me&&!me.role){ this.data={}; S.me=me; S.mode='notmember'; return }
+    S.me=me||{email:SESSION.user&&SESSION.user.email,role:'member'};
+    if(/access_token=/.test(location.hash)) history.replaceState(null,'',location.pathname+location.search);
     S.mode='cloud';
     await this.pull(true);
     setInterval(()=>{ if(document.visibilityState==='visible') this.pull() },5000);
@@ -539,7 +556,7 @@ const Store={data:{},subs:{},chains:{},pending:{},since:null,
     let rows;
     try{ const since=(!first&&this.since)?new Date(new Date(this.since).getTime()-15000).toISOString():null;
       rows=await rpc('cookbook_pull',{p_key:KEY,p_since:since}) }
-    catch(e){ if(e.status===401||e.status===403){ S.mode='badkey'; render() } else if(first) toast("Can't reach the cookbook. Check your connection."); return }
+    catch(e){ if(e.status===401||e.status===403){ S.mode='notmember'; render() } else if(first) toast("Can't reach the cookbook. Check your connection."); return }
     if(first){ this.data={} }
     const touched=new Set(first?Object.keys(this.subs):[]);
     for(const r of rows||[]){
@@ -567,15 +584,13 @@ const Store={data:{},subs:{},chains:{},pending:{},since:null,
 /* live updates: after any change, tell every other open copy to refresh straight away */
 let live=null, nudgeT=null;
 async function startLive(){ try{
-  await new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js'; sc.onload=res; sc.onerror=rej; document.head.appendChild(sc) });
-  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('milton:'+KEY)); const h=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,24);
-  const client=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false}});
-  live=client.channel('cookbook-'+h,{config:{broadcast:{self:false}}});
+  const client=sb; if(!client) return;
+  live=client.channel('milton-manor-live',{config:{broadcast:{self:false}}});
   live.on('broadcast',{event:'changed'},()=>Store.pull()).subscribe(st=>{ if(st==='SUBSCRIBED') Store.pull() });
 }catch(e){ live=null } }
 function nudgeOthers(){ if(!live) return; clearTimeout(nudgeT); nudgeT=setTimeout(()=>{ try{ live.send({type:'broadcast',event:'changed',payload:{at:Date.now()}}) }catch(e){} },150) }
 function writeErr(e){
-  if(e&&(e.status===401||e.status===403)){ S.mode='badkey'; render(); return }
+  if(e&&(e.status===401||e.status===403)){ S.mode='notmember'; render(); return }
   toast("That didn't save. Check your connection and try again.");
 }
 let toastT;
@@ -679,7 +694,7 @@ function toggleTick(it){
   S.ticks[it.tick]={at:Date.now()}; render(); return Store.set('ticks',it.tick,{at:Date.now()}) }
 
 /* ---------- navigation ---------- */
-function go(view,extra){ document.body.classList.remove('menuopen'); UI.view=view; Object.assign(UI,extra||{}); UI.sheet=null; UI.swap=view==='planner'?UI.swap:null; render(); window.scrollTo(0,0) }
+function go(view,extra){ if(view==='people') loadPeople(); document.body.classList.remove('menuopen'); UI.view=view; Object.assign(UI,extra||{}); UI.sheet=null; UI.swap=view==='planner'?UI.swap:null; render(); window.scrollTo(0,0) }
 function openList(kind,id){ UI.list={kind,id}; UI.status='all'; go('home') }
 
 /* ---------- render: chrome ---------- */
@@ -707,7 +722,8 @@ function renderSide(){ setTimeout(()=>{ UI.justOpened=null },0);
   $('#side').innerHTML=`
     <button class="logo" data-act="go" data-view="dash">Milton Manor</button>
     <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Groceries','apple',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn]].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
-      return `<div class="secg${open?' open':''}"><div class="secrow"><button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>${k?`<button class="fx" data-act="fold" data-k="${k}" aria-expanded="${!!open}" aria-label="${open?'Hide':'Show'} ${x[1]}">${ic('down')}</button>`:''}</div>${open?`<div class="nav subnav${UI.justOpened===k?' anim':''}">${SUB[x[0]]}</div>`:''}</div>` }).join('')}</div>`;
+      return `<div class="secg${open?' open':''}"><div class="secrow"><button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>${k?`<button class="fx" data-act="fold" data-k="${k}" aria-expanded="${!!open}" aria-label="${open?'Hide':'Show'} ${x[1]}">${ic('down')}</button>`:''}</div>${open?`<div class="nav subnav${UI.justOpened===k?' anim':''}">${SUB[x[0]]}</div>`:''}</div>` }).join('')}</div>
+    ${S.me?`<div class="acct"><span class="muted">${esc(S.me.email||'')}</span><span class="row" style="gap:16px">${S.me.role==='owner'?`<button class="link${UI.view==='people'?' on':''}" data-act="go" data-view="people">People</button>`:''}<button class="link" data-act="signout">Sign out</button></span></div>`:''}`;
 }
 function renderTop(){
   $('#top').innerHTML=`<label class="search">${ic('search')}<input id="q" type="search" placeholder="Search recipes or ingredients…" value="${esc(UI.q)}" autocomplete="off"></label>`;
@@ -920,6 +936,19 @@ function viewShopping(){
     </aside></div>`;
 }
 
+/* ---------- people (who can sign in) ---------- */
+let peopleRm=null; function confirmRm(em){ if(peopleRm===em){ peopleRm=null; return true } peopleRm=em; render(); setTimeout(()=>{ if(peopleRm===em){ peopleRm=null; render() } },4000); return false }
+async function loadPeople(){ try{ S.people=await rpc('cookbook_members_list',{}) }catch(e){ S.people=null } if(UI.view==='people') render() }
+function viewPeople(){ const owner=S.me&&S.me.role==='owner';
+  if(!owner) return `<div class="head"><div class="tg"><div class="kick">Milton Manor</div><h1 class="h1">People</h1></div></div><p class="muted">Only May can change who has access.</p>`;
+  const ps=S.people||[];
+  return `<div class="head"><div class="tg"><div class="kick">Milton Manor</div><h1 class="h1">People</h1><div class="sub">Only these emails can sign in</div></div></div>
+    <div class="lwrap">
+      <form class="row" data-form="addperson" style="flex-wrap:nowrap"><label class="search" style="border-radius:6px">${ic('plus')}<input id="newperson" type="email" inputmode="email" placeholder="Add someone's email" autocomplete="off"></label><button class="btn solid" type="submit">Add</button></form>
+      <div class="lsec">${S.people==null?'<p class="muted" style="margin:0">Loading…</p>':ps.map(p=>`<div class="it lit"><span class="nm" style="flex:1"><span>${esc(p.email)}</span>${p.role==='owner'?'<span class="rt">Owner</span>':''}${p.email===(S.me&&S.me.email)?'<span class="rt">You</span>':''}</span>${p.role!=='owner'?`<button class="${peopleRm===p.email?'btn sm dangerous':'xbtn'}" data-act="rmperson" data-email="${esc(p.email)}" aria-label="Remove ${esc(p.email)}">${peopleRm===p.email?'Remove?':ic('x')}</button>`:''}</div>`).join('')}</div>
+      <p class="muted" style="margin:0;font-size:12px;line-height:1.6">People you add sign in with their email: they type it in, tap the link we email them, and stay signed in on that device. Removing someone stops them straight away.</p>
+    </div>` }
+
 /* ---------- home ---------- */
 function viewDash(){
   const wk=mondayOf(TODAY); const hr=new Date().getHours(); const hello=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
@@ -1026,13 +1055,21 @@ function sheetHTML(){
 }
 
 /* ---------- render with focus preservation ---------- */
+function gateHTML(){
+  if(S.mode==='offline') return `<div class="box"><div class="kick">Milton Manor</div><div class="serif">Can't connect right now</div><p class="muted" style="margin:0;font-size:14px">Check your internet connection, then refresh the page.</p></div>`;
+  if(S.mode==='notmember') return `<div class="box"><div class="kick">Milton Manor</div><div class="serif">You're not on the list yet</div><p class="muted" style="margin:0;font-size:14px">${esc((S.me&&S.me.email)||'This email')} doesn't have access. Ask May to add you on the People page.</p><button class="btn" data-act="signout">Sign out</button></div>`;
+  if(UI.sentTo) return `<div class="box"><div class="kick">Milton Manor</div><div class="serif">Check your email</div><p class="muted" style="margin:0;font-size:14px;line-height:1.6">We've sent a sign-in link to <b style="color:var(--fg)">${esc(UI.sentTo)}</b>. Open it on this device and you'll be signed in. It can take a minute to arrive.</p><button class="link" data-act="signinagain">Use a different email</button></div>`;
+  return `<div class="box"><div class="kick">Milton Manor</div><div class="serif">Welcome home</div><p class="muted" style="margin:0;font-size:14px;line-height:1.6">Enter your email and we'll send you a link to sign in. You'll stay signed in on this device.</p>
+    <form class="stack" data-form="signin" style="width:100%;gap:10px;margin-top:6px"><input class="in" id="signinemail" type="email" inputmode="email" autocomplete="email" placeholder="Your email" required style="padding:12px 16px;text-align:center"><button class="btn solid wide" type="submit"${UI.sending?' disabled':''}>${UI.sending?'Sending…':'Send me a link'}</button></form>
+    ${UI.signinErr?`<p style="margin:0;font-size:13px;color:var(--danger)">${esc(UI.signinErr)}</p>`:''}</div>` }
 function render(){
   const a=document.activeElement; const fid=a&&a.id; let sel=null; try{ if(fid&&a.selectionStart!=null) sel=[a.selectionStart,a.selectionEnd] }catch(e){}
   const keepVals={}; document.querySelectorAll('#view input[id], #view textarea[id]').forEach(el=>{ if(!DRAFT_IDS[el.id]&&el.type!=='file'&&!el.classList.contains('qin')&&!el.classList.contains('lnote')) keepVals[el.id]=el.value });
-  const locked=S.mode==='nokey'||S.mode==='badkey'; document.body.classList.toggle('locked',locked);
-  if(locked){ $('#gate').innerHTML=`<div class="box"><div class="kick">Milton Manor</div><div class="serif">${S.mode==='nokey'?'Open Milton Manor from the family link':'This link no longer opens Milton Manor'}</div><p class="muted" style="margin:0;font-size:14px">${S.mode==='nokey'?'Ask May to send you the link. Once you open it on this device, it will remember you.':'Ask May for the current family link.'}</p></div>`; return }
+  const locked=S.mode==='signin'||S.mode==='notmember'||S.mode==='offline'; document.body.classList.toggle('locked',locked);
+  if(locked){ $('#gate').innerHTML=gateHTML(); return }
+  if(false){ $('#gate').innerHTML=`<div class="box"><div class="kick">Milton Manor</div><div class="serif">${S.mode==='nokey'?'Open Milton Manor from the family link':'This link no longer opens Milton Manor'}</div><p class="muted" style="margin:0;font-size:14px">${S.mode==='nokey'?'Ask May to send you the link. Once you open it on this device, it will remember you.':'Ask May for the current family link.'}</p></div>`; return }
   renderSide(); renderTop();
-  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():UI.view==='dash'?viewDash():viewShopping();
+  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():UI.view==='dash'?viewDash():UI.view==='people'?viewPeople():viewShopping();
   $('#view').innerHTML=v;
   for(const id in keepVals){ const el=document.getElementById(id); if(el) el.value=keepVals[id] }
   $('#sheet').innerHTML=sheetHTML();
@@ -1074,6 +1111,9 @@ document.addEventListener('click',async e=>{
     case 'listfavs': UI.lfav=true; UI.lrename=false; go('lists',{lid:null}); break;
     case 'lfav': { const L=S.lists.find(x=>x.id===UI.lid); if(!L) break; L.fav=!L.fav; render(); Store.set('lists',L.id,L); toast(L.fav?'Added to favourites.':'Removed from favourites.'); break }
     case 'openlist': if(!id) UI.lfav=false; UI.addingSec=false; UI.secRename=null; UI.lrename=false; go('lists',{lid:id||null}); break;
+    case 'signout': { try{ await sb.auth.signOut() }catch(err){} try{ localStorage.removeItem('milton-cache') }catch(err){} location.replace(location.pathname); break }
+    case 'signinagain': UI.sentTo=null; UI.signinErr=''; render(); break;
+    case 'rmperson': { const em=t.dataset.email; if(!confirmRm(em)) break; try{ await rpc('cookbook_member_remove',{p_email:em}); toast(`${em} can no longer sign in.`); loadPeople() }catch(err){ toast("Couldn't remove that person.") } break }
     case 'menu': document.body.classList.toggle('menuopen'); break;
     case 'fold': { const k=t.dataset.k; const op=!FOLD[k]; for(const x of Object.keys(FOLD)) FOLD[x]=false; FOLD[k]=op; if(op) UI.justOpened=k; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
     case 'idealist': newList(t.dataset.name); break;
@@ -1186,6 +1226,12 @@ document.addEventListener('submit',async e=>{
   if(f==='rencol'){ const v=$('#rencol').value.trim(); const c=S.cols.find(x=>x.id===UI.renaming); UI.renaming=null; if(c&&v&&v!==c.name){ c.name=v; const doc={name:v,order:c.order||0}; Store.set('collections',c.id,doc); toast(`Renamed to ${v}.`) } render(); return }
   if(f==='col'){ const v=$('#newcol').value.trim(); UI.addingCol=false; if(v){ const cid=slug(v)+'-'+rid().slice(-4); const c={name:v,order:S.cols.length}; S.cols.push(Object.assign({id:cid},c)); Store.set('collections',cid,c); openList('col',cid) } else render() }
   if(f==='sidelist'){ const v=$('#sidelist').value.trim(); UI.addingList=false; if(v) newList(v); else render(); return }
+  if(f==='signin'){ const email=$('#signinemail').value.trim().toLowerCase(); if(!email) return; UI.signinErr=''; UI.sending=true; render();
+    try{ const ok=await rpc('cookbook_can_join',{p_email:email}); if(!ok){ UI.sending=false; UI.signinErr="That email isn't on the Milton Manor list. Ask May to add you."; render(); return }
+      const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname,shouldCreateUser:true}});
+      UI.sending=false; if(error){ UI.signinErr=/rate|limit|seconds/i.test(error.message)?'Too many links sent just now. Wait a few minutes and try again.':/not authorized|authorized/i.test(error.message)?"Milton Manor can't email that address yet. May needs to finish the email setup in Supabase.":'Something went wrong sending the link. Try again in a moment.'; render(); return }
+      UI.sentTo=email; render() }catch(err){ UI.sending=false; UI.signinErr="Can't connect right now. Check your connection and try again."; render() } return }
+  if(f==='addperson'){ const v=$('#newperson').value.trim(); if(!v) return; try{ await rpc('cookbook_member_add',{p_email:v}); $('#newperson').value=''; toast(`${v} can now sign in.`); loadPeople() }catch(err){ toast("Couldn't add that email. Check it and try again.") } return }
   if(f==='newlist'){ const v=$('#newlist').value.trim(); if(!v) return; $('#newlist').value=''; newList(v); return }
   if(f==='renlist'){ const v=$('#renlist').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); UI.lrename=false; if(L&&v&&v!==L.name){ L.name=v; Store.set('lists',L.id,L); toast(`Renamed to ${v}.`) } render(); return }
   if(f==='newsec'){ const v=$('#newsec').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); UI.addingSec=false; if(L&&v){ L.secs=secsOf(L).concat([{id:rid().slice(-8),name:v.charAt(0).toUpperCase()+v.slice(1)}]); Store.set('lists',L.id,L); const sid=L.secs[L.secs.length-1].id; render(); setTimeout(()=>{ const i=document.getElementById('si-'+sid); if(i) i.focus() },30) } else render(); return }
@@ -1371,7 +1417,7 @@ async function autofill(){ const t=(($('#paste')||{}).value||'').trim(); if(!t){
   const isCk=/(^|\.)cookidoo\./i.test((()=>{try{return new URL(t).hostname}catch(e){return ''}})());
   if(isCk){ UI.draft.tm=true; if(!String(UI.draft.cookidoo||'').trim()) UI.draft.cookidoo=t }
   UI.importing='text'; render();
-  try{ const r=await fetch(FN_URL,{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({key:KEY,url:t})});
+  try{ const r=await fetch(FN_URL,{method:'POST',headers:await authHeaders(),body:JSON.stringify({url:t})});
     let out=null; try{ out=await r.json() }catch(e){}
     UI.importing=null;
     if(!r.ok||!out||out.error){ render(); toast(out&&out.error==='fetch_failed'?"That website wouldn't let us in. Copy the recipe text from the page and paste it instead.":r.status===404?"Reading links needs the free populate function in Supabase (see the README). You can paste the recipe text instead.":"Couldn't read that link. Copy the recipe text from the page and paste it instead."); return }

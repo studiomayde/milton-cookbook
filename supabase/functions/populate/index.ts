@@ -101,10 +101,12 @@ Deno.serve(async (req) => {
     const url = typeof rawUrl === "string" ? rawUrl.trim() : rawUrl;
     const sbUrl = Deno.env.get("SUPABASE_URL")!;
     const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
+    // Only signed-in, approved people: pass their sign-in on to the database check.
+    const auth = req.headers.get("Authorization") || `Bearer ${anon}`;
     const ok = await fetch(`${sbUrl}/rest/v1/rpc/cookbook_check`, {
       method: "POST",
-      headers: { apikey: anon, Authorization: `Bearer ${anon}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ p_key: key }),
+      headers: { apikey: anon, Authorization: auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_key: key ?? null }),
     }).then((r) => r.json()).catch(() => false);
     if (ok !== true) return json({ error: "not_allowed" }, 403);
     if (!url) return json({ error: "no_url" }, 400);
