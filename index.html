@@ -303,6 +303,23 @@ body.secsorting{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .lcard.drop-after{box-shadow:4px 0 0 var(--fg)}
 .swatch{width:22px;height:22px;border-radius:50%;border:2px solid transparent;flex:none}
 .swatch.on{border-color:var(--fg);box-shadow:inset 0 0 0 2px var(--bg)}
+.binic{display:inline-block;width:22px;height:26px;flex:none}
+.bins-row{display:flex;gap:10px;flex-wrap:wrap}
+.binchip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;border-radius:999px;background:var(--bg);font-size:12px}
+.binhero{background:var(--soft);border-radius:10px;padding:26px 28px;display:flex;flex-direction:column;gap:14px;max-width:860px;margin-bottom:26px}
+.binhero .when{font-family:var(--serif);font-size:38px;line-height:1}
+.binhero .binbig{display:flex;gap:22px;flex-wrap:wrap;margin-top:6px}
+.binhero .binbig div{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;text-align:center;max-width:96px}
+.binhero .binbig .binic{width:54px;height:64px}
+.binlist{max-width:860px;display:flex;flex-direction:column}
+.binrow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:center;padding:12px 0;border-top:1px solid var(--line);font-size:13px}
+.binrow .d{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.binset{background:var(--soft);border-radius:8px;padding:22px 24px;display:flex;flex-direction:column;gap:14px;max-width:860px;margin-bottom:26px}
+.binset h2{font-family:var(--serif);font-weight:400;font-size:26px;margin:0}
+.binedit{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.binedit select,.binedit input{font:inherit;font-size:12px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.wbin{margin-bottom:20px}
+.wbin .bins-row{margin-top:4px}
 .lwrap{max-width:760px;display:flex;flex-direction:column;gap:24px}
 .progress{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin:6px 0 20px}
 .progress i{display:block;height:100%;background:var(--fg)}
@@ -419,6 +436,11 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .lnote{width:110px;font-size:12px !important}
   .lit .itmain{flex:0 1 auto;max-width:55%}
   .lacts{gap:20px}
+  .binrow{grid-template-columns:1fr;gap:6px}
+  .binhero{padding:20px}
+  .binhero .when{font-size:30px}
+  .binedit{grid-template-columns:auto minmax(0,1fr) auto;row-gap:8px}
+  .binedit .bf{grid-column:2/4}
   .lsec{padding:16px 16px 8px}
   .dgrid{grid-template-columns:1fr;grid-auto-rows:auto;gap:14px}
   .wg{padding:18px}
@@ -467,6 +489,7 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
 const $=(s,r=document)=>r.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const IC={
+  bin:'<path d="M5 7h14M9.5 7V5h5v2M6.5 7l1 13h9l1-13M10 10.5v6.5M14 10.5v6.5"/>',
   clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   cog:'<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>',
   apple:'<path d="M12 8c-1.4-1-3.6-1.4-5.2-.2C4.6 9.4 4.5 12.9 5.6 15.5c1 2.4 2.8 4.8 4.6 4.8 1 0 1.2-.5 1.8-.5s.8.5 1.8.5c1.8 0 3.6-2.4 4.6-4.8 1.1-2.6 1-6.1-1.2-7.7-1.6-1.2-3.8-.8-5.2.2Z"/><path d="M12 8V5.6"/><path d="M12 5.6c.4-1.7 1.8-2.7 3.7-2.6-.4 1.7-1.8 2.7-3.7 2.6Z"/>',
@@ -511,7 +534,7 @@ function mins(s){if(!s)return 0;s=String(s).toLowerCase();let m=0;const h=s.matc
 function fmtMins(m){if(!m)return'';if(m<60)return m+' min';const h=Math.floor(m/60),r=m%60;return h+' hr'+(r?' '+r:'')}
 
 /* ---------- state ---------- */
-const S={lists:[],litems:[],recipes:[],cols:[],plan:{},ticks:{},extras:[],regs:[],qty:{},qtyLocal:{},readOnly:false,mode:'loading',loaded:{}};
+const S={bins:null,lists:[],litems:[],recipes:[],cols:[],plan:{},ticks:{},extras:[],regs:[],qty:{},qtyLocal:{},readOnly:false,mode:'loading',loaded:{}};
 const UI={view:'dash',list:{kind:'all'},status:'all',sort:'new',q:'',rid:null,editId:null,pmode:'week',week:mondayOf(TODAY),day:TODAY,month:TODAY.slice(0,8)+'01',extraCols:[],extraDay:[],swap:null,sheet:null,cook:{},trolley:true,regEdit:false,regGroup:'Food',draft:null,addingCol:false,lid:null,ldone:true,lrename:false};
 let sample=null;
 const photosHere=()=>true;
@@ -721,7 +744,7 @@ function renderSide(){ setTimeout(()=>{ UI.justOpened=null },0);
   const FK={lists:'lists',home:'recipes'};
   $('#side').innerHTML=`
     <button class="logo" data-act="go" data-view="dash">Milton Manor</button>
-    <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Groceries','apple',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn]].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
+    <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Groceries','apple',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn],['bins','Bins','bin',UI.view==='bins']].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
       return `<div class="secg${open?' open':''}"><div class="secrow"><button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>${k?`<button class="fx" data-act="fold" data-k="${k}" aria-expanded="${!!open}" aria-label="${open?'Hide':'Show'} ${x[1]}">${ic('down')}</button>`:''}</div>${open?`<div class="nav subnav${UI.justOpened===k?' anim':''}">${SUB[x[0]]}</div>`:''}</div>` }).join('')}</div>
     ${S.me?`<div class="acct"><span class="muted">${esc(S.me.email||'')}</span><span class="row" style="gap:16px">${S.me.role==='owner'?`<button class="link${UI.view==='people'?' on':''}" data-act="go" data-view="people">People</button>`:''}<button class="link" data-act="signout">Sign out</button></span></div>`:''}`;
 }
@@ -949,6 +972,45 @@ function viewPeople(){ const owner=S.me&&S.me.role==='owner';
       <p class="muted" style="margin:0;font-size:12px;line-height:1.6">After you add someone, they open Milton Manor, tap <b>First time here? Create your password</b>, and choose their own password. They stay signed in on that device. Removing someone stops them straight away.</p>
     </div>` }
 
+/* ---------- bins ---------- */
+const BIN_COLOURS=[['#c8453c','Red'],['#e2b42b','Yellow'],['#86b83b','Lime'],['#3f7f45','Green'],['#3d6fb5','Blue'],['#7b5aa6','Purple'],['#2b2b2b','Black']];
+const BIN_DEFAULT=()=>({day:1,bins:[{id:'gen',name:'General waste',colour:'#c8453c',freq:'weekly',start:''},{id:'rec',name:'Recycling',colour:'#e2b42b',freq:'fortnightly',start:''},{id:'fogo',name:'FOGO / garden',colour:'#86b83b',freq:'fortnightly',start:''}]});
+const binIcon=(c,cls='binic')=>`<svg class="${cls}" viewBox="0 0 22 26" aria-hidden="true"><rect x="2" y="3" width="18" height="4" rx="1.5" fill="${c}"/><path d="M3.5 8h15l-1.3 15.2a1.5 1.5 0 0 1-1.5 1.3H6.3a1.5 1.5 0 0 1-1.5-1.3Z" fill="none" stroke="var(--fg)" stroke-width="1.3"/><path d="M8.5 11.5v9M13.5 11.5v9" stroke="var(--fg)" stroke-width="1.1" stroke-linecap="round"/></svg>`;
+function nextDow(from,dow){ const d=parse(from); d.setDate(d.getDate()+((dow-d.getDay()+7)%7)); return ymd(d) }
+function binsOn(ds){ const c=S.bins; if(!c||parse(ds).getDay()!==+c.day) return [];
+  return c.bins.filter(b=>{ if(b.freq!=='fortnightly') return true; const st=b.start||ds; const w=Math.round((parse(ds)-parse(nextDow(st,+c.day)))/(7*864e5)); return ((w%2)+2)%2===0 }) }
+function nextCollections(n){ const out=[]; if(!S.bins) return out; const hr=new Date().getHours(); let d=nextDow(TODAY,+S.bins.day); if(d===TODAY&&hr>=12) d=addDays(d,7);
+  for(let i=0;i<n;i++){ const bs=binsOn(d); if(bs.length) out.push({d,bs}); d=addDays(d,7) } return out }
+function whenLabel(ds){ if(ds===TODAY) return 'Today'; if(ds===addDays(TODAY,1)) return 'Tomorrow'; const dd=parse(ds); return DAYS_LONG[dd.getDay()]+' '+dd.getDate()+' '+MONTHS[dd.getMonth()].slice(0,3) }
+function putOutLabel(ds){ if(ds===TODAY) return 'Out this morning'; if(ds===addDays(TODAY,1)) return 'Put them out tonight'; return 'Put them out the night before, '+DAYS_LONG[parse(addDays(ds,-1)).getDay()] }
+function binWidget(){ if(!S.bins) return ''; const nx=nextCollections(3)[0]; if(!nx) return '';
+  return `<div class="wg wbin"><div class="wh"><div><div class="kick">${esc(putOutLabel(nx.d))}</div><h2>Bins · ${esc(whenLabel(nx.d))}</h2></div><button class="link wl" data-act="go" data-view="bins">Bin schedule</button></div>
+    <div class="bins-row">${nx.bs.map(b=>`<span class="binchip">${binIcon(b.colour)}${esc(b.name)}</span>`).join('')}</div></div>` }
+function binsICS(){ const c=S.bins; if(!c) return ''; const first=nextDow(TODAY,+c.day); const wk=[first,addDays(first,7)].map(d=>({d,bs:binsOn(d)}));
+  const same=wk[0].bs.map(b=>b.id).join()===wk[1].bs.map(b=>b.id).join(); const series=same?[{...wk[0],iv:1}]:wk.map(w=>({...w,iv:2}));
+  const f=ds=>ds.replace(/-/g,''); const now=new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';
+  const ev=series.filter(x=>x.bs.length).map((x,i)=>{ const eve=f(addDays(x.d,-1)); return ['BEGIN:VEVENT','UID:milton-bins-'+i+'-'+f(x.d)+'@miltonmanor','DTSTAMP:'+now,'DTSTART:'+eve+'T190000','DTEND:'+eve+'T191500','RRULE:FREQ=WEEKLY;INTERVAL='+x.iv,'SUMMARY:Bins out: '+x.bs.map(b=>b.name).join(' + '),'DESCRIPTION:Collection is tomorrow. Put out '+x.bs.map(b=>b.name).join(' and ')+'.','BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Bins out tonight','TRIGGER:PT0M','END:VALARM','END:VEVENT'].join('\r\n') });
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Milton Manor//Bins//EN','CALSCALE:GREGORIAN','X-WR-CALNAME:Milton Manor bins',...ev,'END:VCALENDAR'].join('\r\n') }
+function binSettingsHTML(){ const c=UI.binDraft||(UI.binDraft=JSON.parse(JSON.stringify(S.bins||BIN_DEFAULT()))); const first=nextDow(TODAY,+c.day);
+  const opts=[0,1,2,3,4,5,6].map(i=>`<option value="${(i+1)%7}"${+c.day===(i+1)%7?' selected':''}>${DAYS_LONG[(i+1)%7]}</option>`).join('');
+  const thisWk=b=>{ if(b.freq!=='fortnightly') return true; const st=b.start||first; const w=Math.round((parse(first)-parse(nextDow(st,+c.day)))/(7*864e5)); return ((w%2)+2)%2===0 };
+  return `<div class="binset"><div class="between"><h2>${S.bins?'Bin settings':'Set up your bins'}</h2>${S.bins?`<button class="link" data-act="binset">Cancel</button>`:''}</div>
+    <div class="row" style="gap:10px"><span class="lbl">Collection day</span><select id="binday" class="in" style="padding:8px 12px;width:auto">${opts}</select></div>
+    <div><div class="lbl" style="padding-bottom:6px">Your bins · tick the ones collected on ${esc(whenLabel(first))}</div>
+    ${c.bins.map((b,i)=>`<div class="binedit">${binIcon(b.colour)}<input data-binname="${i}" value="${esc(b.name)}" aria-label="Bin name"><select data-bincolour="${i}" aria-label="Lid colour">${BIN_COLOURS.map(([v,n])=>`<option value="${v}"${b.colour===v?' selected':''}>${n} lid</option>`).join('')}</select><select data-binfreq="${i}" class="bf" aria-label="How often"><option value="weekly"${b.freq!=='fortnightly'?' selected':''}>Every week</option><option value="fortnightly"${b.freq==='fortnightly'?' selected':''}>Every 2nd week</option></select><label class="row bf" style="gap:6px;font-size:12px;flex-wrap:nowrap"><input type="checkbox" data-binthis="${i}"${thisWk(b)?' checked':''}${b.freq!=='fortnightly'?' disabled':''}> ${esc(whenLabel(first))}</label><button class="xbtn" data-act="binrm" data-i="${i}" aria-label="Remove bin">${ic('x')}</button></div>`).join('')}
+    <button class="link" data-act="binadd" style="margin-top:8px">+ Add a bin</button></div>
+    <button class="btn solid" data-act="binsave" style="align-self:flex-start">Save</button></div>` }
+function readBinDraft(){ const c=UI.binDraft; if(!c) return; const v=$('#binday'); if(v) c.day=+v.value; const first=nextDow(TODAY,+c.day);
+  c.bins.forEach((b,i)=>{ const n=document.querySelector(`[data-binname="${i}"]`); if(n) b.name=n.value.trim()||b.name; const col=document.querySelector(`[data-bincolour="${i}"]`); if(col) b.colour=col.value; const fr=document.querySelector(`[data-binfreq="${i}"]`); if(fr) b.freq=fr.value;
+    const t=document.querySelector(`[data-binthis="${i}"]`); if(b.freq==='fortnightly'&&t) b.start=t.checked?first:addDays(first,7); if(b.freq!=='fortnightly') b.start='' }) }
+function viewBins(){ const setup=!S.bins||UI.binSet; const nx=nextCollections(9);
+  const head=`<div class="head"><div class="tg"><div class="kick">${esc(longDate(TODAY))}</div><h1 class="h1">Bins</h1></div>${S.bins?`<div class="row" style="gap:12px"><button class="btn" data-act="binics">${ic('cal')} Add reminders to calendar</button><button class="btn" data-act="binset">${ic('edit')} Edit</button></div>`:''}</div>`;
+  if(!S.bins) return head+binSettingsHTML();
+  const h=nx[0];
+  return head+(setup?binSettingsHTML():'')+(h?`<div class="binhero"><div class="kick">${esc(putOutLabel(h.d))}</div><div class="when">${esc(whenLabel(h.d))}</div><div class="binbig">${h.bs.map(b=>`<div>${binIcon(b.colour)}<span>${esc(b.name)}</span></div>`).join('')}</div></div>`:'')+
+    `<div class="lbl" style="padding-bottom:6px">Coming up</div><div class="binlist">${nx.slice(1).map(x=>`<div class="binrow"><span class="d">${esc(whenLabel(x.d))}</span><span class="bins-row">${x.bs.map(b=>`<span class="binchip" style="background:var(--soft)">${binIcon(b.colour)}${esc(b.name)}</span>`).join('')}</span></div>`).join('')}</div>
+    <p class="muted" style="font-size:12px;line-height:1.6;max-width:640px;margin-top:22px">For a reminder on your phone, tap <b>Add reminders to calendar</b> on each phone and add the events. You'll get a reminder at 7pm the night before each collection.</p>` }
+
 /* ---------- home ---------- */
 function viewDash(){
   const wk=mondayOf(TODAY); const hr=new Date().getHours(); const hello=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
@@ -970,7 +1032,7 @@ function viewDash(){
     ${recent.length?`<div class="wthumbs">${recent.map(r=>`<button class="wthumb" data-act="open" data-id="${r.id}"><span class="pic">${r.photo?`<img src="${r.photo}" alt="">`:`<span class="ph">${esc((r.title||'?').charAt(0))}</span>`}</span><span class="t">${esc(r.title)}</span></button>`).join('')}</div>`:''}
     <div class="row"><button class="btn" data-act="surprise">${ic('shuffle')} Surprise me</button>${canWrite()?`<button class="btn" data-act="new">${ic('plus')} New recipe</button>`:''}</div></div>`;
   return `<div class="head"><div class="tg"><div class="kick">${esc(longDate(TODAY))}</div><h1 class="h1">${hello}</h1></div></div>
-    <div class="dgrid">${lists}${shop}${meals}${recipes}</div>`;
+    ${binWidget()}<div class="dgrid">${lists}${shop}${meals}${recipes}</div>`;
 }
 
 /* ---------- household lists ---------- */
@@ -1075,7 +1137,7 @@ function render(){
   if(locked){ $('#gate').innerHTML=gateHTML(); return }
   if(false){ $('#gate').innerHTML=`<div class="box"><div class="kick">Milton Manor</div><div class="serif">${S.mode==='nokey'?'Open Milton Manor from the family link':'This link no longer opens Milton Manor'}</div><p class="muted" style="margin:0;font-size:14px">${S.mode==='nokey'?'Ask May to send you the link. Once you open it on this device, it will remember you.':'Ask May for the current family link.'}</p></div>`; return }
   renderSide(); renderTop();
-  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():UI.view==='dash'?viewDash():UI.view==='people'?viewPeople():viewShopping();
+  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():UI.view==='dash'?viewDash():UI.view==='people'?viewPeople():UI.view==='bins'?viewBins():viewShopping();
   $('#view').innerHTML=v;
   for(const id in keepVals){ const el=document.getElementById(id); if(el) el.value=keepVals[id] }
   $('#sheet').innerHTML=sheetHTML();
@@ -1116,6 +1178,11 @@ document.addEventListener('click',async e=>{
     case 'delsec': { const L=S.lists.find(x=>x.id===UI.sheet.lid); if(L){ const sid=UI.sheet.sec; const sc=secsOf(L).find(x=>x.id===sid); S.litems.filter(i=>i.list===L.id&&i.sec===sid).forEach(i=>Store.del('litems',i.id)); S.litems=S.litems.filter(i=>!(i.list===L.id&&i.sec===sid)); L.secs=secsOf(L).filter(x=>x.id!==sid); Store.set('lists',L.id,L); toast(`Deleted ${sc?sc.name:'the heading'}.`) } UI.sheet=null; render(); break }
     case 'listfavs': UI.lfav=true; UI.lrename=false; go('lists',{lid:null}); break;
     case 'lfav': { const L=S.lists.find(x=>x.id===UI.lid); if(!L) break; L.fav=!L.fav; render(); Store.set('lists',L.id,L); toast(L.fav?'Added to favourites.':'Removed from favourites.'); break }
+    case 'binset': UI.binSet=!UI.binSet; UI.binDraft=null; render(); break;
+    case 'binadd': readBinDraft(); UI.binDraft.bins.push({id:rid().slice(-6),name:'New bin',colour:'#3d6fb5',freq:'fortnightly',start:''}); render(); break;
+    case 'binrm': readBinDraft(); UI.binDraft.bins.splice(+t.dataset.i,1); render(); break;
+    case 'binsave': { readBinDraft(); const c=UI.binDraft; if(!c.bins.length){ toast('Add at least one bin.'); break } c.bins.forEach(b=>{ if(b.freq==='fortnightly'&&!b.start) b.start=nextDow(TODAY,+c.day) }); S.bins=c; UI.binDraft=null; UI.binSet=false; Store.set('settings','bins',c); toast('Bin schedule saved.'); render(); break }
+    case 'binics': { const blob=new Blob([binsICS()],{type:'text/calendar'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='milton-manor-bins.ics'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove() },1500); break }
     case 'openlist': if(!id) UI.lfav=false; UI.addingSec=false; UI.secRename=null; UI.lrename=false; go('lists',{lid:id||null}); break;
     case 'signout': { try{ await sb.auth.signOut() }catch(err){} try{ localStorage.removeItem('milton-cache') }catch(err){} location.replace(location.pathname); break }
     case 'authmode': UI.authMode=UI.authMode==='create'?'signin':'create'; UI.signinErr=''; render(); break;
@@ -1221,6 +1288,7 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',async e=>{
   const id=e.target.id;
   if(id==='sort'){ UI.sort=e.target.value; render() }
+  if(UI.binDraft&&e.target.matches&&e.target.matches('#binday,[data-binfreq],[data-bincolour],[data-binthis]')){ readBinDraft(); render() }
   if(e.target.classList&&e.target.classList.contains('qin')) saveQty(e.target.dataset.qkey,e.target.value.trim());
   if(e.target.classList&&e.target.classList.contains('lnote')){ const i=S.litems.find(x=>x.id===e.target.dataset.id); if(i){ i.note=e.target.value.trim(); saveLItem(i) } }
   if(id==='daynote'){ setPlan(UI.day,{notes:e.target.value.trim()}) }
@@ -1469,6 +1537,7 @@ Store.init().then(()=>{
   Store.sub('plan',d=>{ S.plan={}; d.forEach(p=>S.plan[p.id]=p); if(UI.view!=='edit') soon() });
   Store.sub('ticks',d=>{ S.ticks={}; d.forEach(t=>S.ticks[t.id]=t); if(UI.view!=='edit') soon() });
   Store.sub('extras',d=>{ S.extras=d; if(UI.view!=='edit') soon() });
+  Store.sub('settings',d=>{ const b=d.find(x=>x.id==='bins'); S.bins=b&&Array.isArray(b.bins)?b:null; if(UI.view!=='edit') soon() });
   Store.sub('lists',d=>{ S.lists=d; if(UI.view!=='edit') soon(); else renderSide() });
   Store.sub('litems',d=>{ S.litems=d; if(UI.view!=='edit') soon() });
   Store.sub('regulars',d=>{ S.regs=d; if(UI.view!=='edit') soon() });
