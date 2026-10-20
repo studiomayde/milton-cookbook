@@ -993,7 +993,7 @@ function nextCollections(n){ const out=[]; if(!S.bins) return out; const hr=new 
 function whenLabel(ds){ if(ds===TODAY) return 'Today'; if(ds===addDays(TODAY,1)) return 'Tomorrow'; const dd=parse(ds); return DAYS_LONG[dd.getDay()]+' '+dd.getDate()+' '+MONTHS[dd.getMonth()].slice(0,3) }
 function putOutLabel(ds){ if(ds===TODAY) return 'Out this morning'; if(ds===addDays(TODAY,1)) return 'Put them out tonight'; return 'Put them out the night before, '+DAYS_LONG[parse(addDays(ds,-1)).getDay()] }
 function binWidget(){ if(!S.bins) return ''; const nx=nextCollections(3)[0]; if(!nx) return '';
-  return `<div class="wg wbin"><div class="wh"><div><div class="kick">${esc(putOutLabel(nx.d))}</div><h2>Bins · ${esc(whenLabel(nx.d))}</h2></div><button class="link wl" data-act="go" data-view="bins">Bin schedule</button></div>
+  return `<div class="wg wbin"><div class="wh"><div><h2>Bins · ${esc(whenLabel(nx.d))}</h2></div><button class="link wl" data-act="go" data-view="bins">Bin schedule</button></div>
     <div class="bins-row">${nx.bs.map(b=>`<span class="binchip">${binIcon(b.colour)}${esc(b.name)}</span>`).join('')}</div></div>` }
 function binsICS(){ const c=S.bins; if(!c) return ''; const first=nextDow(TODAY,+c.day); const wk=[first,addDays(first,7)].map(d=>({d,bs:binsOn(d)}));
   const same=wk[0].bs.map(b=>b.id).join()===wk[1].bs.map(b=>b.id).join(); const series=same?[{...wk[0],iv:1}]:wk.map(w=>({...w,iv:2}));
@@ -1016,7 +1016,7 @@ function viewBins(){ const setup=!S.bins||UI.binSet; const nx=nextCollections(9)
   const head=`<div class="head"><div class="tg"><div class="kick">${esc(longDate(TODAY))}</div><h1 class="h1">Bins</h1></div>${S.bins?`<div class="row" style="gap:12px"><button class="btn" data-act="binics">${ic('cal')} Add reminders to calendar</button><button class="btn" data-act="binset">${ic('edit')} Edit</button></div>`:''}</div>`;
   if(!S.bins) return head+binSettingsHTML();
   const h=nx[0];
-  return head+(setup?binSettingsHTML():'')+(h?`<div class="binhero"><div class="kick">${esc(putOutLabel(h.d))}</div><div class="when">${esc(whenLabel(h.d))}</div><div class="binbig">${h.bs.map(b=>`<div>${binIcon(b.colour)}<span>${esc(b.name)}</span></div>`).join('')}</div></div>`:'')+
+  return head+(setup?binSettingsHTML():'')+(h?`<div class="binhero"><div class="when">${esc(whenLabel(h.d))}</div><div class="binbig">${h.bs.map(b=>`<div>${binIcon(b.colour)}<span>${esc(b.name)}</span></div>`).join('')}</div></div>`:'')+
     `<div class="lbl" style="padding-bottom:6px">Coming up</div><div class="binlist">${nx.slice(1).map(x=>`<div class="binrow"><span class="d">${esc(whenLabel(x.d))}</span><span class="bins-row">${x.bs.map(b=>`<span class="binchip" style="background:var(--soft)">${binIcon(b.colour)}${esc(b.name)}</span>`).join('')}</span></div>`).join('')}</div>
     <p class="muted" style="font-size:12px;line-height:1.6;max-width:640px;margin-top:22px">For a reminder on your phone, tap <b>Add reminders to calendar</b> on each phone and add the events. You'll get a reminder at 7pm the night before each collection.</p>` }
 
