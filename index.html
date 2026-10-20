@@ -746,7 +746,7 @@ function renderSide(){ setTimeout(()=>{ UI.justOpened=null },0);
     <button class="logo" data-act="go" data-view="dash">Milton Manor</button>
     <div class="secnav">${[['lists','Lists','list',UI.view==='lists'],['shopping','Groceries','apple',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn],['bins','Bins','bin',UI.view==='bins']].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
       return `<div class="secg${open?' open':''}"><div class="secrow"><button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>${k?`<button class="fx" data-act="fold" data-k="${k}" aria-expanded="${!!open}" aria-label="${open?'Hide':'Show'} ${x[1]}">${ic('down')}</button>`:''}</div>${open?`<div class="nav subnav${UI.justOpened===k?' anim':''}">${SUB[x[0]]}</div>`:''}</div>` }).join('')}</div>
-    ${S.me?`<div class="acct"><span class="muted">${esc(S.me.email||'')}</span><span class="row" style="gap:16px">${S.me.role==='owner'?`<button class="link${UI.view==='people'?' on':''}" data-act="go" data-view="people">People</button>`:''}<button class="link" data-act="signout">Sign out</button></span></div>`:''}`;
+    ${S.me?`<div class="acct"><span class="muted">${esc(S.me.email||'')}</span><span class="row" style="gap:16px">${S.me.role==='owner'?`<button class="link${UI.view==='people'?' on':''}" data-act="go" data-view="people">People</button>`:''}<button class="link${UI.view==='account'?' on':''}" data-act="go" data-view="account">Password</button><button class="link" data-act="signout">Sign out</button></span></div>`:''}`;
 }
 function renderTop(){
   $('#top').innerHTML=`<label class="search">${ic('search')}<input id="q" type="search" placeholder="Search recipes or ingredients…" value="${esc(UI.q)}" autocomplete="off"></label>`;
@@ -972,6 +972,14 @@ function viewPeople(){ const owner=S.me&&S.me.role==='owner';
       <p class="muted" style="margin:0;font-size:12px;line-height:1.6">After you add someone, they open Milton Manor, tap <b>First time here? Create your password</b>, and choose their own password. They stay signed in on that device. Removing someone stops them straight away.</p>
     </div>` }
 
+/* ---------- account ---------- */
+function viewAccount(){ return `<div class="head"><div class="tg"><div class="kick">${esc((S.me&&S.me.email)||'')}</div><h1 class="h1">Change password</h1></div></div>
+  <div class="binset" style="max-width:520px"><form class="stack" data-form="newpass" style="gap:10px">
+    <input class="in" id="np1" type="password" autocomplete="new-password" placeholder="New password (8+ characters)" required style="padding:12px 16px">
+    <input class="in" id="np2" type="password" autocomplete="new-password" placeholder="Type it again" required style="padding:12px 16px">
+    <button class="btn solid" type="submit" style="align-self:flex-start">Save new password</button></form>
+    <p class="muted" style="margin:0;font-size:12px">You'll stay signed in here. Use the new password next time you sign in on another device.</p></div>` }
+
 /* ---------- bins ---------- */
 const BIN_COLOURS=[['#c8453c','Red'],['#e2b42b','Yellow'],['#86b83b','Lime'],['#3f7f45','Green'],['#3d6fb5','Blue'],['#7b5aa6','Purple'],['#2b2b2b','Black']];
 const BIN_DEFAULT=()=>({day:1,bins:[{id:'gen',name:'General waste',colour:'#c8453c',freq:'weekly',start:''},{id:'rec',name:'Recycling',colour:'#e2b42b',freq:'fortnightly',start:''},{id:'fogo',name:'FOGO / garden',colour:'#86b83b',freq:'fortnightly',start:''}]});
@@ -1137,7 +1145,7 @@ function render(){
   if(locked){ $('#gate').innerHTML=gateHTML(); return }
   if(false){ $('#gate').innerHTML=`<div class="box"><div class="kick">Milton Manor</div><div class="serif">${S.mode==='nokey'?'Open Milton Manor from the family link':'This link no longer opens Milton Manor'}</div><p class="muted" style="margin:0;font-size:14px">${S.mode==='nokey'?'Ask May to send you the link. Once you open it on this device, it will remember you.':'Ask May for the current family link.'}</p></div>`; return }
   renderSide(); renderTop();
-  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():UI.view==='dash'?viewDash():UI.view==='people'?viewPeople():UI.view==='bins'?viewBins():viewShopping();
+  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():UI.view==='dash'?viewDash():UI.view==='people'?viewPeople():UI.view==='bins'?viewBins():UI.view==='account'?viewAccount():viewShopping();
   $('#view').innerHTML=v;
   for(const id in keepVals){ const el=document.getElementById(id); if(el) el.value=keepVals[id] }
   $('#sheet').innerHTML=sheetHTML();
@@ -1311,6 +1319,8 @@ document.addEventListener('submit',async e=>{
       const {error}=await sb.auth.signInWithPassword({email,password:pass}); UI.sending=false;
       if(error){ UI.signinErr=/invalid|credentials/i.test(error.message)?'Wrong email or password. First time? Tap Create your password.':/confirm/i.test(error.message)?'This email still needs confirming. Ask May to turn off email confirmation.':"Couldn't sign in. Try again in a moment."; render(); return }
       location.replace(location.pathname) }catch(err){ UI.sending=false; UI.signinErr="Can't connect right now. Check your connection and try again."; render() } return }
+  if(f==='newpass'){ const a=$('#np1').value, b=$('#np2').value; if(a.length<8){ toast('Choose a password with at least 8 characters.'); return } if(a!==b){ toast("The two passwords don't match."); return }
+    try{ const {error}=await sb.auth.updateUser({password:a}); if(error){ toast(/different|same/i.test(error.message)?'That is already your password. Choose a new one.':"Couldn't change your password. Try again."); return } $('#np1').value=''; $('#np2').value=''; toast('Password changed.'); go('dash') }catch(err){ toast("Can't connect right now. Try again.") } return }
   if(f==='addperson'){ const v=$('#newperson').value.trim(); if(!v) return; try{ await rpc('cookbook_member_add',{p_email:v}); $('#newperson').value=''; toast(`${v} can now sign in.`); loadPeople() }catch(err){ toast("Couldn't add that email. Check it and try again.") } return }
   if(f==='newlist'){ const v=$('#newlist').value.trim(); if(!v) return; $('#newlist').value=''; newList(v); return }
   if(f==='renlist'){ const v=$('#renlist').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); UI.lrename=false; if(L&&v&&v!==L.name){ L.name=v; Store.set('lists',L.id,L); toast(`Renamed to ${v}.`) } render(); return }
