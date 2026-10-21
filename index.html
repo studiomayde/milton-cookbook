@@ -483,8 +483,12 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .ldate{width:112px;font-size:12px !important}
   .ldue{display:none}
   .ldate-add{width:118px}
-  .lit:has(.ldwrap) .lnote{min-width:40px;width:60px;flex:1}
-  .lit:has(.ldwrap) .itmain{max-width:45%}
+  .lit:has(.ldwrap){flex-wrap:wrap;row-gap:6px;align-items:center}
+  .lit:has(.ldwrap) .itmain{flex:1 1 0;max-width:none;order:1;min-width:0}
+  .lit:has(.ldwrap) .xbtn{order:2}
+  .lit:has(.ldwrap) .ldwrap{order:3;flex:1 1 100%;margin-left:32px;justify-content:flex-start}
+  .lit:has(.ldwrap) .lnote{order:4;flex:1 1 100%;width:auto;min-width:0;margin-left:32px;text-align:left}
+  .lit:has(.ldwrap) .ldue{display:inline}
   .binrow{grid-template-columns:1fr;gap:6px}
   .binhero{padding:20px}
   .binhero .when{font-size:30px}
