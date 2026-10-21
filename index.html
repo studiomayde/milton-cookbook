@@ -342,6 +342,8 @@ select.lrepu{background-position:right 8px center;padding-right:24px !important}
 .ldue{font-size:11px;color:var(--muted);white-space:nowrap;min-width:64px}
 .ldue.past{color:var(--faint)}
 .wdates{margin-bottom:20px}
+.cd .m.phm{color:var(--muted)}
+.cd .m.phm:before{background:var(--faint)}
 .lph .cb.ph{border:0;color:var(--muted)}
 .lph .cb.ph svg.i{width:15px;height:15px}
 .lph .nm{color:var(--fg)}
@@ -1129,6 +1131,20 @@ const isPHsec=sc=>/public\s*holiday/i.test(sc&&sc.name||'');
 function phItems(L){ const out=[]; for(const sc of secsOf(L)){ if(!isPHsec(sc)) continue; const y=+TODAY.slice(0,4); const end=addDays(TODAY,366);
     for(const yy of [y,y+1]) for(const h of waHolidays(yy)) if(h.date>=TODAY&&h.date<=end) out.push({id:'ph-'+sc.id+'-'+h.date+'-'+h.name.length,list:L.id,sec:sc.id,name:h.name,date:h.date,virtual:true}) }
   return out }
+function occurrencesIn(i,from,to){ if(!i.date) return []; const r=repOf(i); if(!r) return (i.date>=from&&i.date<=to)?[i.date]:[]; if(i.date>to) return [];
+  let k=0; if(i.date<from){ if(r.unit==='day'||r.unit==='week'){ k=Math.max(0,Math.floor(Math.round((parse(from)-parse(i.date))/864e5)/((r.unit==='day'?1:7)*r.n))-1) } else { const [y,m]=i.date.split('-').map(Number); const [fy,fm]=from.split('-').map(Number); k=Math.max(0,Math.floor(((fy-y)*12+(fm-m))/((r.unit==='year'?12:1)*r.n))-1) } }
+  const out=[]; for(let g=0;g<400;g++,k++){ const d=addUnits(i.date,k*r.n,r.unit); if(d>to) break; if(d>=from) out.push(d) } return out }
+function listMonthItems(L,from,to){ const ev=[]; for(const i of S.litems.filter(x=>x.list===L.id&&!x.done&&x.date)) for(const d of occurrencesIn(i,from,to)) ev.push({d,i});
+  if(secsOf(L).some(isPHsec)){ const ys=new Set([+from.slice(0,4),+to.slice(0,4)]); for(const y of ys) for(const h of waHolidays(y)) if(h.date>=from&&h.date<=to) ev.push({d:h.date,i:{name:h.name,virtual:true}}) }
+  return ev.sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:0) }
+function listMonthHTML(L){ const mk=UI.ldMonth||TODAY.slice(0,8)+'01'; const first=parse(mk), mth=first.getMonth(); const start=mondayOf(mk); const end=addDays(start,41);
+  const ev=listMonthItems(L,start,end); const sel=UI.ldDay||TODAY; let cells='', d=start;
+  for(let n=0;n<42;n++){ const dd=parse(d); if(n>=35&&dd.getMonth()!==mth) break; const es=ev.filter(x=>x.d===d);
+    cells+=`<button class="cd${dd.getMonth()!==mth?' out':''}${d===sel?' sel':''}" data-act="ldpick" data-date="${d}"><span class="n${d===TODAY?' today':''}">${dd.getDate()}</span>${es.slice(0,3).map(x=>`<span class="m${x.i.virtual?' phm':''}">${esc(x.i.name)}</span>`).join('')}${es.length>3?`<span class="m" style="color:var(--muted)">+${es.length-3} more</span>`:''}${es.length?`<span class="dots">${es.slice(0,4).map(()=>'<i></i>').join('')}</span>`:''}</button>`; d=addDays(d,1) }
+  const se=ev.filter(x=>x.d===sel);
+  return `<div class="between"><div class="seg"><button data-act="ldmnav" data-d="-1" aria-label="Previous month">${ic('back')}</button><button data-act="ldmtoday">${MONTHS[mth]} ${first.getFullYear()}</button><button data-act="ldmnav" data-d="1" aria-label="Next month">${ic('right')}</button></div></div>
+    <div class="cal">${['M','T','W','T','F','S','S'].map(x=>`<span class="wd">${x}</span>`).join('')}${cells}</div>
+    <div class="lsec"><div class="lsh"><h3>${esc(shortDate(sel))}</h3></div>${se.length?se.map(x=>`<div class="it lit"><span class="nm" style="flex:1"><span>${esc(x.i.name)}</span>${x.i.virtual?'<span class="rt">Public holiday</span>':''}${x.i.note?`<span class="muted" style="font-size:11px">· ${esc(x.i.note)}</span>`:''}</span>${!x.i.virtual&&repOf(x.i)?`<span class="q">${esc(repLabel(repOf(x.i)))}</span>`:''}</div>`).join(''):'<p class="muted" style="margin:0;font-size:12px">Nothing on this day.</p>'}</div>` }
 function liHTML(i){ if(i.virtual) return `<div class="it lit lph"><span class="cb ph">${ic('cal')}</span><span class="nm" style="flex:1"><span>${esc(i.name)}</span></span><span class="ldwrap"><span class="q">${esc(shortDate(i.date))}</span><span class="ldue">${esc(dueLabel(i.date))}</span></span></div>`;
   const w=canWrite(); const L=S.lists.find(x=>x.id===i.list); const dated=listHasDates(L);
   return `<div class="it lit"${w&&!i.done?` data-iid="${esc(i.id)}" data-sec="${esc(i.sec||'')}"`:''}>${w&&!i.done&&!dated?`<span class="igrip" data-id="${esc(i.id)}" aria-label="Drag to reorder">${ic('grip')}</span>`:''}<button class="itmain" data-act="ltick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span>${i.done&&i.sec?(()=>{ const L=S.lists.find(x=>x.id===i.list); const sc=L&&secsOf(L).find(x=>x.id===i.sec); return sc?`<span class="rt">${esc(sc.name)}</span>`:'' })():''}</span></button>${dated?(w&&!i.done?`<span class="ldwrap"><input class="ldate" type="date" data-id="${esc(i.id)}" value="${esc(i.date||'')}" aria-label="Date for ${esc(i.name)}">${(()=>{ const r=repOf(i); const k=repKey(r); const custom=i.repCustom||(r&&!REP_PRESETS.some(x=>x[0]===k)); return `<select class="lrep${r?' on':''}" data-id="${esc(i.id)}" aria-label="Repeat">${REP_PRESETS.map(([v,l])=>`<option value="${v}"${(custom?v==='custom':v===k)?' selected':''}>${l}</option>`).join('')}</select>${custom?`<span class="lrepc">Every <input class="lrepn" type="number" min="1" max="99" data-id="${esc(i.id)}" value="${r?r.n:2}"><select class="lrepu" data-id="${esc(i.id)}">${REP_UNITS.map(([u,l])=>`<option value="${u}"${(r?r.unit:'week')===u?' selected':''}>${l}</option>`).join('')}</select></span>`:''}` })()}${i.date?`<span class="ldue${nextOcc(i)<TODAY?' past':''}">${esc(dueLabel(nextOcc(i)))}</span>`:''}</span>`:i.date?`<span class="q">${esc(shortDate(nextOcc(i)||i.date))}${repOf(i)?' · '+esc(repLabel(repOf(i))):''}</span>`:''):''}${w&&!i.done?`<input class="lnote" id="ln-${esc(i.id)}" data-id="${esc(i.id)}" value="${esc(i.note||'')}" placeholder="Note" aria-label="Note for ${esc(i.name)}" autocomplete="off">`:i.note?`<span class="q">${esc(i.note)}</span>`:''}${w?`<button class="xbtn" data-act="rmlitem" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
@@ -1160,8 +1176,9 @@ function viewLists(){
     <div class="progress"><i style="width:${pct}%"></i></div>
     <div class="lwrap">
       ${canWrite()?`<form class="row" data-form="litem" style="flex-wrap:nowrap"><label class="search" style="border-radius:6px">${ic('plus')}<input id="litem" placeholder="Add to ${esc(L.name)}" autocomplete="off"></label>${listHasDates(L)?`<input class="in ldate-add" id="litemdate" type="date" aria-label="Date"><select class="in ldate-add lrep-add" id="litemrep" aria-label="Repeat">${REP_PRESETS.filter(x=>x[0]!=='custom').map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select>`:''}<button class="btn solid" type="submit">Add</button></form>`:''}
-      ${listBodyHTML(L,todo,its)}
-      ${done.length?`<div class="trolley"><div class="between" style="padding-bottom:8px"><span class="row" style="gap:8px">${ic('check')}<span class="lbl" style="color:var(--fg)">Done</span><span class="count">${done.length}</span></span><button class="link" style="color:var(--muted)" data-act="ldonetoggle">${UI.ldone?'Hide':'Show'}</button></div>${UI.ldone?done.map(liHTML).join(''):''}</div>
+      ${listHasDates(L)?`<div class="seg" style="align-self:flex-start"><button class="${UI.ldView!=='month'?'on':''}" data-act="ldview" data-v="list">List</button><button class="${UI.ldView==='month'?'on':''}" data-act="ldview" data-v="month">Month</button></div>`:''}
+      ${listHasDates(L)&&UI.ldView==='month'?listMonthHTML(L):listBodyHTML(L,todo,its)}
+      ${done.length&&!(listHasDates(L)&&UI.ldView==='month')?`<div class="trolley"><div class="between" style="padding-bottom:8px"><span class="row" style="gap:8px">${ic('check')}<span class="lbl" style="color:var(--fg)">Done</span><span class="count">${done.length}</span></span><button class="link" style="color:var(--muted)" data-act="ldonetoggle">${UI.ldone?'Hide':'Show'}</button></div>${UI.ldone?done.map(liHTML).join(''):''}</div>
       ${canWrite()?`<div class="row" style="gap:24px"><button class="link" data-act="lcleardone">Clear done</button><button class="link" data-act="luntick">Untick all</button></div>`:''}`:''}
     </div>`;
 }
@@ -1275,6 +1292,10 @@ document.addEventListener('click',async e=>{
     case 'binics': { const blob=new Blob([binsICS()],{type:'text/calendar'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='milton-manor-bins.ics'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove() },1500); break }
     case 'lyearly': { const i=S.litems.find(x=>x.id===id); if(!i) break; i.yearly=!i.yearly; render(); saveLItem(i); toast(i.yearly?'Repeats every year.':'One-off date.'); break }
     case 'ldates': { const L=S.lists.find(x=>x.id===UI.lid); if(!L) break; L.dates=!listHasDates(L); Store.set('lists',L.id,L); render(); break }
+    case 'ldview': UI.ldView=t.dataset.v; render(); break;
+    case 'ldpick': UI.ldDay=t.dataset.date; render(); break;
+    case 'ldmnav': { const d=parse(UI.ldMonth||TODAY.slice(0,8)+'01'); d.setMonth(d.getMonth()+(+t.dataset.d)); UI.ldMonth=ymd(d).slice(0,8)+'01'; render(); break }
+    case 'ldmtoday': UI.ldMonth=TODAY.slice(0,8)+'01'; UI.ldDay=TODAY; render(); break;
     case 'openlist': if(!id) UI.lfav=false; UI.addingSec=false; UI.secRename=null; UI.lrename=false; go('lists',{lid:id||null}); break;
     case 'signout': { try{ await sb.auth.signOut() }catch(err){} try{ localStorage.removeItem('milton-cache') }catch(err){} location.replace(location.pathname); break }
     case 'authmode': UI.authMode=UI.authMode==='create'?'signin':'create'; UI.signinErr=''; render(); break;
