@@ -324,6 +324,12 @@ body.secsorting{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .ldate{font:inherit;font-size:12px;border:1px solid transparent;border-bottom-color:var(--line);background:transparent;color:var(--fg);padding:4px 4px;border-radius:4px;width:132px}
 .ldate:hover,.ldate:focus{border-color:var(--line);outline:none;background:var(--bg)}
 .ldate-add{width:150px;flex:none;padding:10px 12px}
+.lrep{font:inherit;font-size:11px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);padding:4px 8px;max-width:130px}
+.lrep.on{background:var(--fg);color:var(--on-fg);border-color:var(--fg)}
+.lrepc{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+.lrepn{width:44px;font:inherit;font-size:11px;padding:3px 4px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg)}
+.lrepu{font:inherit;font-size:11px;padding:3px 4px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg)}
+.lrep-add{width:150px}
 .lyr{width:26px;height:26px;display:grid;place-items:center;border-radius:50%;color:var(--faint)}
 .lyr svg.i{width:13px;height:13px}
 .lyr.on{background:var(--fg);color:var(--on-fg)}
@@ -446,7 +452,10 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .lnote{width:110px;font-size:12px !important}
   .lit .itmain{flex:0 1 auto;max-width:55%}
   .lacts{gap:20px}
-  .ldwrap{margin-left:6px}
+  .ldwrap{margin-left:6px;flex-wrap:wrap;justify-content:flex-end;row-gap:4px}
+  .lrep{max-width:104px;font-size:11px !important}
+  .lrepn,.lrepu{font-size:11px !important}
+  .lrep-add{width:120px}
   .ldate{width:112px;font-size:12px !important}
   .ldue{display:none}
   .ldate-add{width:118px}
@@ -1071,13 +1080,23 @@ function sortedLists(){ return S.lists.slice().sort((a,b)=>(a.order||0)-(b.order
 const ikey=i=>i.ord!=null?i.ord:(i.at||0);
 function itemsOf(lid){ return S.litems.filter(i=>i.list===lid).sort((a,b)=>ikey(a)-ikey(b)) }
 const listHasDates=L=>!!L&&(L.dates===true||(L.dates==null&&/key dates|birthdays|dates/i.test(L.name||'')));
-function nextOcc(i){ if(!i.date) return null; if(!i.yearly) return i.date; const [y,m,d]=i.date.split('-').map(Number); const ty=+TODAY.slice(0,4); let c=ymd(new Date(ty,m-1,d)); if(c<TODAY) c=ymd(new Date(ty+1,m-1,d)); return c }
+const REP_PRESETS=[['','Doesn\u2019t repeat'],['1:day','Every day'],['1:week','Every week'],['2:week','Every 2 weeks'],['1:month','Every month'],['3:month','Every 3 months'],['6:month','Every 6 months'],['1:year','Every year'],['custom','Custom\u2026']];
+const REP_UNITS=[["day","days"],['week','weeks'],['month','months'],['year','years']];
+const repOf=i=>i.rep&&i.rep.n>0?i.rep:(i.yearly?{n:1,unit:'year'}:null);
+const repKey=r=>r?r.n+':'+r.unit:'';
+function addUnits(ds,n,unit){ const [y,m,d]=ds.split('-').map(Number); if(unit==='day') return addDays(ds,n); if(unit==='week') return addDays(ds,7*n);
+  const months=unit==='year'?12*n:n; const t=new Date(y,m-1+months,1); const last=new Date(t.getFullYear(),t.getMonth()+1,0).getDate(); return ymd(new Date(t.getFullYear(),t.getMonth(),Math.min(d,last))) }
+function nextOcc(i){ if(!i.date) return null; const r=repOf(i); if(!r||i.date>=TODAY) return i.date;
+  let k=0; if(r.unit==='day'||r.unit==='week'){ const per=(r.unit==='day'?1:7)*r.n; k=Math.ceil(daysTo2(i.date)/per) } else { const [y,m]=i.date.split('-').map(Number); const [ty,tm]=TODAY.split('-').map(Number); const per=(r.unit==='year'?12:1)*r.n; k=Math.max(0,Math.floor(((ty-y)*12+(tm-m))/per)) }
+  let c=addUnits(i.date,k*r.n,r.unit); let g=0; while(c<TODAY&&g++<500){ k++; c=addUnits(i.date,k*r.n,r.unit) } return c }
+const daysTo2=ds=>Math.round((parse(TODAY)-parse(ds))/864e5);
+const repLabel=r=>{ if(!r) return ''; const p=REP_PRESETS.find(x=>x[0]===repKey(r)); if(p) return p[1]; const u=REP_UNITS.find(x=>x[0]===r.unit); return 'Every '+r.n+' '+(u?u[1]:r.unit) };
 const daysTo=ds=>Math.round((parse(ds)-parse(TODAY))/864e5);
 function dueLabel(ds){ const n=daysTo(ds); if(n===0) return 'Today'; if(n===1) return 'Tomorrow'; if(n<0) return n===-1?'Yesterday':Math.abs(n)+' days ago'; if(n<7) return 'in '+n+' days'; if(n<14) return 'next week'; if(n<60) return 'in '+Math.round(n/7)+' weeks'; return 'in '+Math.round(n/30.4)+' months' }
 const shortDate=ds=>{ const d=parse(ds); return DAYS_LONG[d.getDay()].slice(0,3)+' '+d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3) };
 function sortDated(arr){ return arr.slice().sort((a,b)=>{ const x=nextOcc(a), y=nextOcc(b); if(x&&y) return x<y?-1:x>y?1:0; if(x) return -1; if(y) return 1; return 0 }) }
 function liHTML(i){ const w=canWrite(); const L=S.lists.find(x=>x.id===i.list); const dated=listHasDates(L);
-  return `<div class="it lit"${w&&!i.done?` data-iid="${esc(i.id)}" data-sec="${esc(i.sec||'')}"`:''}>${w&&!i.done&&!dated?`<span class="igrip" data-id="${esc(i.id)}" aria-label="Drag to reorder">${ic('grip')}</span>`:''}<button class="itmain" data-act="ltick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span>${i.done&&i.sec?(()=>{ const L=S.lists.find(x=>x.id===i.list); const sc=L&&secsOf(L).find(x=>x.id===i.sec); return sc?`<span class="rt">${esc(sc.name)}</span>`:'' })():''}</span></button>${dated?(w&&!i.done?`<span class="ldwrap"><input class="ldate" type="date" data-id="${esc(i.id)}" value="${esc(i.date||'')}" aria-label="Date for ${esc(i.name)}"><button class="lyr${i.yearly?' on':''}" data-act="lyearly" data-id="${esc(i.id)}" title="${i.yearly?'Repeats every year':'Repeat every year'}" aria-label="Repeat every year">${ic('repeat')}</button>${i.date?`<span class="ldue${nextOcc(i)<TODAY?' past':''}">${esc(dueLabel(nextOcc(i)))}</span>`:''}</span>`:i.date?`<span class="q">${esc(shortDate(i.date))}</span>`:''):''}${w&&!i.done?`<input class="lnote" id="ln-${esc(i.id)}" data-id="${esc(i.id)}" value="${esc(i.note||'')}" placeholder="Note" aria-label="Note for ${esc(i.name)}" autocomplete="off">`:i.note?`<span class="q">${esc(i.note)}</span>`:''}${w?`<button class="xbtn" data-act="rmlitem" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
+  return `<div class="it lit"${w&&!i.done?` data-iid="${esc(i.id)}" data-sec="${esc(i.sec||'')}"`:''}>${w&&!i.done&&!dated?`<span class="igrip" data-id="${esc(i.id)}" aria-label="Drag to reorder">${ic('grip')}</span>`:''}<button class="itmain" data-act="ltick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span>${i.done&&i.sec?(()=>{ const L=S.lists.find(x=>x.id===i.list); const sc=L&&secsOf(L).find(x=>x.id===i.sec); return sc?`<span class="rt">${esc(sc.name)}</span>`:'' })():''}</span></button>${dated?(w&&!i.done?`<span class="ldwrap"><input class="ldate" type="date" data-id="${esc(i.id)}" value="${esc(i.date||'')}" aria-label="Date for ${esc(i.name)}">${(()=>{ const r=repOf(i); const k=repKey(r); const custom=i.repCustom||(r&&!REP_PRESETS.some(x=>x[0]===k)); return `<select class="lrep${r?' on':''}" data-id="${esc(i.id)}" aria-label="Repeat">${REP_PRESETS.map(([v,l])=>`<option value="${v}"${(custom?v==='custom':v===k)?' selected':''}>${l}</option>`).join('')}</select>${custom?`<span class="lrepc">Every <input class="lrepn" type="number" min="1" max="99" data-id="${esc(i.id)}" value="${r?r.n:2}"><select class="lrepu" data-id="${esc(i.id)}">${REP_UNITS.map(([u,l])=>`<option value="${u}"${(r?r.unit:'week')===u?' selected':''}>${l}</option>`).join('')}</select></span>`:''}` })()}${i.date?`<span class="ldue${nextOcc(i)<TODAY?' past':''}">${esc(dueLabel(nextOcc(i)))}</span>`:''}</span>`:i.date?`<span class="q">${esc(shortDate(nextOcc(i)||i.date))}${repOf(i)?' · '+esc(repLabel(repOf(i))):''}</span>`:''):''}${w&&!i.done?`<input class="lnote" id="ln-${esc(i.id)}" data-id="${esc(i.id)}" value="${esc(i.note||'')}" placeholder="Note" aria-label="Note for ${esc(i.name)}" autocomplete="off">`:i.note?`<span class="q">${esc(i.note)}</span>`:''}${w?`<button class="xbtn" data-act="rmlitem" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
 function secsOf(L){ return Array.isArray(L.secs)?L.secs:[] }
 function listBodyHTML(L,todo,its){ const w=canWrite(); if(listHasDates(L)) todo=sortDated(todo); const secs=secsOf(L); const ids=new Set(secs.map(x=>x.id));
   const loose=todo.filter(i=>!i.sec||!ids.has(i.sec));
@@ -1105,7 +1124,7 @@ function viewLists(){
       <div class="row lacts">${canWrite()&&!UI.lrename?`<button class="link" data-act="renlist">Rename</button><button class="link" data-act="asklistdel">Delete list</button><button class="link" data-act="ldates">${listHasDates(L)?'Turn off dates':'Add dates'}</button>`:''}<button class="btn${L.fav?' solid':''}" data-act="lfav">${ic('heart')} Favourite</button><button class="btn" data-act="copylist">${ic('share')} Copy list</button></div></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
     <div class="lwrap">
-      ${canWrite()?`<form class="row" data-form="litem" style="flex-wrap:nowrap"><label class="search" style="border-radius:6px">${ic('plus')}<input id="litem" placeholder="Add to ${esc(L.name)}" autocomplete="off"></label>${listHasDates(L)?`<input class="in ldate-add" id="litemdate" type="date" aria-label="Date">`:''}<button class="btn solid" type="submit">Add</button></form>`:''}
+      ${canWrite()?`<form class="row" data-form="litem" style="flex-wrap:nowrap"><label class="search" style="border-radius:6px">${ic('plus')}<input id="litem" placeholder="Add to ${esc(L.name)}" autocomplete="off"></label>${listHasDates(L)?`<input class="in ldate-add" id="litemdate" type="date" aria-label="Date"><select class="in ldate-add lrep-add" id="litemrep" aria-label="Repeat">${REP_PRESETS.filter(x=>x[0]!=='custom').map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select>`:''}<button class="btn solid" type="submit">Add</button></form>`:''}
       ${listBodyHTML(L,todo,its)}
       ${done.length?`<div class="trolley"><div class="between" style="padding-bottom:8px"><span class="row" style="gap:8px">${ic('check')}<span class="lbl" style="color:var(--fg)">Done</span><span class="count">${done.length}</span></span><button class="link" style="color:var(--muted)" data-act="ldonetoggle">${UI.ldone?'Hide':'Show'}</button></div>${UI.ldone?done.map(liHTML).join(''):''}</div>
       ${canWrite()?`<div class="row" style="gap:24px"><button class="link" data-act="lcleardone">Clear done</button><button class="link" data-act="luntick">Untick all</button></div>`:''}`:''}
@@ -1326,6 +1345,10 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',async e=>{
   const id=e.target.id;
   if(id==='sort'){ UI.sort=e.target.value; render() }
+  if(e.target.classList&&(e.target.classList.contains('lrep')||e.target.classList.contains('lrepn')||e.target.classList.contains('lrepu'))){ const i=S.litems.find(x=>x.id===e.target.dataset.id); if(i){ delete i.yearly;
+      if(e.target.classList.contains('lrep')){ const v=e.target.value; if(!v){ delete i.rep; delete i.repCustom } else if(v==='custom'){ i.repCustom=true; const r=repOf(i); i.rep=r||{n:2,unit:'week'} } else { const [n,u]=v.split(':'); i.rep={n:+n,unit:u}; delete i.repCustom } }
+      else { const row=e.target.closest('.lrepc'); const n=Math.max(1,Math.min(99,+row.querySelector('.lrepn').value||1)); i.rep={n,unit:row.querySelector('.lrepu').value}; i.repCustom=true }
+      if(i.rep&&!i.date) i.date=TODAY; saveLItem(i); render() } }
   if(e.target.classList&&e.target.classList.contains('ldate')){ const i=S.litems.find(x=>x.id===e.target.dataset.id); if(i){ if(e.target.value) i.date=e.target.value; else delete i.date; saveLItem(i); render() } }
   if(UI.binDraft&&e.target.matches&&e.target.matches('#binday,[data-binfreq],[data-bincolour],[data-binthis]')){ readBinDraft(); render() }
   if(e.target.classList&&e.target.classList.contains('qin')) saveQty(e.target.dataset.qkey,e.target.value.trim());
@@ -1358,7 +1381,7 @@ document.addEventListener('submit',async e=>{
   if(f==='newsec'){ const v=$('#newsec').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); UI.addingSec=false; if(L&&v){ L.secs=secsOf(L).concat([{id:rid().slice(-8),name:v.charAt(0).toUpperCase()+v.slice(1)}]); Store.set('lists',L.id,L); const sid=L.secs[L.secs.length-1].id; render(); setTimeout(()=>{ const i=document.getElementById('si-'+sid); if(i) i.focus() },30) } else render(); return }
   if(f==='rensec'){ const v=$('#rensec').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); const sc=L&&secsOf(L).find(x=>x.id===e.target.dataset.sec); UI.secRename=null; if(sc&&v&&v!==sc.name){ sc.name=v; Store.set('lists',L.id,L) } render(); return }
   if(f==='secitem'){ const sid=e.target.dataset.sec; const inp=e.target.querySelector('input'); const v=inp.value.trim(); if(!v||!UI.lid) return; const iid=Store.newId('litems'); const doc={list:UI.lid,sec:sid,name:v.charAt(0).toUpperCase()+v.slice(1),note:'',done:false,at:Date.now()}; S.litems.push(Object.assign({id:iid},doc)); inp.value=''; render(); Store.set('litems',iid,doc); setTimeout(()=>{ const i=document.getElementById('si-'+sid); if(i) i.focus() },20); return }
-  if(f==='litem'){ const v=$('#litem').value.trim(); if(!v||!UI.lid) return; const iid=Store.newId('litems'); const doc={list:UI.lid,name:v.charAt(0).toUpperCase()+v.slice(1),note:'',done:false,at:Date.now()}; const dEl=$('#litemdate'); if(dEl&&dEl.value) doc.date=dEl.value; S.litems.push(Object.assign({id:iid},doc)); $('#litem').value=''; if(dEl) dEl.value=''; render(); Store.set('litems',iid,doc); return }
+  if(f==='litem'){ const v=$('#litem').value.trim(); if(!v||!UI.lid) return; const iid=Store.newId('litems'); const doc={list:UI.lid,name:v.charAt(0).toUpperCase()+v.slice(1),note:'',done:false,at:Date.now()}; const dEl=$('#litemdate'); if(dEl&&dEl.value) doc.date=dEl.value; const rEl=$('#litemrep'); if(rEl&&rEl.value&&doc.date){ const [n,u]=rEl.value.split(':'); doc.rep={n:+n,unit:u} } if(rEl) rEl.value=''; S.litems.push(Object.assign({id:iid},doc)); $('#litem').value=''; if(dEl) dEl.value=''; render(); Store.set('litems',iid,doc); return }
   if(f==='extra'){ const v=$('#extra').value.trim(); if(!v) return; const x=parseLine(v)||{name:v,qty:''}; const eid=Store.newId('extras'); const doc={name:x.name,qty:x.qty,done:false,at:Date.now()}; S.extras.push(Object.assign({id:eid},doc)); $('#extra').value=''; render(); Store.set('extras',eid,doc) }
   if(f==='reg'){ const v=$('#newreg').value.trim(); if(!v) return; const gid=slug(v); if(S.regs.some(r=>r.id===gid)){ toast(`${v} is already a regular.`); return } const doc={name:v.charAt(0).toUpperCase()+v.slice(1),group:UI.regGroup,on:false}; S.regs.push(Object.assign({id:gid},doc)); $('#newreg').value=''; render(); Store.set('regulars',gid,doc) }
   if(f==='recipe'){ readDraft(); const d=UI.draft; if(!d.title.trim()){ toast('Give the recipe a name first.'); $('#f-title').focus(); return }
