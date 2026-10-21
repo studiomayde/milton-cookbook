@@ -342,6 +342,9 @@ select.lrepu{background-position:right 8px center;padding-right:24px !important}
 .ldue{font-size:11px;color:var(--muted);white-space:nowrap;min-width:64px}
 .ldue.past{color:var(--faint)}
 .wdates{margin-bottom:20px}
+.lph .cb.ph{border:0;color:var(--muted)}
+.lph .cb.ph svg.i{width:15px;height:15px}
+.lph .nm{color:var(--fg)}
 .wrow.soon,.wrow.soon .wd,.wrow.soon .wn{font-weight:600;color:var(--fg)}
 .dtop{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-bottom:20px;align-items:stretch}
 .dtop>.wg{margin:0}
@@ -1057,7 +1060,7 @@ function viewBins(){ const setup=!S.bins||UI.binSet; const nx=nextCollections(9)
     <p class="muted" style="font-size:12px;line-height:1.6;max-width:640px;margin-top:22px">For a reminder on your phone, tap <b>Add reminders to calendar</b> on each phone and add the events. You'll get a reminder at 7pm the night before each collection.</p>` }
 
 function datesWidget(){ const dl=S.lists.filter(listHasDates); if(!dl.length) return ''; const ids=new Set(dl.map(l=>l.id));
-  const up=S.litems.filter(i=>ids.has(i.list)&&!i.done&&i.date).map(i=>({i,d:nextOcc(i)})).filter(x=>x.d>=TODAY&&x.d<=addDays(TODAY,14)).sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:0);
+  const up=S.litems.filter(i=>ids.has(i.list)&&!i.done&&i.date).concat(...dl.map(phItems)).map(i=>({i,d:nextOcc(i)})).filter(x=>x.d>=TODAY&&x.d<=addDays(TODAY,14)).sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:0);
   const one=dl.length===1?dl[0]:null;
   return `<div class="wg wdates"><div class="wh"><div><h2>${esc(one?one.name:'Key dates')}</h2></div><button class="link wl" data-act="openlist" data-id="${esc(one?one.id:'')}">${one?'Open list':'All lists'}</button></div><div>${up.length?up.map(({i,d})=>`<button class="wrow wbig${daysTo(d)<=3?' soon':''}" data-act="openlist" data-id="${esc(i.list)}"><span class="wd${d===TODAY?' today':''}" style="width:96px">${esc(shortDate(d))}</span><span class="wt">${esc(i.name)}${i.note?` <span class="muted">· ${esc(i.note)}</span>`:''}</span><span class="wn">${esc(dueLabel(d))}</span></button>`).join(''):'<p class="muted" style="margin:0">Nothing in the next two weeks.</p>'}</div></div>` }
 
@@ -1106,14 +1109,35 @@ const daysTo=ds=>Math.round((parse(ds)-parse(TODAY))/864e5);
 function dueLabel(ds){ const n=daysTo(ds); if(n===0) return 'Today'; if(n===1) return 'Tomorrow'; if(n<0) return n===-1?'Yesterday':Math.abs(n)+' days ago'; if(n<7) return 'in '+n+' days'; if(n<14) return 'next week'; if(n<60) return 'in '+Math.round(n/7)+' weeks'; return 'in '+Math.round(n/30.4)+' months' }
 const shortDate=ds=>{ const d=parse(ds); return DAYS_LONG[d.getDay()].slice(0,3)+' '+d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3) };
 function sortDated(arr){ return arr.slice().sort((a,b)=>{ const x=nextOcc(a), y=nextOcc(b); if(x&&y) return x<y?-1:x>y?1:0; if(x) return -1; if(y) return 1; return 0 }) }
-function liHTML(i){ const w=canWrite(); const L=S.lists.find(x=>x.id===i.list); const dated=listHasDates(L);
+/* WA public holidays, worked out each year (rules from wa.gov.au) */
+function easterSunday(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1; return ymd(new Date(y,mo-1,da)) }
+function nthMon(y,m,n){ const d=new Date(y,m,1); d.setDate(1+((8-d.getDay())%7)+(n-1)*7); return ymd(d) }
+function lastMon(y,m){ const d=new Date(y,m+1,0); d.setDate(d.getDate()-((d.getDay()+6)%7)); return ymd(d) }
+function waHolidays(y){ const H=[]; const add=(ds,n)=>H.push({date:ds,name:n}); const dow=ds=>parse(ds).getDay(); const D=(m,d)=>ymd(new Date(y,m-1,d));
+  const withMon=(ds,n)=>{ add(ds,n); const w=dow(ds); if(w===6) add(addDays(ds,2),n+' (additional day)'); if(w===0) add(addDays(ds,1),n+' (additional day)') };
+  withMon(D(1,1),"New Year's Day");
+  const au=D(1,26), aw=dow(au); add(aw===6?addDays(au,2):aw===0?addDays(au,1):au,'Australia Day');
+  add(nthMon(y,2,1),'Labour Day');
+  const es=easterSunday(y); add(addDays(es,-2),'Good Friday'); add(es,'Easter Sunday'); add(addDays(es,1),'Easter Monday');
+  withMon(D(4,25),'Anzac Day');
+  add(nthMon(y,5,1),'Western Australia Day');
+  add(lastMon(y,8),"King's Birthday");
+  const xm=D(12,25), xw=dow(xm); add(xm,'Christmas Day'); if(xw===6||xw===0) add(addDays(xm,xw===6?2:1),'Christmas Day (additional day)');
+  const bx=D(12,26), bw=dow(bx); add(bx,'Boxing Day'); if(bw===6) add(addDays(bx,2),'Boxing Day (additional day)'); if(bw===0||bw===1) add(addDays(bx,2),'Boxing Day (additional day)');
+  return H }
+const isPHsec=sc=>/public\s*holiday/i.test(sc&&sc.name||'');
+function phItems(L){ const out=[]; for(const sc of secsOf(L)){ if(!isPHsec(sc)) continue; const y=+TODAY.slice(0,4); const end=addDays(TODAY,366);
+    for(const yy of [y,y+1]) for(const h of waHolidays(yy)) if(h.date>=TODAY&&h.date<=end) out.push({id:'ph-'+sc.id+'-'+h.date+'-'+h.name.length,list:L.id,sec:sc.id,name:h.name,date:h.date,virtual:true}) }
+  return out }
+function liHTML(i){ if(i.virtual) return `<div class="it lit lph"><span class="cb ph">${ic('cal')}</span><span class="nm" style="flex:1"><span>${esc(i.name)}</span></span><span class="ldwrap"><span class="q">${esc(shortDate(i.date))}</span><span class="ldue">${esc(dueLabel(i.date))}</span></span></div>`;
+  const w=canWrite(); const L=S.lists.find(x=>x.id===i.list); const dated=listHasDates(L);
   return `<div class="it lit"${w&&!i.done?` data-iid="${esc(i.id)}" data-sec="${esc(i.sec||'')}"`:''}>${w&&!i.done&&!dated?`<span class="igrip" data-id="${esc(i.id)}" aria-label="Drag to reorder">${ic('grip')}</span>`:''}<button class="itmain" data-act="ltick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span>${i.done&&i.sec?(()=>{ const L=S.lists.find(x=>x.id===i.list); const sc=L&&secsOf(L).find(x=>x.id===i.sec); return sc?`<span class="rt">${esc(sc.name)}</span>`:'' })():''}</span></button>${dated?(w&&!i.done?`<span class="ldwrap"><input class="ldate" type="date" data-id="${esc(i.id)}" value="${esc(i.date||'')}" aria-label="Date for ${esc(i.name)}">${(()=>{ const r=repOf(i); const k=repKey(r); const custom=i.repCustom||(r&&!REP_PRESETS.some(x=>x[0]===k)); return `<select class="lrep${r?' on':''}" data-id="${esc(i.id)}" aria-label="Repeat">${REP_PRESETS.map(([v,l])=>`<option value="${v}"${(custom?v==='custom':v===k)?' selected':''}>${l}</option>`).join('')}</select>${custom?`<span class="lrepc">Every <input class="lrepn" type="number" min="1" max="99" data-id="${esc(i.id)}" value="${r?r.n:2}"><select class="lrepu" data-id="${esc(i.id)}">${REP_UNITS.map(([u,l])=>`<option value="${u}"${(r?r.unit:'week')===u?' selected':''}>${l}</option>`).join('')}</select></span>`:''}` })()}${i.date?`<span class="ldue${nextOcc(i)<TODAY?' past':''}">${esc(dueLabel(nextOcc(i)))}</span>`:''}</span>`:i.date?`<span class="q">${esc(shortDate(nextOcc(i)||i.date))}${repOf(i)?' · '+esc(repLabel(repOf(i))):''}</span>`:''):''}${w&&!i.done?`<input class="lnote" id="ln-${esc(i.id)}" data-id="${esc(i.id)}" value="${esc(i.note||'')}" placeholder="Note" aria-label="Note for ${esc(i.name)}" autocomplete="off">`:i.note?`<span class="q">${esc(i.note)}</span>`:''}${w?`<button class="xbtn" data-act="rmlitem" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
 function secsOf(L){ return Array.isArray(L.secs)?L.secs:[] }
-function listBodyHTML(L,todo,its){ const w=canWrite(); if(listHasDates(L)) todo=sortDated(todo); const secs=secsOf(L); const ids=new Set(secs.map(x=>x.id));
+function listBodyHTML(L,todo,its){ const w=canWrite(); if(listHasDates(L)) todo=sortDated(todo.concat(phItems(L))); const secs=secsOf(L); const ids=new Set(secs.map(x=>x.id));
   const loose=todo.filter(i=>!i.sec||!ids.has(i.sec));
   let out=loose.length||!secs.length?`<div class="lsec">${loose.length?loose.map(liHTML).join(''):`<p class="muted" style="margin:0">${its.length?'Everything is ticked off.':'Nothing on this list yet.'}</p>`}</div>`:'';
   for(const sc of secs){ const g=todo.filter(i=>i.sec===sc.id); const all=its.filter(i=>i.sec===sc.id);
-    out+=`<div class="lsec" data-sec="${esc(sc.id)}"><div class="lsh">${UI.secRename===sc.id?`<form class="row" data-form="rensec" data-sec="${esc(sc.id)}" style="flex-wrap:nowrap;flex:1"><input class="in" id="rensec" value="${esc(sc.name)}" autocomplete="off" style="font-family:var(--serif);font-size:20px;padding:4px 12px"><button class="btn solid sm" type="submit">Save</button><button class="link" type="button" data-act="rensecx">Cancel</button></form>`:`<h3>${w&&secs.length>1?`<span class="sgrip" data-sec="${esc(sc.id)}" title="Drag to reorder" aria-label="Drag to reorder">${ic('grip')}</span>`:''}${esc(sc.name)}<span class="count">${g.length}${all.length-g.length?` / ${all.length}`:''}</span></h3>${w?`<span class="row" style="gap:16px"><button class="link" data-act="rensec" data-sec="${esc(sc.id)}">Rename</button><button class="link" data-act="asksecdel" data-sec="${esc(sc.id)}">Delete</button></span>`:''}`}</div>
+    out+=`<div class="lsec" data-sec="${esc(sc.id)}"><div class="lsh">${UI.secRename===sc.id?`<form class="row" data-form="rensec" data-sec="${esc(sc.id)}" style="flex-wrap:nowrap;flex:1"><input class="in" id="rensec" value="${esc(sc.name)}" autocomplete="off" style="font-family:var(--serif);font-size:20px;padding:4px 12px"><button class="btn solid sm" type="submit">Save</button><button class="link" type="button" data-act="rensecx">Cancel</button></form>`:`<h3>${w&&secs.length>1?`<span class="sgrip" data-sec="${esc(sc.id)}" title="Drag to reorder" aria-label="Drag to reorder">${ic('grip')}</span>`:''}${esc(sc.name)}<span class="count">${g.length}${all.length-g.length>0?` / ${all.length}`:''}</span></h3>${w?`<span class="row" style="gap:16px"><button class="link" data-act="rensec" data-sec="${esc(sc.id)}">Rename</button><button class="link" data-act="asksecdel" data-sec="${esc(sc.id)}">Delete</button></span>`:''}`}</div>
       ${g.map(liHTML).join('')}
       ${w?`<form class="secadd" data-form="secitem" data-sec="${esc(sc.id)}" data-drop-end="${esc(sc.id)}">${ic('plus')}<input id="si-${esc(sc.id)}" placeholder="Add to ${esc(sc.name)}" autocomplete="off">${listHasDates(L)?`<input class="ldate secdate" type="date" aria-label="Date"><select class="lrep secrep" aria-label="Repeat">${REP_PRESETS.filter(x=>x[0]!=='custom').map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select><button class="btn sm" type="submit">Add</button>`:''}</form>`:''}</div>` }
   if(w) out+=UI.addingSec?`<form class="row" data-form="newsec" style="flex-wrap:nowrap"><input class="in" id="newsec" placeholder="Heading name, e.g. Gift cards" autocomplete="off" style="padding:10px 14px"><button class="btn solid" type="submit">Add</button><button class="link" type="button" data-act="addsecx">Cancel</button></form>`:`<button class="btn" data-act="addsec" style="align-self:flex-start">${ic('plus')} Add heading</button>`;
