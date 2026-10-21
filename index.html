@@ -467,6 +467,14 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .lnote{width:110px;font-size:12px !important}
   .lit .itmain{flex:0 1 auto;max-width:55%}
   .lacts{gap:20px}
+  .laddf{flex-wrap:wrap !important;gap:8px}
+  .laddf .search{flex:1 1 100%}
+  .laddf .ldate-add{flex:1 1 0;width:auto;min-width:0}
+  .laddf .btn{flex:none}
+  .secadd:has(.secdate){flex-wrap:wrap;row-gap:8px}
+  .secadd:has(.secdate) input:not(.secdate){flex:1 1 calc(100% - 34px)}
+  .secadd .secdate{flex:1 1 0;width:auto;min-width:0}
+  .secadd .secrep{flex:1 1 0;min-width:0;max-width:none}
   .dtop{grid-template-columns:1fr;gap:14px;margin-bottom:14px}
   .ldwrap{margin-left:6px;flex-wrap:wrap;justify-content:flex-end;row-gap:4px}
   .lrep{max-width:104px;font-size:11px !important}
@@ -1175,7 +1183,7 @@ function viewLists(){
       <div class="row lacts">${canWrite()&&!UI.lrename?`<button class="link" data-act="renlist">Rename</button>${/key dates/i.test(L.name||'')?'':'<button class="link" data-act="asklistdel">Delete list</button>'}${listHasDates(L)?'':'<button class="link" data-act="ldates">Add dates</button>'}`:''}<button class="btn${L.fav?' solid':''}" data-act="lfav">${ic('heart')} Favourite</button></div></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
     <div class="lwrap">
-      ${canWrite()?`<form class="row" data-form="litem" style="flex-wrap:nowrap"><label class="search" style="border-radius:6px">${ic('plus')}<input id="litem" placeholder="Add to ${esc(L.name)}" autocomplete="off"></label>${listHasDates(L)?`<input class="in ldate-add" id="litemdate" type="date" aria-label="Date"><select class="in ldate-add lrep-add" id="litemrep" aria-label="Repeat">${REP_PRESETS.filter(x=>x[0]!=='custom').map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select>`:''}<button class="btn solid" type="submit">Add</button></form>`:''}
+      ${canWrite()?`<form class="row${listHasDates(L)?' laddf':''}" data-form="litem" style="flex-wrap:nowrap"><label class="search" style="border-radius:6px">${ic('plus')}<input id="litem" placeholder="Add to ${esc(L.name)}" autocomplete="off"></label>${listHasDates(L)?`<input class="in ldate-add" id="litemdate" type="date" aria-label="Date"><select class="in ldate-add lrep-add" id="litemrep" aria-label="Repeat">${REP_PRESETS.filter(x=>x[0]!=='custom').map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select>`:''}<button class="btn solid" type="submit">Add</button></form>`:''}
       ${listHasDates(L)?`<div class="seg" style="align-self:flex-start"><button class="${UI.ldView!=='month'?'on':''}" data-act="ldview" data-v="list">List</button><button class="${UI.ldView==='month'?'on':''}" data-act="ldview" data-v="month">Month</button></div>`:''}
       ${listHasDates(L)&&UI.ldView==='month'?listMonthHTML(L):listBodyHTML(L,todo,its)}
       ${done.length&&!(listHasDates(L)&&UI.ldView==='month')?`<div class="trolley"><div class="between" style="padding-bottom:8px"><span class="row" style="gap:8px">${ic('check')}<span class="lbl" style="color:var(--fg)">Done</span><span class="count">${done.length}</span></span><button class="link" style="color:var(--muted)" data-act="ldonetoggle">${UI.ldone?'Hide':'Show'}</button></div>${UI.ldone?done.map(liHTML).join(''):''}</div>
