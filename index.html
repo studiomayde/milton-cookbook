@@ -1022,7 +1022,7 @@ function nextCollections(n){ const out=[]; if(!S.bins) return out; const hr=new 
 function whenLabel(ds){ if(ds===TODAY) return 'Today'; if(ds===addDays(TODAY,1)) return 'Tomorrow'; const dd=parse(ds); return DAYS_LONG[dd.getDay()]+' '+dd.getDate()+' '+MONTHS[dd.getMonth()].slice(0,3) }
 function putOutLabel(ds){ if(ds===TODAY) return 'Out this morning'; if(ds===addDays(TODAY,1)) return 'Put them out tonight'; return 'Put them out the night before, '+DAYS_LONG[parse(addDays(ds,-1)).getDay()] }
 function binWidget(){ if(!S.bins) return ''; const nx=nextCollections(3)[0]; if(!nx) return '';
-  return `<div class="wg wbin"><div class="wh"><div><h2>Bins · ${esc(whenLabel(nx.d))}</h2></div><button class="link wl" data-act="go" data-view="bins">Bin schedule</button></div>
+  return `<div class="wg wbin"><div class="wh"><div><div class="kick">${esc(whenLabel(nx.d))}</div><h2>Bins</h2></div><button class="link wl" data-act="go" data-view="bins">Bin schedule</button></div>
     <div class="bins-row">${nx.bs.map(b=>`<span class="binchip">${binIcon(b.colour)}${esc(b.name)}</span>`).join('')}</div></div>` }
 function binsICS(){ const c=S.bins; if(!c) return ''; const first=nextDow(TODAY,+c.day); const wk=[first,addDays(first,7)].map(d=>({d,bs:binsOn(d)}));
   const same=wk[0].bs.map(b=>b.id).join()===wk[1].bs.map(b=>b.id).join(); const series=same?[{...wk[0],iv:1}]:wk.map(w=>({...w,iv:2}));
