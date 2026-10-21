@@ -1056,9 +1056,9 @@ function viewBins(){ const setup=!S.bins||UI.binSet; const nx=nextCollections(9)
     <p class="muted" style="font-size:12px;line-height:1.6;max-width:640px;margin-top:22px">For a reminder on your phone, tap <b>Add reminders to calendar</b> on each phone and add the events. You'll get a reminder at 7pm the night before each collection.</p>` }
 
 function datesWidget(){ const dl=S.lists.filter(listHasDates); if(!dl.length) return ''; const ids=new Set(dl.map(l=>l.id));
-  const up=S.litems.filter(i=>ids.has(i.list)&&!i.done&&i.date).map(i=>({i,d:nextOcc(i)})).filter(x=>x.d>=TODAY).sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:0).slice(0,6);
+  const up=S.litems.filter(i=>ids.has(i.list)&&!i.done&&i.date).map(i=>({i,d:nextOcc(i)})).filter(x=>x.d>=TODAY&&x.d<=addDays(TODAY,14)).sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:0);
   const one=dl.length===1?dl[0]:null;
-  return `<div class="wg wdates"><div class="wh"><div><h2>${esc(one?one.name:'Key dates')}</h2></div><button class="link wl" data-act="openlist" data-id="${esc(one?one.id:'')}">${one?'Open list':'All lists'}</button></div><div>${up.length?up.map(({i,d})=>`<button class="wrow wbig" data-act="openlist" data-id="${esc(i.list)}"><span class="wd${d===TODAY?' today':''}" style="width:96px">${esc(shortDate(d))}</span><span class="wt">${esc(i.name)}${i.note?` <span class="muted">· ${esc(i.note)}</span>`:''}</span><span class="wn">${esc(dueLabel(d))}</span></button>`).join(''):'<p class="muted" style="margin:0">No upcoming dates. Add some to the list.</p>'}</div></div>` }
+  return `<div class="wg wdates"><div class="wh"><div><h2>${esc(one?one.name:'Key dates')}</h2></div><button class="link wl" data-act="openlist" data-id="${esc(one?one.id:'')}">${one?'Open list':'All lists'}</button></div><div>${up.length?up.map(({i,d})=>`<button class="wrow wbig" data-act="openlist" data-id="${esc(i.list)}"><span class="wd${d===TODAY?' today':''}" style="width:96px">${esc(shortDate(d))}</span><span class="wt">${esc(i.name)}${i.note?` <span class="muted">· ${esc(i.note)}</span>`:''}</span><span class="wn">${esc(dueLabel(d))}</span></button>`).join(''):'<p class="muted" style="margin:0">Nothing in the next two weeks.</p>'}</div></div>` }
 
 /* ---------- home ---------- */
 function viewDash(){
