@@ -336,6 +336,9 @@ body.secsorting{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .ldue{font-size:11px;color:var(--muted);white-space:nowrap;min-width:64px}
 .ldue.past{color:var(--faint)}
 .wdates{margin-bottom:20px}
+.dtop{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-bottom:20px;align-items:stretch}
+.dtop>.wg{margin:0}
+.dtop>.wg:only-child{grid-column:1/-1}
 .lwrap{max-width:760px;display:flex;flex-direction:column;gap:24px}
 .progress{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin:6px 0 20px}
 .progress i{display:block;height:100%;background:var(--fg)}
@@ -452,6 +455,7 @@ body.colsorting,body.colsorting *{cursor:grabbing !important}
   .lnote{width:110px;font-size:12px !important}
   .lit .itmain{flex:0 1 auto;max-width:55%}
   .lacts{gap:20px}
+  .dtop{grid-template-columns:1fr;gap:14px;margin-bottom:14px}
   .ldwrap{margin-left:6px;flex-wrap:wrap;justify-content:flex-end;row-gap:4px}
   .lrep{max-width:104px;font-size:11px !important}
   .lrepn,.lrepu{font-size:11px !important}
@@ -1071,7 +1075,7 @@ function viewDash(){
     ${recent.length?`<div class="wthumbs">${recent.map(r=>`<button class="wthumb" data-act="open" data-id="${r.id}"><span class="pic">${r.photo?`<img src="${r.photo}" alt="">`:`<span class="ph">${esc((r.title||'?').charAt(0))}</span>`}</span><span class="t">${esc(r.title)}</span></button>`).join('')}</div>`:''}
     <div class="row"><button class="btn" data-act="surprise">${ic('shuffle')} Surprise me</button>${canWrite()?`<button class="btn" data-act="new">${ic('plus')} New recipe</button>`:''}</div></div>`;
   return `<div class="head"><div class="tg"><div class="kick">${esc(longDate(TODAY))}</div><h1 class="h1">${hello}</h1></div></div>
-    ${binWidget()}${datesWidget()}<div class="dgrid">${lists}${shop}${meals}${recipes}</div>`;
+    ${(()=>{ const t=binWidget()+datesWidget(); return t?`<div class="dtop">${t}</div>`:'' })()}<div class="dgrid">${lists}${shop}${meals}${recipes}</div>`;
 }
 
 /* ---------- household lists ---------- */
