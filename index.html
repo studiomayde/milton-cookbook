@@ -258,6 +258,8 @@ textarea.in{resize:vertical;line-height:1.55}
 .wg .wh{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
 .wg h2{font-family:var(--serif);font-weight:400;font-size:30px;line-height:1;margin:6px 0 0}
 .wg .wl{white-space:nowrap}
+.hlink{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:left;line-height:inherit}
+.hlink:hover{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:5px}
 .wrow{display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1px solid var(--line);width:100%;text-align:left;font-size:12px;min-width:0}
 .wrow .wd{width:74px;flex:none;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .wrow .wd.today{color:var(--fg);font-weight:500}
@@ -1052,7 +1054,7 @@ function nextCollections(n){ const out=[]; if(!S.bins) return out; const hr=new 
 function whenLabel(ds){ if(ds===TODAY) return 'Today'; if(ds===addDays(TODAY,1)) return 'Tomorrow'; const dd=parse(ds); return DAYS_LONG[dd.getDay()]+' '+dd.getDate()+' '+MONTHS[dd.getMonth()].slice(0,3) }
 function putOutLabel(ds){ if(ds===TODAY) return 'Out this morning'; if(ds===addDays(TODAY,1)) return 'Put them out tonight'; return 'Put them out the night before, '+DAYS_LONG[parse(addDays(ds,-1)).getDay()] }
 function binWidget(){ if(!S.bins) return ''; const nx=nextCollections(3)[0]; if(!nx) return '';
-  return `<div class="wg wbin"><div class="wh"><div><div class="kick">${esc(whenLabel(nx.d))}</div><h2>Bins</h2></div><button class="link wl" data-act="go" data-view="bins">Bin schedule</button></div>
+  return `<div class="wg wbin"><div class="wh"><div><div class="kick">${esc(whenLabel(nx.d))}</div><h2><button class="hlink" data-act="go" data-view="bins">Bins</button></h2></div><button class="link wl" data-act="go" data-view="bins">Bin schedule</button></div>
     <div class="bins-row">${nx.bs.map(b=>`<span class="binchip">${binIcon(b.colour)}${esc(b.name)}</span>`).join('')}</div></div>` }
 function binsICS(){ const c=S.bins; if(!c) return ''; const first=nextDow(TODAY,+c.day); const wk=[first,addDays(first,7)].map(d=>({d,bs:binsOn(d)}));
   const same=wk[0].bs.map(b=>b.id).join()===wk[1].bs.map(b=>b.id).join(); const series=same?[{...wk[0],iv:1}]:wk.map(w=>({...w,iv:2}));
@@ -1082,12 +1084,12 @@ function viewBins(){ const setup=!S.bins||UI.binSet; const nx=nextCollections(9)
 function datesWidget(){ const dl=S.lists.filter(listHasDates); if(!dl.length) return ''; const ids=new Set(dl.map(l=>l.id));
   const up=S.litems.filter(i=>ids.has(i.list)&&!i.done&&i.date).concat(...dl.map(phItems)).map(i=>({i,d:nextOcc(i)})).filter(x=>x.d>=TODAY&&x.d<=addDays(TODAY,14)).sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:0);
   const one=dl.length===1?dl[0]:null;
-  return `<div class="wg wdates"><div class="wh"><div><h2>${esc(one?one.name:'Key dates')}</h2></div><button class="link wl" data-act="openlist" data-id="${esc(one?one.id:'')}">${one?'Open list':'All lists'}</button></div><div>${up.length?up.map(({i,d})=>`<button class="wrow wbig${daysTo(d)<=3?' soon':''}" data-act="openlist" data-id="${esc(i.list)}"><span class="wd${d===TODAY?' today':''}" style="width:96px">${esc(shortDate(d))}</span><span class="wt">${esc(i.name)}${i.note?` <span class="muted">· ${esc(i.note)}</span>`:''}</span><span class="wn">${esc(dueLabel(d))}</span></button>`).join(''):'<p class="muted" style="margin:0">Nothing in the next two weeks.</p>'}</div></div>` }
+  return `<div class="wg wdates"><div class="wh"><div><h2>${one&&isKD(one)?`<button class="hlink" data-act="go" data-view="dates">${esc(one.name)}</button>`:`<button class="hlink" data-act="openlist" data-id="${esc(one?one.id:'')}">${esc(one?one.name:'Key dates')}</button>`}</h2></div><button class="link wl" data-act="openlist" data-id="${esc(one?one.id:'')}">${one?'Open list':'All lists'}</button></div><div>${up.length?up.map(({i,d})=>`<button class="wrow wbig${daysTo(d)<=3?' soon':''}" data-act="openlist" data-id="${esc(i.list)}"><span class="wd${d===TODAY?' today':''}" style="width:96px">${esc(shortDate(d))}</span><span class="wt">${esc(i.name)}${i.note?` <span class="muted">· ${esc(i.note)}</span>`:''}</span><span class="wn">${esc(dueLabel(d))}</span></button>`).join(''):'<p class="muted" style="margin:0">Nothing in the next two weeks.</p>'}</div></div>` }
 
 /* ---------- home ---------- */
 function viewDash(){
   const wk=mondayOf(TODAY); const hr=new Date().getHours(); const hello=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
-  const wh=(kick,title,view,link,extra)=>`<div class="wh"><div><div class="kick">${kick}</div><h2>${title}</h2></div><button class="link wl" data-act="go" data-view="${view}"${extra||''}>${link}</button></div>`;
+  const wh=(kick,title,view,link,extra)=>`<div class="wh"><div><div class="kick">${kick}</div><h2><button class="hlink" data-act="go" data-view="${view}"${extra||''}>${title}</button></h2></div><button class="link wl" data-act="go" data-view="${view}"${extra||''}>${link}</button></div>`;
   // meals this week
   let mealRows=''; for(let i=0;i<7;i++){ const d=addDays(wk,i); const p=S.plan[d]||{}; const ms=MEALS.filter(m=>p[m[0]]&&R(p[m[0]]));
     if(!ms.length&&d!==TODAY) continue;
