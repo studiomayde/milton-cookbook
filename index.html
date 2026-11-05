@@ -811,8 +811,8 @@ function renderTop(){
   const share=UI.view==='shopping';
   $('#mtop').innerHTML=`<span class="row" style="gap:10px;flex-wrap:nowrap"><button class="btn icon mburger" data-act="menu" aria-label="Menu">${ic('menu')}</button><button class="logo" data-act="go" data-view="dash">Milton Manor</button></span>
     ${share?`<button class="btn icon" data-act="sharelist" aria-label="Copy list">${ic('share')}</button>`:''}`;
-  const t=(v,label,icon)=>`<button class="${(UI.view===v&&!(v==='lists'&&onKD()))||(v==='home'&&UI.view==='recipe')?'on':''}" data-act="${v==='search'?'msearch':'go'}" data-view="${v}">${ic(icon)}<span>${label}</span></button>`;
-  $('#tabbar').innerHTML=t('lists','Lists','list')+t('shopping','Groceries','apple')+(canWrite()?`<button class="fab" data-act="new" aria-label="New recipe">${ic('plus')}</button>`:'')+t('home','Recipes','book')+t('planner','Meals','cal');
+  const t=(v,label,icon)=>{ const on=v==='dates'?onKD():v==='lists'?UI.view==='lists'&&!onKD():UI.view===v; return `<button class="${on?'on':''}" data-act="go" data-view="${v}"${on?' aria-current="page"':''}>${ic(icon)}<span>${label}</span></button>` };
+  $('#tabbar').innerHTML=t('dash','Home','home')+t('lists','Lists','list')+t('dates','Key dates','kdate')+t('shopping','Groceries','apple');
 }
 
 /* ---------- render: views ---------- */
