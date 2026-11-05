@@ -1114,9 +1114,27 @@ const repOf=i=>i.rep&&i.rep.n>0?i.rep:(i.yearly?{n:1,unit:'year'}:null);
 const repKey=r=>r?r.n+':'+r.unit:'';
 function addUnits(ds,n,unit){ const [y,m,d]=ds.split('-').map(Number); if(unit==='day') return addDays(ds,n); if(unit==='week') return addDays(ds,7*n);
   const months=unit==='year'?12*n:n; const t=new Date(y,m-1+months,1); const last=new Date(t.getFullYear(),t.getMonth()+1,0).getDate(); return ymd(new Date(t.getFullYear(),t.getMonth(),Math.min(d,last))) }
-function nextOcc(i){ if(!i.date) return null; const r=repOf(i); if(!r||i.date>=TODAY) return i.date;
-  let k=0; if(r.unit==='day'||r.unit==='week'){ const per=(r.unit==='day'?1:7)*r.n; k=Math.ceil(daysTo2(i.date)/per) } else { const [y,m]=i.date.split('-').map(Number); const [ty,tm]=TODAY.split('-').map(Number); const per=(r.unit==='year'?12:1)*r.n; k=Math.max(0,Math.floor(((ty-y)*12+(tm-m))/per)) }
-  let c=addUnits(i.date,k*r.n,r.unit); let g=0; while(c<TODAY&&g++<500){ k++; c=addUnits(i.date,k*r.n,r.unit) } return c }
+function rawOcc(i,from){ if(!i.date) return null; const r=repOf(i); if(i.date>=from) return i.date; if(!r) return null;
+  let k=0; if(r.unit==='day'||r.unit==='week'){ const per=(r.unit==='day'?1:7)*r.n; k=Math.ceil(Math.round((parse(from)-parse(i.date))/864e5)/per) } else { const [y,m]=i.date.split('-').map(Number); const [ty,tm]=from.split('-').map(Number); const per=(r.unit==='year'?12:1)*r.n; k=Math.max(0,Math.floor(((ty-y)*12+(tm-m))/per)) }
+  let c=addUnits(i.date,k*r.n,r.unit); let g=0; while(c<from&&g++<500){ k++; c=addUnits(i.date,k*r.n,r.unit) } return c }
+/* household chores: items under a "household tasks" heading in Key dates always fall on a weekend (Mon-Fri moves to that week's Saturday) */
+const wkndOf=ds=>{ const d=parse(ds).getDay(); return d>=1&&d<=5?addDays(ds,6-d):ds };
+const isChoreSec=sc=>!!sc&&(sc.chores===true||/household tasks|chores/i.test(sc.name||''));
+function isChore(i){ if(!i||!i.sec) return false; const L=S.lists.find(x=>x.id===i.list); return !!L&&listHasDates(L)&&isChoreSec(secsOf(L).find(x=>x.id===i.sec)) }
+function nextOcc(i){ if(!i.date) return null; const r=repOf(i);
+  if(isChore(i)){ if(!r) return wkndOf(i.date); let c=rawOcc(i,addDays(TODAY,-6)); let g=0; while(c&&wkndOf(c)<TODAY&&g++<500) c=rawOcc(i,addDays(c,1)); return c?wkndOf(c):null }
+  if(!r||i.date>=TODAY) return i.date; return rawOcc(i,TODAY) }
+function lastChoreOcc(i){ if(!i.date) return null; const r=repOf(i); if(!r){ const w=wkndOf(i.date); return w<=TODAY?w:null }
+  let c=rawOcc(i,addDays(TODAY,-400)), last=null, g=0; while(c&&wkndOf(c)<=TODAY&&g++<1000){ last=wkndOf(c); c=rawOcc(i,addDays(c,1)) } return last }
+/* on its due weekend, each chore is put on Household jobs and stays there until ticked */
+let choreT; function choresSoon(){ clearTimeout(choreT); choreT=setTimeout(syncChores,800) }
+function syncChores(){ if(S.mode!=='cloud'||!canWrite()) return; const HH=S.lists.find(l=>/household jobs/i.test(l.name||'')); if(!HH) return;
+  for(const i of S.litems.slice()){ if(i.done||!i.date||!isChore(i)) continue;
+    const w=wkndOf(i.date); if(w!==i.date){ i.date=w; saveLItem(i) }
+    const last=lastChoreOcc(i); if(!last||(i.choreOcc||'')>=last) continue;
+    const cid='ch-'+i.id; const ex=S.litems.find(x=>x.id===cid);
+    const doc=ex&&!ex.done?Object.assign({},ex,{occ:last}):{list:HH.id,name:i.name,note:i.note||'',done:false,at:Date.now(),src:i.id,occ:last};
+    delete doc.id; Store.set('litems',cid,doc); i.choreOcc=last; saveLItem(i) } }
 const daysTo2=ds=>Math.round((parse(TODAY)-parse(ds))/864e5);
 const repLabel=r=>{ if(!r) return ''; const p=REP_PRESETS.find(x=>x[0]===repKey(r)); if(p) return p[1]; const u=REP_UNITS.find(x=>x[0]===r.unit); return 'Every '+r.n+' '+(u?u[1]:r.unit) };
 const daysTo=ds=>Math.round((parse(ds)-parse(TODAY))/864e5);
@@ -1670,8 +1688,8 @@ Store.init().then(()=>{
   Store.sub('ticks',d=>{ S.ticks={}; d.forEach(t=>S.ticks[t.id]=t); if(UI.view!=='edit') soon() });
   Store.sub('extras',d=>{ S.extras=d; if(UI.view!=='edit') soon() });
   Store.sub('settings',d=>{ const b=d.find(x=>x.id==='bins'); S.bins=b&&Array.isArray(b.bins)?b:null; if(UI.view!=='edit') soon() });
-  Store.sub('lists',d=>{ S.lists=d; if(UI.view!=='edit') soon(); else renderSide() });
-  Store.sub('litems',d=>{ S.litems=d; if(UI.view!=='edit') soon() });
+  Store.sub('lists',d=>{ S.lists=d; choresSoon(); if(UI.view!=='edit') soon(); else renderSide() });
+  Store.sub('litems',d=>{ S.litems=d; choresSoon(); if(UI.view!=='edit') soon() });
   Store.sub('regulars',d=>{ S.regs=d; if(UI.view!=='edit') soon() });
   Store.sub('qty',d=>{ S.qty={}; d.forEach(q=>S.qty[q.id]=q); if(UI.view!=='edit') soon() });
 });
