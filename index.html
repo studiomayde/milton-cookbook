@@ -1316,7 +1316,7 @@ document.addEventListener('click',async e=>{
     case 'fold': { const k=t.dataset.k; const op=!FOLD[k]; for(const x of Object.keys(FOLD)) FOLD[x]=false; FOLD[k]=op; if(op) UI.justOpened=k; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
     case 'idealist': newList(t.dataset.name); break;
     case 'addlist': UI.addingList=true; render(); setTimeout(()=>{ const i=$('#sidelist'); if(i) i.focus() },20); break;
-    case 'ltick': { const i=S.litems.find(x=>x.id===id); if(!i) break; i.done=!i.done; i.doneAt=i.done?Date.now():null; render(); saveLItem(i); break }
+    case 'ltick': { const i=S.litems.find(x=>x.id===id); if(!i) break; const r=!i.done&&i.date&&repOf(i); if(r){ const nx=addUnits(nextOcc(i),r.n,r.unit); i.date=nx; i.lastDone=TODAY; render(); saveLItem(i); toast('Done. Next due '+shortDate(nx)+'.'); break } i.done=!i.done; i.doneAt=i.done?Date.now():null; render(); saveLItem(i); break }
     case 'rmlitem': { e.stopPropagation(); S.litems=S.litems.filter(x=>x.id!==id); render(); Store.del('litems',id); break }
     case 'ldonetoggle': UI.ldone=!UI.ldone; render(); break;
     case 'lcleardone': { const gone=itemsOf(UI.lid).filter(i=>i.done); S.litems=S.litems.filter(x=>!gone.includes(x)); gone.forEach(i=>Store.del('litems',i.id)); render(); toast(`Cleared ${gone.length} done item${gone.length===1?'':'s'}.`); break }
