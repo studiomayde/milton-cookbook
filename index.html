@@ -339,6 +339,9 @@ select.lrepu{background-position:right 8px center;padding-right:24px !important}
 .lyr{width:26px;height:26px;display:grid;place-items:center;border-radius:50%;color:var(--faint)}
 .lyr svg.i{width:13px;height:13px}
 .lyr.on{background:var(--fg);color:var(--on-fg)}
+.ltodo{display:inline-flex;align-items:center;gap:4px;font:inherit;font-size:11px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);padding:4px 9px;cursor:pointer;white-space:nowrap;flex:none}
+.ltodo .i{width:12px;height:12px}
+.ltodo.on{background:var(--fg);color:var(--on-fg);border-color:var(--fg)}
 .ldue{font-size:11px;color:var(--muted);white-space:nowrap;min-width:64px}
 .ldue.past{color:var(--faint)}
 .wdates{margin-bottom:20px}
@@ -1124,16 +1127,22 @@ function isChore(i){ if(!i||!i.sec) return false; const L=S.lists.find(x=>x.id==
 function nextOcc(i){ if(!i.date) return null; const r=repOf(i);
   if(isChore(i)){ if(!r) return wkndOf(i.date); let c=rawOcc(i,addDays(TODAY,-6)); let g=0; while(c&&wkndOf(c)<TODAY&&g++<500) c=rawOcc(i,addDays(c,1)); return c?wkndOf(c):null }
   if(!r||i.date>=TODAY) return i.date; return rawOcc(i,TODAY) }
-function lastChoreOcc(i){ if(!i.date) return null; const r=repOf(i); if(!r){ const w=wkndOf(i.date); return w<=TODAY?w:null }
-  let c=rawOcc(i,addDays(TODAY,-400)), last=null, g=0; while(c&&wkndOf(c)<=TODAY&&g++<1000){ last=wkndOf(c); c=rawOcc(i,addDays(c,1)) } return last }
+function lastOccOn(i,snap){ if(!i.date) return null; const r=repOf(i); const f=snap?wkndOf:(d=>d); if(!r){ const w=f(i.date); return w<=TODAY?w:null }
+  let c=rawOcc(i,addDays(TODAY,-400)), last=null, g=0; while(c&&f(c)<=TODAY&&g++<1000){ last=f(c); c=rawOcc(i,addDays(c,1)) } return last }
 /* on its due weekend, each chore is put on Household jobs and stays there until ticked */
 let choreT; function choresSoon(){ clearTimeout(choreT); choreT=setTimeout(syncChores,800) }
-function syncChores(){ if(S.mode!=='cloud'||!canWrite()) return; const HH=S.lists.find(l=>/household jobs/i.test(l.name||'')); if(!HH) return;
-  for(const i of S.litems.slice()){ if(i.done||!i.date||!isChore(i)) continue;
-    const w=wkndOf(i.date); if(w!==i.date){ i.date=w; saveLItem(i) }
-    const last=lastChoreOcc(i); if(!last||(i.choreOcc||'')>=last) continue;
+/* key dates ticked "To-do" are put on Actions from key dates when they come up, and stay there until ticked */
+const ACT_ID='actions-from-key-dates';
+function actList(make){ let L=S.lists.find(l=>l.id===ACT_ID)||S.lists.find(l=>/actions from key dates/i.test(l.name||''));
+  if(!L&&make&&canWrite()){ const doc={name:'Actions from key dates',order:S.lists.length,at:Date.now()}; L=Object.assign({id:ACT_ID},doc); S.lists.push(L); Store.set('lists',ACT_ID,doc) } return L }
+function syncChores(){ if(S.mode!=='cloud'||!canWrite()) return; const HH=S.lists.find(l=>/household jobs/i.test(l.name||''));
+  for(const i of S.litems.slice()){ if(i.done||!i.date) continue; const chore=isChore(i); if(!chore&&!i.todo) continue;
+    let T; if(chore){ if(!HH) continue; T=HH; const w=wkndOf(i.date); if(w!==i.date){ i.date=w; saveLItem(i) } }
+    else { const L=S.lists.find(x=>x.id===i.list); if(!L||!listHasDates(L)) continue; T=actList(true); if(!T) continue }
+    const last=lastOccOn(i,chore); if(!last||(i.choreOcc||'')>=last) continue;
     const cid='ch-'+i.id; const ex=S.litems.find(x=>x.id===cid);
-    const doc=ex&&!ex.done?Object.assign({},ex,{occ:last}):{list:HH.id,name:i.name,note:i.note||'',done:false,at:Date.now(),src:i.id,occ:last};
+    const note=chore?(i.note||''):shortDate(last)+(i.note?' · '+i.note:'');
+    const doc=ex&&!ex.done&&ex.list===T.id?Object.assign({},ex,{occ:last}):{list:T.id,name:i.name,note,done:false,at:Date.now(),src:i.id,occ:last};
     delete doc.id; Store.set('litems',cid,doc); i.choreOcc=last; saveLItem(i) } }
 const daysTo2=ds=>Math.round((parse(TODAY)-parse(ds))/864e5);
 const repLabel=r=>{ if(!r) return ''; const p=REP_PRESETS.find(x=>x[0]===repKey(r)); if(p) return p[1]; const u=REP_UNITS.find(x=>x[0]===r.unit); return 'Every '+r.n+' '+(u?u[1]:r.unit) };
@@ -1177,7 +1186,7 @@ function listMonthHTML(L){ const mk=UI.ldMonth||TODAY.slice(0,8)+'01'; const fir
     <div class="lsec"><div class="lsh"><h3>${esc(shortDate(sel))}</h3></div>${se.length?se.map(x=>`<div class="it lit"><span class="nm" style="flex:1"><span>${esc(x.i.name)}</span>${x.i.virtual?'<span class="rt">Public holiday</span>':''}${x.i.note?`<span class="muted" style="font-size:11px">· ${esc(x.i.note)}</span>`:''}</span>${!x.i.virtual&&repOf(x.i)?`<span class="q">${esc(repLabel(repOf(x.i)))}</span>`:''}</div>`).join(''):'<p class="muted" style="margin:0;font-size:12px">Nothing on this day.</p>'}</div>` }
 function liHTML(i){ if(i.virtual) return `<div class="it lit lph"><span class="cb ph">${ic('cal')}</span><span class="nm" style="flex:1"><span>${esc(i.name)}</span></span><span class="ldwrap"><span class="q">${esc(shortDate(i.date))}</span><span class="ldue">${esc(dueLabel(i.date))}</span></span></div>`;
   const w=canWrite(); const L=S.lists.find(x=>x.id===i.list); const dated=listHasDates(L);
-  return `<div class="it lit"${w&&!i.done?` data-iid="${esc(i.id)}" data-sec="${esc(i.sec||'')}"`:''}>${w&&!i.done&&!dated?`<span class="igrip" data-id="${esc(i.id)}" aria-label="Drag to reorder">${ic('grip')}</span>`:''}<button class="itmain" data-act="ltick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span>${i.done&&i.sec?(()=>{ const L=S.lists.find(x=>x.id===i.list); const sc=L&&secsOf(L).find(x=>x.id===i.sec); return sc?`<span class="rt">${esc(sc.name)}</span>`:'' })():''}</span></button>${dated?(w&&!i.done?`<span class="ldwrap"><input class="ldate" type="date" data-id="${esc(i.id)}" value="${esc(i.date||'')}" aria-label="Date for ${esc(i.name)}">${(()=>{ const r=repOf(i); const k=repKey(r); const custom=i.repCustom||(r&&!REP_PRESETS.some(x=>x[0]===k)); return `<select class="lrep${r?' on':''}" data-id="${esc(i.id)}" aria-label="Repeat">${REP_PRESETS.map(([v,l])=>`<option value="${v}"${(custom?v==='custom':v===k)?' selected':''}>${l}</option>`).join('')}</select>${custom?`<span class="lrepc">Every <input class="lrepn" type="number" min="1" max="99" data-id="${esc(i.id)}" value="${r?r.n:2}"><select class="lrepu" data-id="${esc(i.id)}">${REP_UNITS.map(([u,l])=>`<option value="${u}"${(r?r.unit:'week')===u?' selected':''}>${l}</option>`).join('')}</select></span>`:''}` })()}${i.date?`<span class="ldue${nextOcc(i)<TODAY?' past':''}">${esc(dueLabel(nextOcc(i)))}</span>`:''}</span>`:i.date?`<span class="q">${esc(shortDate(nextOcc(i)||i.date))}${repOf(i)?' · '+esc(repLabel(repOf(i))):''}</span>`:''):''}${w&&!i.done?`<input class="lnote" id="ln-${esc(i.id)}" data-id="${esc(i.id)}" value="${esc(i.note||'')}" placeholder="Note" aria-label="Note for ${esc(i.name)}" autocomplete="off">`:i.note?`<span class="q">${esc(i.note)}</span>`:''}${w?`<button class="xbtn" data-act="rmlitem" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
+  return `<div class="it lit"${w&&!i.done?` data-iid="${esc(i.id)}" data-sec="${esc(i.sec||'')}"`:''}>${w&&!i.done&&!dated?`<span class="igrip" data-id="${esc(i.id)}" aria-label="Drag to reorder">${ic('grip')}</span>`:''}<button class="itmain" data-act="ltick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span>${i.done&&i.sec?(()=>{ const L=S.lists.find(x=>x.id===i.list); const sc=L&&secsOf(L).find(x=>x.id===i.sec); return sc?`<span class="rt">${esc(sc.name)}</span>`:'' })():''}</span></button>${dated?(w&&!i.done?`<span class="ldwrap"><input class="ldate" type="date" data-id="${esc(i.id)}" value="${esc(i.date||'')}" aria-label="Date for ${esc(i.name)}">${(()=>{ const r=repOf(i); const k=repKey(r); const custom=i.repCustom||(r&&!REP_PRESETS.some(x=>x[0]===k)); return `<select class="lrep${r?' on':''}" data-id="${esc(i.id)}" aria-label="Repeat">${REP_PRESETS.map(([v,l])=>`<option value="${v}"${(custom?v==='custom':v===k)?' selected':''}>${l}</option>`).join('')}</select>${custom?`<span class="lrepc">Every <input class="lrepn" type="number" min="1" max="99" data-id="${esc(i.id)}" value="${r?r.n:2}"><select class="lrepu" data-id="${esc(i.id)}">${REP_UNITS.map(([u,l])=>`<option value="${u}"${(r?r.unit:'week')===u?' selected':''}>${l}</option>`).join('')}</select></span>`:''}` })()}${isChore(i)?'':`<button type="button" class="ltodo${i.todo?' on':''}" data-act="ltodo" data-id="${esc(i.id)}" aria-pressed="${i.todo?'true':'false'}" title="Add to Actions from key dates when the date comes up">${ic('check')}To-do</button>`}${i.date?`<span class="ldue${nextOcc(i)<TODAY?' past':''}">${esc(dueLabel(nextOcc(i)))}</span>`:''}</span>`:i.date?`<span class="q">${esc(shortDate(nextOcc(i)||i.date))}${repOf(i)?' · '+esc(repLabel(repOf(i))):''}</span>`:''):''}${w&&!i.done?`<input class="lnote" id="ln-${esc(i.id)}" data-id="${esc(i.id)}" value="${esc(i.note||'')}" placeholder="Note" aria-label="Note for ${esc(i.name)}" autocomplete="off">`:i.note?`<span class="q">${esc(i.note)}</span>`:''}${w?`<button class="xbtn" data-act="rmlitem" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
 function secsOf(L){ return Array.isArray(L.secs)?L.secs:[] }
 function listBodyHTML(L,todo,its){ const w=canWrite(); if(listHasDates(L)) todo=sortDated(todo.concat(phItems(L))); const secs=secsOf(L); const ids=new Set(secs.map(x=>x.id));
   const loose=todo.filter(i=>!i.sec||!ids.has(i.sec));
@@ -1334,6 +1343,9 @@ document.addEventListener('click',async e=>{
     case 'fold': { const k=t.dataset.k; const op=!FOLD[k]; for(const x of Object.keys(FOLD)) FOLD[x]=false; FOLD[k]=op; if(op) UI.justOpened=k; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
     case 'idealist': newList(t.dataset.name); break;
     case 'addlist': UI.addingList=true; render(); setTimeout(()=>{ const i=$('#sidelist'); if(i) i.focus() },20); break;
+    case 'ltodo': { const i=S.litems.find(x=>x.id===id); if(!i) break; i.todo=!i.todo;
+      if(i.todo){ const lo=lastOccOn(i,false); if(lo&&lo<TODAY&&lo>(i.choreOcc||'')) i.choreOcc=lo; actList(true) }
+      render(); saveLItem(i); choresSoon(); toast(i.todo?'Added to Actions from key dates when it comes up.':'No longer added to Actions from key dates.'); break }
     case 'ltick': { const i=S.litems.find(x=>x.id===id); if(!i) break; const r=!i.done&&i.date&&repOf(i); if(r){ const nx=addUnits(nextOcc(i),r.n,r.unit); i.date=nx; i.lastDone=TODAY; render(); saveLItem(i); toast('Done. Next due '+shortDate(nx)+'.'); break } i.done=!i.done; i.doneAt=i.done?Date.now():null; render(); saveLItem(i); break }
     case 'rmlitem': { e.stopPropagation(); S.litems=S.litems.filter(x=>x.id!==id); render(); Store.del('litems',id); break }
     case 'ldonetoggle': UI.ldone=!UI.ldone; render(); break;
