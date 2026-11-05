@@ -558,6 +558,7 @@ const IC={
   back:'<path d="m15 6-6 6 6 6"/>', right:'<path d="m9 6 6 6-6 6"/>',
   heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/>',
   edit:'<path d="M4 20h4L19 9l-4-4L4 16v4Z"/>', trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  kdate:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/><path d="m12 12.6.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2-1.45-1.4 2-.3Z"/>',
   cal:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
   book:'<path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2V5Z"/><path d="M4 20a2 2 0 0 0 2 2h13v-4"/>',
   bag:'<path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
@@ -774,7 +775,7 @@ function toggleTick(it){
   S.ticks[it.tick]={at:Date.now()}; render(); return Store.set('ticks',it.tick,{at:Date.now()}) }
 
 /* ---------- navigation ---------- */
-function go(view,extra){ if(view==='people') loadPeople(); document.body.classList.remove('menuopen'); UI.view=view; Object.assign(UI,extra||{}); UI.sheet=null; UI.swap=view==='planner'?UI.swap:null; render(); window.scrollTo(0,0) }
+function go(view,extra){ if(view==='dates'){ const K=kdList(); view='lists'; extra=Object.assign({},extra,{lid:K?K.id:null,lfav:false,addingSec:false,secRename:null,lrename:false}) } if(view==='people') loadPeople(); document.body.classList.remove('menuopen'); UI.view=view; Object.assign(UI,extra||{}); UI.sheet=null; UI.swap=view==='planner'?UI.swap:null; render(); window.scrollTo(0,0) }
 function openList(kind,id){ UI.list={kind,id}; UI.status='all'; go('home') }
 
 /* ---------- render: chrome ---------- */
@@ -788,7 +789,7 @@ function renderSide(){ setTimeout(()=>{ UI.justOpened=null },0);
   const cols=S.cols.slice().sort((a,b)=>(a.order||0)-(b.order||0));
   const plannerOn=UI.view==='planner', shopOn=UI.view==='shopping';
   const SUB={lists:`
-      <button class="ni${UI.view==='lists'&&!UI.lid&&!UI.lfav?' on':''}" data-act="openlist" data-id=""><span>All lists</span><span>${S.lists.length}</span></button>
+      <button class="ni${UI.view==='lists'&&!UI.lid&&!UI.lfav?' on':''}" data-act="openlist" data-id=""><span>All lists</span><span>${sortedLists().length}</span></button>
       <button class="ni${UI.view==='lists'&&!UI.lid&&UI.lfav?' on':''}" data-act="listfavs"><span>Favourites</span><span>${S.lists.filter(x=>x.fav).length}</span></button>
       <div style="height:12px"></div>
       ${sortedLists().map(L=>{ const on=UI.view==='lists'&&UI.lid===L.id; const dr=canWrite(); return `<button class="ni${on?' on':''}" data-act="openlist" data-id="${esc(L.id)}"${dr?` data-lstid="${esc(L.id)}" title="Drag to reorder"`:''}><span>${dr?`<span class="cgrip">${ic('grip')}</span>`:''}${esc(L.name)}${L.fav?` <span class="lheart">${ic('heart')}</span>`:''}</span><span>${itemsOf(L.id).filter(i=>!i.done).length}</span></button>` }).join('')}
@@ -801,7 +802,7 @@ function renderSide(){ setTimeout(()=>{ UI.justOpened=null },0);
   const FK={lists:'lists',home:'recipes'};
   $('#side').innerHTML=`
     <button class="logo" data-act="go" data-view="dash">Milton Manor</button>
-    <div class="secnav">${[['dash','Home','home',UI.view==='dash'],['lists','Lists','list',UI.view==='lists'],['shopping','Groceries','apple',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn],['bins','Bins','bin',UI.view==='bins']].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
+    <div class="secnav">${[['dash','Home','home',UI.view==='dash'],['lists','Lists','list',UI.view==='lists'&&!onKD()],['dates','Key dates','kdate',onKD()],['shopping','Groceries','apple',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn],['bins','Bins','bin',UI.view==='bins']].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
       return `<div class="secg${open?' open':''}"><div class="secrow"><button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>${k?`<button class="fx" data-act="fold" data-k="${k}" aria-expanded="${!!open}" aria-label="${open?'Hide':'Show'} ${x[1]}">${ic('down')}</button>`:''}</div>${open?`<div class="nav subnav${UI.justOpened===k?' anim':''}">${SUB[x[0]]}</div>`:''}</div>` }).join('')}</div>
     ${S.me?`<div class="acct"><span class="muted">${esc(S.me.email||'')}</span><span class="row" style="gap:16px">${S.me.role==='owner'?`<button class="link${UI.view==='people'?' on':''}" data-act="go" data-view="people">People</button>`:''}<button class="link${UI.view==='account'?' on':''}" data-act="go" data-view="account">Change password</button><button class="link" data-act="signout">Sign out</button></span></div>`:''}`;
 }
@@ -810,7 +811,7 @@ function renderTop(){
   const share=UI.view==='shopping';
   $('#mtop').innerHTML=`<span class="row" style="gap:10px;flex-wrap:nowrap"><button class="btn icon mburger" data-act="menu" aria-label="Menu">${ic('menu')}</button><button class="logo" data-act="go" data-view="dash">Milton Manor</button></span>
     ${share?`<button class="btn icon" data-act="sharelist" aria-label="Copy list">${ic('share')}</button>`:''}`;
-  const t=(v,label,icon)=>`<button class="${UI.view===v||(v==='home'&&UI.view==='recipe')?'on':''}" data-act="${v==='search'?'msearch':'go'}" data-view="${v}">${ic(icon)}<span>${label}</span></button>`;
+  const t=(v,label,icon)=>`<button class="${(UI.view===v&&!(v==='lists'&&onKD()))||(v==='home'&&UI.view==='recipe')?'on':''}" data-act="${v==='search'?'msearch':'go'}" data-view="${v}">${ic(icon)}<span>${label}</span></button>`;
   $('#tabbar').innerHTML=t('lists','Lists','list')+t('shopping','Groceries','apple')+(canWrite()?`<button class="fab" data-act="new" aria-label="New recipe">${ic('plus')}</button>`:'')+t('home','Recipes','book')+t('planner','Meals','cal');
 }
 
@@ -1107,7 +1108,10 @@ function viewDash(){
 
 /* ---------- household lists ---------- */
 const LIST_IDEAS=['Vouchers to use','Household jobs','Things to fix','Bills to pay','Gift ideas','Birthdays','Packing list','Before the baby'];
-function sortedLists(){ return S.lists.slice().sort((a,b)=>(a.order||0)-(b.order||0)||(a.at||0)-(b.at||0)) }
+const isKD=L=>!!L&&/^key dates$/i.test(String(L.name||'').trim());
+const kdList=()=>S.lists.find(isKD);
+const onKD=()=>UI.view==='lists'&&!!UI.lid&&isKD(S.lists.find(x=>x.id===UI.lid));
+function sortedLists(){ return S.lists.filter(L=>!isKD(L)).slice().sort((a,b)=>(a.order||0)-(b.order||0)||(a.at||0)-(b.at||0)) }
 const ikey=i=>i.ord!=null?i.ord:(i.at||0);
 function itemsOf(lid){ return S.litems.filter(i=>i.list===lid).sort((a,b)=>ikey(a)-ikey(b)) }
 const listHasDates=L=>!!L&&(/key dates/i.test(L.name||'')||L.dates===true||(L.dates==null&&/birthdays|dates/i.test(L.name||'')));
@@ -1199,7 +1203,7 @@ function listBodyHTML(L,todo,its){ const w=canWrite(); if(listHasDates(L)) todo=
   return out }
 function viewLists(){
   const L=UI.lid&&S.lists.find(x=>x.id===UI.lid);
-  if(!L){ UI.lid=null; const allLs=sortedLists(); const ls=UI.lfav?allLs.filter(x=>x.fav):allLs; const used=new Set(ls.map(x=>x.name.toLowerCase())); const ideas=LIST_IDEAS.filter(x=>!used.has(x.toLowerCase()));
+  if(!L){ UI.lid=null; const allLs=sortedLists(); const ls=UI.lfav?allLs.filter(x=>x.fav):allLs; const used=new Set(S.lists.map(x=>String(x.name||'').toLowerCase())); const ideas=LIST_IDEAS.filter(x=>!used.has(x.toLowerCase()));
     return `<div class="head"><div class="tg"><div class="kick">Milton Manor</div><h1 class="h1">${UI.lfav?'Favourite lists':'Lists'}</h1><div class="sub">${ls.length} list${ls.length===1?'':'s'}</div></div>
       <div class="seg"><button class="${UI.lfav?'':'on'}" data-act="openlist" data-id="">All  ${allLs.length}</button><button class="${UI.lfav?'on':''}" data-act="listfavs">Favourites  ${allLs.filter(x=>x.fav).length}</button></div></div>
       <div class="lwrap" style="max-width:none">
@@ -1208,10 +1212,10 @@ function viewLists(){
         return `<button class="lcard" data-act="openlist" data-id="${esc(l.id)}"${canWrite()?` data-lstid="${esc(l.id)}"`:''}><span class="lm">${l.fav?`<span class="lheart">${ic('heart')}</span>`:''}${todo.length} to do${its.length-todo.length?`  ·  ${its.length-todo.length} done`:''}</span><span class="ln">${esc(l.name)}</span>${todo.length?`<ul>${todo.slice(0,4).map(i=>`<li>${esc(i.name)}</li>`).join('')}${todo.length>4?`<li style="list-style:none">+ ${todo.length-4} more</li>`:''}</ul>`:`<span class="muted" style="font-size:12px">${its.length?'All done.':'Nothing on it yet.'}</span>`}</button>` }).join('')}</div>`:`<p class="muted" style="margin:0">${UI.lfav?'No favourite lists yet. Open a list and tap Favourite.':'No lists yet. Start one above.'}</p>`}
       </div>`; }
   const its=itemsOf(L.id), todo=its.filter(i=>!i.done), done=its.filter(i=>i.done); const pct=its.length?Math.round(done.length/its.length*100):0;
-  return `<div class="head"><div class="tg"><button class="back" data-act="openlist" data-id="" style="margin-bottom:10px">${ic('back')} All lists</button>
+  return `<div class="head"><div class="tg">${isKD(L)?'':`<button class="back" data-act="openlist" data-id="" style="margin-bottom:10px">${ic('back')} All lists</button>`}
       ${UI.lrename?`<form class="row" data-form="renlist" style="flex-wrap:nowrap"><input class="in" id="renlist" value="${esc(L.name)}" autocomplete="off" style="font-family:var(--serif);font-size:30px;padding:6px 14px;max-width:420px"><button class="btn solid" type="submit">Save</button><button class="link" type="button" data-act="renlistcancel">Cancel</button></form>`:`<h1 class="h1">${esc(L.name)}</h1>`}
       <div class="sub">Total: ${todo.length} item${todo.length===1?'':'s'}${done.length?`  ·  ${done.length} done`:''}</div></div>
-      <div class="row lacts">${canWrite()&&!UI.lrename?`<button class="link" data-act="renlist">Rename</button>${/key dates/i.test(L.name||'')?'':'<button class="link" data-act="asklistdel">Delete list</button>'}${listHasDates(L)?'':'<button class="link" data-act="ldates">Add dates</button>'}`:''}<button class="btn${L.fav?' solid':''}" data-act="lfav">${ic('heart')} Favourite</button></div></div>
+      <div class="row lacts">${canWrite()&&!UI.lrename?`${isKD(L)?'':'<button class="link" data-act="renlist">Rename</button>'}${/key dates/i.test(L.name||'')?'':'<button class="link" data-act="asklistdel">Delete list</button>'}${listHasDates(L)?'':'<button class="link" data-act="ldates">Add dates</button>'}`:''}<button class="btn${L.fav?' solid':''}" data-act="lfav">${ic('heart')} Favourite</button></div></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
     <div class="lwrap">
       ${canWrite()?`<form class="row${listHasDates(L)?' laddf':''}" data-form="litem" style="flex-wrap:nowrap"><label class="search" style="border-radius:6px">${ic('plus')}<input id="litem" placeholder="Add to ${esc(L.name)}" autocomplete="off"></label>${listHasDates(L)?`<input class="in ldate-add" id="litemdate" type="date" aria-label="Date"><select class="in ldate-add lrep-add" id="litemrep" aria-label="Repeat">${REP_PRESETS.filter(x=>x[0]!=='custom').map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select>`:''}<button class="btn solid" type="submit">Add</button></form>`:''}
