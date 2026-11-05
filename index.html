@@ -1114,7 +1114,7 @@ const onKD=()=>UI.view==='lists'&&!!UI.lid&&isKD(S.lists.find(x=>x.id===UI.lid))
 function sortedLists(){ return S.lists.filter(L=>!isKD(L)).slice().sort((a,b)=>(a.order||0)-(b.order||0)||(a.at||0)-(b.at||0)) }
 const ikey=i=>i.ord!=null?i.ord:(i.at||0);
 function itemsOf(lid){ return S.litems.filter(i=>i.list===lid).sort((a,b)=>ikey(a)-ikey(b)) }
-const listHasDates=L=>!!L&&(/key dates/i.test(L.name||'')||L.dates===true||(L.dates==null&&/birthdays|dates/i.test(L.name||'')));
+const listHasDates=L=>!!L&&!/^actions from/i.test(L.name||'')&&(/key dates/i.test(L.name||'')||L.dates===true||(L.dates==null&&/birthdays|dates/i.test(L.name||'')));
 const REP_PRESETS=[['','Doesn\u2019t repeat'],['1:day','Every day'],['1:week','Every week'],['2:week','Every 2 weeks'],['1:month','Every month'],['3:month','Every 3 months'],['6:month','Every 6 months'],['1:year','Every year'],['custom','Custom\u2026']];
 const REP_UNITS=[["day","days"],['week','weeks'],['month','months'],['year','years']];
 const repOf=i=>i.rep&&i.rep.n>0?i.rep:(i.yearly?{n:1,unit:'year'}:null);
