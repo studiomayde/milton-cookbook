@@ -326,6 +326,20 @@ body.secsorting{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .bbtel li:first-child{border-top:0}
 .bbtel a{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--fg);text-decoration:none}
 .bbtel a b{font-weight:600;white-space:nowrap}.bbtel .muted{font-size:11px}
+.bedsteps{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px}
+.bedsteps li{background:var(--bg);border-radius:8px;padding:14px 12px;display:flex;flex-direction:column;gap:6px;font-size:12px;line-height:1.45}
+.bedsteps li b{font-family:var(--serif);font-weight:400;font-size:19px;line-height:1.1}
+.bedsteps .n{font-size:10px;letter-spacing:.1em;color:var(--muted)}
+.bedsteps li.on{background:var(--fg);color:var(--on-fg)}.bedsteps li.on .muted,.bedsteps li.on .n{color:rgba(255,255,255,.7)}
+.cuegrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:stretch}
+.cue h3{font-family:var(--serif);font-weight:400;font-size:22px;margin:10px 0 0}
+.cue p{font-size:12.5px;line-height:1.55;margin:0}
+.cue .fsec{padding:12px 0 4px}
+.cueic{width:56px;height:56px;fill:none;stroke:var(--fg);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;background:var(--bg);border-radius:50%;padding:4px}
+.cueic .f{fill:var(--fg);stroke:none}
+.cue{padding-bottom:22px}
+@media (max-width:1100px){.bedsteps{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:860px){.cuegrid{grid-template-columns:1fr;gap:14px}.bedsteps{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .bbtabs{display:flex;flex-wrap:wrap;gap:6px}
 .bbtabs button{padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
 .bbtabs button.on{background:var(--fg);border-color:var(--fg);color:var(--on-fg)}
@@ -1216,7 +1230,7 @@ const BABY_WEEKS=[
   p:['Most babies are back to birth weight by about 2 weeks.','The cord stump usually falls off this week. First proper bath once it has.','She may be more alert and want to look at faces.','A growth spurt is common around now. Feed more, it settles in a couple of days.','Short tummy time on your chest or the floor when she’s awake.'],
   appt:'Child health nurse visit (before 14 days)',ideas:['Tummy time on your chest or a mat, 1 to 2 minutes','Black and white cards held close to her face','Read aloud. Anything works, even your emails','A short walk outside in the pram or carrier, in the shade','Warm bath play once the cord is off']},
  {k:'Weeks 3 to 4',t:'More awake, more fussy',feeds:'8 to 12',awake:'About 1 hour',sleep:'15 to 17 hrs',nappies:'6+ heavy wet',
-  p:['Fussy evenings and cluster feeding are very common.','Another growth spurt often comes around 3 weeks.','Start a simple bedtime routine: bath, feed, swaddle, dim lights, cot.','Tummy time a few minutes, several times a day.','Day versus night: bright and chatty in the day, calm and dark overnight.'],
+  p:['Fussy evenings and cluster feeding are very common.','Another growth spurt often comes around 3 weeks.','Start a simple bedtime routine with a short book after her last feed. See Bedtime routine below.','Tummy time a few minutes, several times a day.','Day versus night: bright and chatty in the day, calm and dark overnight.'],
   appt:'Register her birth if you haven’t yet',ideas:['Tummy time a few minutes, several times a day','High-contrast cards or a play mat','Look in a mirror together','Narrate what you’re doing around the house','Baby massage and gentle bicycle legs']},
  {k:'Weeks 5 to 6',t:'First smiles',feeds:'7 to 10',awake:'60 to 75 min',sleep:'14 to 17 hrs',nappies:'6+ heavy wet',
   p:['First real smiles often appear around 6 weeks.','Crying tends to peak around now, then slowly eases.','Growth spurt again around 6 weeks.','She may start following you with her eyes and turning to voices.','Look for tired signs: yawning, staring, jerky movements, grizzling. Settle her before she’s overtired.'],
@@ -1227,6 +1241,27 @@ const BABY_WEEKS=[
  {k:'Months 3 to 4',t:'Feed, play, sleep',feeds:'6 to 8',awake:'1.5 to 2 hrs',sleep:'14 to 16 hrs',nappies:'5 to 6+ wet',
   p:['3 to 4 naps a day with a clearer bedtime.','Laughing, grabbing toys, maybe starting to roll. Stop swaddling once she shows signs of rolling.','Sleep can go a little wobbly around 4 months as her sleep matures. It passes.','Keep tummy time going every day.'],
   appt:'4-month immunisations and child health check',ideas:['Toys to reach for, grab and mouth','Tummy time propped on her elbows','Rolling practice, side to side','Peekaboo and mirror play','Different textures to touch, and time outdoors']}];
+const BED_STEPS=[['Bath','Warm, quick and calm. Every night or every few nights.'],['Massage','A few strokes with oil on legs, tummy and back.'],['Pyjamas','Fresh nappy, pyjamas, swaddle or sleeping bag.'],['Feed','Lights low, quiet voice, no screens.'],['Book','5 minutes, the same few books. She’s calm but still awake.'],['Song and cuddle','One song, the same words each night.'],['Cot','Into her cot drowsy but awake, on her back.']];
+const CUE_FACE={
+ hungry:'<circle cx="24" cy="24" r="17"/><circle cx="18" cy="21" r="1.4" class="f"/><circle cx="30" cy="21" r="1.4" class="f"/><circle cx="24" cy="30.5" r="3"/><path d="M38 12c2 2 2 5 0 7"/>',
+ tired:'<circle cx="24" cy="24" r="17"/><path d="M15.5 22c1.5 1.4 3.5 1.4 5 0M27.5 22c1.5 1.4 3.5 1.4 5 0"/><ellipse cx="24" cy="31" rx="2.6" ry="3.4"/><path d="M36 9h4l-4 4h4"/>',
+ overtired:'<circle cx="24" cy="24" r="17"/><path d="M16 19l4 2-4 2M32 19l-4 2 4 2"/><path d="M17 33c2-4 12-4 14 0Z"/><path d="M14 26v3"/>',
+ play:'<circle cx="24" cy="24" r="17"/><circle cx="18" cy="21" r="1.6" class="f"/><circle cx="30" cy="21" r="1.6" class="f"/><path d="M17 28c3 4.5 11 4.5 14 0"/>',
+ overstim:'<circle cx="24" cy="24" r="17"/><circle cx="16" cy="21" r="1.4" class="f"/><circle cx="27" cy="21" r="1.4" class="f"/><path d="M18 31h8"/><path d="M41 15l3-2M42 22h4M41 29l3 2"/>',
+ wind:'<circle cx="24" cy="24" r="17"/><path d="M15.5 20l4 1.5M32.5 20l-4 1.5"/><path d="M17 31c1.5-1.5 3-1.5 4.5 0s3 1.5 4.5 0 3-1.5 4.5 0"/><path d="M37 37c3 0 4-3 2-4s-3 1-1 2"/>',
+ full:'<circle cx="24" cy="24" r="17"/><path d="M15.5 22c1.5-1.4 3.5-1.4 5 0M27.5 22c1.5-1.4 3.5-1.4 5 0"/><path d="M19 29c2.5 2.5 7.5 2.5 10 0"/>',
+ temp:'<path d="M21 9a3 3 0 0 1 6 0v18a6.5 6.5 0 1 1-6 0Z"/><circle cx="24" cy="32" r="2.5" class="f"/><path d="M24 30V16M30 13h4M30 18h3M30 23h4"/>',
+ comfort:'<circle cx="24" cy="24" r="17"/><circle cx="18" cy="21" r="1.4" class="f"/><circle cx="30" cy="21" r="1.4" class="f"/><path d="M19 32c2.5-2.5 7.5-2.5 10 0"/><path d="M33 26c0 1.5-1 2.5-2 2.5"/>'};
+const CUES=[
+ ['hungry','Hungry','Rooting, turning her head, lip smacking, sucking on hands or fists.','Offer a feed now. Crying is a late hunger sign, so feed early if you can.'],
+ ['tired','Tired','Yawning, staring into space, frowning, jerky movements, rubbing eyes or ears.','Start settling her for sleep now, before she gets overtired.'],
+ ['overtired','Overtired','Arching her back, hard crying, clenched fists, fighting sleep.','Calm everything down. Dim room, swaddle, rock, shush. Aim to catch the tired signs earlier next time.'],
+ ['play','Ready to play','Bright, wide eyes, looking at your face, smooth movements, smiling or cooing.','Her best learning time. Chat, sing, tummy time, show her things.'],
+ ['overstim','Needs a break','Looking or turning away, hiccups, splayed fingers, sneezing, going quiet or fussy.','Give her a quiet moment. Less talking, less light, a cuddle facing into you.'],
+ ['wind','Wind or tummy pain','Pulling her legs up, squirming, red face, grunting, crying after feeds.','Burp her upright, gentle tummy massage or bicycle legs.'],
+ ['full','Full and content','Relaxed open hands, lets go of the breast or bottle, drowsy and calm.','The feed is done. A burp, a cuddle, then play or sleep.'],
+ ['temp','Too hot or cold','Sweaty neck, flushed skin, or a cool chest and back.','Feel her chest or back of her neck, not her hands. Add or remove a layer.'],
+ ['comfort','Wants comfort','Whimpering, fussing that settles when picked up, wanting to be close.','Pick her up. You can’t spoil a newborn.']];
 let BABY_DEF=null;
 function babyData(){ if(S.baby) return S.baby; if(BABY_DEF) return BABY_DEF;
   return BABY_DEF={about:{},todo:BABY_GROUPS.flatMap(G=>BABY_TODO[G].map(n=>({id:rid().slice(-8),name:n,done:false,g:G})))} }
@@ -1253,11 +1288,14 @@ function viewBaby(){ const d=babyData(); const w=canWrite(); const a=d.about||{}
     <div class="labcols" style="margin-top:8px"><div><div class="fsec">What to focus on</div><ul class="affl plain">${W.p.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div>
     <div><div class="fsec">Appointments</div><p style="font-size:12.5px;line-height:1.55;margin:4px 0 0">${esc(W.appt)}</p><div class="fsec" style="margin-top:10px">A typical stretch</div><p style="font-size:12.5px;line-height:1.55;margin:4px 0 0">Feed, a little awake time (${esc(W.awake.toLowerCase())}), then sleep. Repeat around the clock.</p><div class="fsec" style="margin-top:10px">Awake time ideas</div><ul class="affl plain">${(W.ideas||[]).map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div></div>
     <p class="muted" style="font-size:11px;margin:16px 0 0">Every baby is different. These are rough ranges, not targets.</p></div>`;
+  const bed=`<h2 class="labh">Bedtime routine</h2><div class="lsec"><p style="font-size:13px;line-height:1.6;margin:0 0 4px"><b>The best time for a book</b> is after her last feed, once she’s fed, changed and calm but still awake, about 20 to 30 minutes before you’d like her asleep. You can read to her from day one. Making it part of the routine from about weeks 3 to 4 helps her learn that a story means sleep is coming.</p>
+    <ol class="bedsteps">${BED_STEPS.map(([t,d],i)=>`<li class="${t==='Book'?'on':''}"><span class="n">${i+1}</span><b>${esc(t)}</b><span class="muted">${esc(d)}</span></li>`).join('')}</ol></div>`;
+  const cues=`<h2 class="labh">Reading her cues</h2><div class="cuegrid">${CUES.map(([k,t,l,d])=>`<div class="lsec cue"><svg class="cueic" viewBox="0 0 48 48" aria-hidden="true">${CUE_FACE[k]}</svg><h3>${esc(t)}</h3><div class="fsec">Looks like</div><p>${esc(l)}</p><div class="fsec">What to do</div><p>${esc(d)}</p></div>`).join('')}</div>`;
   const open=UI.bbOpen||{};
   const guide=`<h2 class="labh">Day to day</h2><div class="lsec bbguide">${BABY_GUIDE.map((x,i)=>`<div class="bbg${open[i]?' open':''}"><button class="bbgh" data-act="bbg" data-i="${i}" aria-expanded="${!!open[i]}"><span><h3>${esc(x.t)}</h3><span class="muted">${esc(x.s)}</span></span>${ic('down')}</button>${open[i]?`<ul class="affl plain" style="margin-top:10px">${x.p.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}</div>`).join('')}</div>
     <p class="muted" style="font-size:11px;line-height:1.6;margin:22px 0 0">A general guide only. Your midwife, child health nurse and GP know her best.</p>`;
   return `<div class="head"><div class="tg"><div class="kick">Welcome home</div><h1 class="h1">Baby girl</h1></div></div>
-    <div class="labtop">${about}${help}</div>${todo}${weeks}${guide}<div style="height:20px"></div>${urgent}` }
+    <div class="labtop">${about}${help}</div>${todo}${weeks}${bed}${cues}${guide}<div style="height:20px"></div>${urgent}` }
 document.addEventListener('change',e=>{ const k=e.target&&e.target.dataset&&e.target.dataset.babyf; if(!k) return; const d=JSON.parse(JSON.stringify(babyData())); d.about=d.about||{}; d.about[k]=e.target.value.trim(); saveBaby(d,true) });
 /* ---------- home ---------- */
 function favWidgets(){ const fs=sortedLists().filter(L=>L.fav); if(!fs.length) return '';
