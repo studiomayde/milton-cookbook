@@ -314,7 +314,8 @@ body.secsorting{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .affl li::marker{color:var(--faint)}
 .labaff .affl li{font-family:var(--serif);font-size:19px;line-height:1.35;padding:7px 0}
 .labaff .affl li{display:list-item}.labaff .affl li span{margin-right:6px}.labaff .affl .xbtn{vertical-align:middle;opacity:.6}
-.affl.plain li{padding:5px 0;font-size:12.5px}
+.affl.plain li{padding:5px 0;font-size:12.5px;line-height:1.55}
+.affl.plain b{font-weight:600}
 .labpack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 40px}
 .labpack .it .nm{font-size:12.5px}
 .labdone{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
@@ -1154,9 +1155,12 @@ function labRow(i,w){ return `<div class="it"><button class="itmain" data-act="l
 function viewLabour(){ const d=labData(); const w=canWrite(); const done=d.pack.filter(i=>i.done).length;
   const affirm=`<div class="lsec labaff"><div class="lsh"><h3>Affirmations</h3></div><ul class="affl">${d.affirm.map(a=>`<li><span>${esc(a.t)}</span>${w?`<button class="xbtn" data-act="labaffrm" data-id="${esc(a.id)}" aria-label="Remove">${ic('x')}</button>`:''}</li>`).join('')}</ul>
     ${w?`<form class="row" data-form="labaff" style="margin-top:12px"><label class="search" style="border-radius:6px">${ic('plus')}<input id="labaff" placeholder="Add an affirmation" autocomplete="off"></label></form>`:''}</div>`;
-  const call=`<div class="lsec labcall"><div class="lsh"><h3>Call your midwife or hospital</h3></div><ul class="affl plain">
-    <li>Your waters break (note the time and colour)</li><li>Any bleeding</li><li>Baby is moving less than usual</li><li>Constant or severe pain, or pain between contractions</li><li>Fever, headache or blurry vision</li><li>Contractions match the pattern your care team gave you</li><li>You feel worried. Always call.</li></ul>
-    <p class="muted" style="font-size:11px;line-height:1.6;margin:14px 0 0">A general guide only. Always follow your own midwife or doctor’s advice.</p></div>`;
+  const call=`<div class="lsec labcall"><div class="lsh"><h3>Water birth</h3></div><ul class="affl plain">
+    <li><b>Pain relief:</b> warm water eases contractions, and studies show women labouring in water are less likely to need an epidural.</li>
+    <li><b>Easier movement:</b> the water takes your weight, so it’s easier to change position, kneel or squat, which helps the baby move down.</li>
+    <li><b>Calmer labour:</b> feeling relaxed and private lowers stress hormones, and that can help labour progress more smoothly.</li>
+    <li><b>A gentler birth:</b> the warmth softens the perineum and the baby tends to come out more gradually, so some midwives see fewer severe tears.</li>
+    <li><b>Feeling in control:</b> many women say they feel more in charge in the pool, and midwives value that.</li></ul></div>`;
   const groups=LAB_GROUPS.concat([...new Set(d.pack.map(i=>i.g))].filter(g=>!LAB_GROUPS.includes(g)));
   const pack=`<div class="lsec"><div class="lsh"><h3>What to pack</h3><span class="row" style="gap:16px"><span class="muted" style="font-size:12px">${done} of ${d.pack.length} packed</span>${w&&done?`<button class="link" data-act="labreset">Untick all</button>`:''}</span></div>
     <div class="labpack">${groups.map(G=>{ const its=d.pack.filter(i=>i.g===G&&!i.done); if(!its.length) return ''; return `<div><div class="fsec">${esc(G)}</div>${its.map(i=>labRow(i,w)).join('')}</div>` }).join('')}</div>
