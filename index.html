@@ -326,8 +326,20 @@ body.secsorting{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .bbtel li:first-child{border-top:0}
 .bbtel a{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--fg);text-decoration:none}
 .bbtel a b{font-weight:600;white-space:nowrap}.bbtel .muted{font-size:11px}
-.bbguide{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
-@media (max-width:860px){.bbabout{grid-template-columns:repeat(2,minmax(0,1fr))}.bbguide{grid-template-columns:1fr;gap:14px}}
+.bbtabs{display:flex;flex-wrap:wrap;gap:6px}
+.bbtabs button{padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.bbtabs button.on{background:var(--fg);border-color:var(--fg);color:var(--on-fg)}
+.bbstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:6px 0 4px}
+.bbstats>div{background:var(--bg);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.bbstats .lbl{font-size:9px}.bbstats b{font-family:var(--serif);font-weight:400;font-size:21px;line-height:1.1}
+.bbgh{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left}
+.bbgh>span{display:flex;flex-direction:column;gap:4px}.bbgh h3{font-family:var(--serif);font-weight:400;font-size:22px;line-height:1.1;margin:0}.bbgh .muted{font-size:12px}
+.bbgh svg.i{flex:none;transition:transform .2s}.bbg.open .bbgh svg.i{transform:rotate(180deg)}
+.bbguide{padding-top:8px;padding-bottom:8px}
+.bbg{border-top:1px solid var(--line);padding:14px 0}.bbg:first-child{border-top:0}
+.bbg .affl{padding-bottom:6px}
+@media (max-width:860px){.bbstats{grid-template-columns:repeat(2,minmax(0,1fr))}.bbtabs{flex-wrap:nowrap;overflow-x:auto;margin:0 -16px;padding:0 16px}}
+@media (max-width:860px){.bbabout{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .labh{font-family:var(--serif);font-weight:400;font-size:34px;margin:40px 0 16px}
 .labst{display:flex;flex-direction:column;gap:20px}
 .labst .lsh{padding-bottom:4px}
@@ -1190,12 +1202,31 @@ const BABY_TODO={'Before we leave hospital':['Vitamin K and hepatitis B vaccine 
  'Later on':['4-month immunisations and child health check','6-month immunisations','12-month immunisations and child health check']};
 const BABY_FIELDS=[['name','Name'],['born','Born'],['time','Time'],['weight','Weight'],['length','Length'],['head','Head'],['place','Place'],['gp','Her GP'],['nurse','Child health nurse']];
 const BABY_GUIDE=[
- {t:'Feeding',p:['Newborns feed often, usually 8 to 12 times in 24 hours, including overnight.','Follow her cues: rooting, sucking on hands, turning her head. Crying is a late sign.','Expect more frequent feeds during growth spurts and cluster feeding in the evenings.','If breastfeeding is sore or she isn’t latching well, call the breastfeeding helpline early.']},
- {t:'Safe sleep',p:['Always on her back, from the very first sleep.','Face and head uncovered. Firm, flat mattress, no pillows, bumpers or soft toys.','Her own cot in our room for the first 6 to 12 months.','Keep her smoke-free, before and after birth.','Swaddle with arms free once she starts to roll, then move to a safe sleeping bag.']},
- {t:'Nappies',p:['From about day 5, around 6 or more heavy wet nappies a day.','Her first poos are dark and sticky (meconium), then turn mustard yellow.','Fewer wet nappies, dark urine or a dry mouth can mean she isn’t getting enough. Call for advice.']},
- {t:'Bath and cord care',p:['A bath every 2 to 3 days is plenty. Test the water with your elbow.','Keep the cord stump clean and dry. Fold the nappy below it.','The stump usually falls off within 1 to 2 weeks.','Check with a doctor if it smells, oozes or the skin around it turns red.']},
- {t:'Crying and settling',p:['Run through the basics: hungry, wet, tired, too hot or cold, needs a cuddle.','Try a swaddle, gentle rocking, shushing, white noise or a walk in the pram.','Crying often peaks around 6 to 8 weeks, then eases.','If it all feels too much, put her safely in her cot, step out for a few minutes and call someone.']},
- {t:'Looking after May',p:['Rest whenever she sleeps. Let Ben and family handle meals and visitors.','Eat well and drink plenty of water, especially when feeding.','Bleeding (lochia) slowly lightens over a few weeks. Large clots or heavy bleeding need a call.','Baby blues in the first week are common. Low mood or anxiety that lasts more than two weeks is worth talking about.']}];
+ {t:'Feeding',s:'8 to 12 feeds a day, led by her cues',p:['Newborns feed often, usually 8 to 12 times in 24 hours, including overnight.','Follow her cues: rooting, sucking on hands, turning her head. Crying is a late sign.','Expect more frequent feeds during growth spurts and cluster feeding in the evenings.','If breastfeeding is sore or she isn’t latching well, call the breastfeeding helpline early.']},
+ {t:'Safe sleep',s:'On her back, face clear, her own cot in our room',p:['Always on her back, from the very first sleep.','Face and head uncovered. Firm, flat mattress, no pillows, bumpers or soft toys.','Her own cot in our room for the first 6 to 12 months.','Keep her smoke-free, before and after birth.','Swaddle with arms free once she starts to roll, then move to a safe sleeping bag.']},
+ {t:'Nappies',s:'6+ heavy wet nappies a day from day 5',p:['From about day 5, around 6 or more heavy wet nappies a day.','Her first poos are dark and sticky (meconium), then turn mustard yellow.','Fewer wet nappies, dark urine or a dry mouth can mean she isn’t getting enough. Call for advice.']},
+ {t:'Bath and cord care',s:'A bath every few days, keep the cord dry',p:['A bath every 2 to 3 days is plenty. Test the water with your elbow.','Keep the cord stump clean and dry. Fold the nappy below it.','The stump usually falls off within 1 to 2 weeks.','Check with a doctor if it smells, oozes or the skin around it turns red.']},
+ {t:'Crying and settling',s:'Check the basics, then swaddle, rock and shush',p:['Run through the basics: hungry, wet, tired, too hot or cold, needs a cuddle.','Try a swaddle, gentle rocking, shushing, white noise or a walk in the pram.','Crying often peaks around 6 to 8 weeks, then eases.','If it all feels too much, put her safely in her cot, step out for a few minutes and call someone.']},
+ {t:'Looking after May',s:'Rest, eat well, and speak up if something feels off',p:['Rest whenever she sleeps. Let Ben and family handle meals and visitors.','Eat well and drink plenty of water, especially when feeding.','Bleeding (lochia) slowly lightens over a few weeks. Large clots or heavy bleeding need a call.','Baby blues in the first week are common. Low mood or anxiety that lasts more than two weeks is worth talking about.']}];
+const BABY_WEEKS=[
+ {k:'Week 1',t:'Getting to know each other',feeds:'8 to 12+',awake:'Up to 45 min',sleep:'16 to 18 hrs',nappies:'Building to 6+ wet',
+  p:['Lots of skin to skin. It calms her and helps feeding.','Feed every 2 to 3 hours (start of one feed to the start of the next). Wake her for a feed if she sleeps more than about 4 hours, unless your midwife says otherwise.','Your milk usually comes in around day 3 to 5. Expect sore, full breasts and lots of feeding.','Losing some weight in the first few days is normal.','Watch for jaundice (yellow skin or eyes), most common on days 2 to 5.','Keep the cord stump clean and dry. Top and tail instead of a full bath.'],
+  appt:'Child health nurse calls to book your first visit'},
+ {k:'Week 2',t:'Finding a rhythm',feeds:'8 to 12',awake:'45 to 60 min',sleep:'15 to 18 hrs',nappies:'6+ heavy wet',
+  p:['Most babies are back to birth weight by about 2 weeks.','The cord stump usually falls off this week. First proper bath once it has.','She may be more alert and want to look at faces.','A growth spurt is common around now. Feed more, it settles in a couple of days.','Short tummy time on your chest or the floor when she’s awake.'],
+  appt:'Child health nurse visit (before 14 days)'},
+ {k:'Weeks 3 to 4',t:'More awake, more fussy',feeds:'8 to 12',awake:'About 1 hour',sleep:'15 to 17 hrs',nappies:'6+ heavy wet',
+  p:['Fussy evenings and cluster feeding are very common.','Another growth spurt often comes around 3 weeks.','Start a simple bedtime routine: bath, feed, swaddle, dim lights, cot.','Tummy time a few minutes, several times a day.','Day versus night: bright and chatty in the day, calm and dark overnight.'],
+  appt:'Register her birth if you haven’t yet'},
+ {k:'Weeks 5 to 6',t:'First smiles',feeds:'7 to 10',awake:'60 to 75 min',sleep:'14 to 17 hrs',nappies:'6+ heavy wet',
+  p:['First real smiles often appear around 6 weeks.','Crying tends to peak around now, then slowly eases.','Growth spurt again around 6 weeks.','She may start following you with her eyes and turning to voices.','Look for tired signs: yawning, staring, jerky movements, grizzling. Settle her before she’s overtired.'],
+  appt:'6-week GP check for May and baby · first immunisations from 6 weeks'},
+ {k:'Weeks 7 to 8',t:'A bit more predictable',feeds:'7 to 9',awake:'60 to 90 min',sleep:'14 to 17 hrs',nappies:'6+ heavy wet',
+  p:['Days often settle into feed, play, sleep.','Some babies start a longer stretch overnight, around 4 to 5 hours.','More cooing and smiling back at you.','Holds her head up for longer during tummy time.'],
+  appt:'8-week child health nurse check · 2-month immunisations if not done'},
+ {k:'Months 3 to 4',t:'Feed, play, sleep',feeds:'6 to 8',awake:'1.5 to 2 hrs',sleep:'14 to 16 hrs',nappies:'5 to 6+ wet',
+  p:['3 to 4 naps a day with a clearer bedtime.','Laughing, grabbing toys, maybe starting to roll. Stop swaddling once she shows signs of rolling.','Sleep can go a little wobbly around 4 months as her sleep matures. It passes.','Keep tummy time going every day.'],
+  appt:'4-month immunisations and child health check'}];
 let BABY_DEF=null;
 function babyData(){ if(S.baby) return S.baby; if(BABY_DEF) return BABY_DEF;
   return BABY_DEF={about:{},todo:BABY_GROUPS.flatMap(G=>BABY_TODO[G].map(n=>({id:rid().slice(-8),name:n,done:false,g:G})))} }
@@ -1215,10 +1246,18 @@ function viewBaby(){ const d=babyData(); const w=canWrite(); const a=d.about||{}
   const urgent=`<div class="lsec"><div class="lsh"><h3>When to get help</h3></div><div class="labcols">
     <div><div class="fsec">Call 000 if she</div><ul class="affl plain"><li>Is struggling to breathe, or her lips or face turn blue or grey</li><li>Is floppy, unresponsive or very hard to wake</li><li>Has a seizure</li><li>Has a rash that doesn’t fade when you press a glass on it</li></ul></div>
     <div><div class="fsec">See a doctor the same day if she</div><ul class="affl plain"><li>Has a temperature of 38°C or more (under 3 months old)</li><li>Isn’t feeding well, or has fewer wet nappies</li><li>Looks yellow in the first 24 hours, or the yellow is spreading or deepening</li><li>Is vomiting green, or vomiting forcefully again and again</li><li>Is unusually sleepy, or her cry sounds different</li><li>Just doesn’t seem right to you. Trust your instincts.</li></ul></div></div></div>`;
-  const guide=`<h2 class="labh">Day to day</h2><div class="bbguide">${BABY_GUIDE.map(x=>`<div class="lsec"><div class="lsh"><h3>${esc(x.t)}</h3></div><ul class="affl plain">${x.p.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div>`).join('')}</div>
+  const wi=Math.min(UI.bbWk||0,BABY_WEEKS.length-1), W=BABY_WEEKS[wi];
+  const weeks=`<h2 class="labh">Week by week</h2><div class="lsec bbweeks"><div class="bbtabs">${BABY_WEEKS.map((x,i)=>`<button class="${i===wi?'on':''}" data-act="bbwk" data-i="${i}">${esc(x.k)}</button>`).join('')}</div>
+    <div class="kick" style="margin-top:22px">${esc(W.k)}</div><div class="lsh"><h3>${esc(W.t)}</h3></div>
+    <div class="bbstats">${[['Feeds a day',W.feeds],['Awake time',W.awake],['Sleep a day',W.sleep],['Nappies',W.nappies]].map(([l,v])=>`<div><span class="lbl">${l}</span><b>${esc(v)}</b></div>`).join('')}</div>
+    <div class="labcols" style="margin-top:8px"><div><div class="fsec">What to focus on</div><ul class="affl plain">${W.p.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div>
+    <div><div class="fsec">Appointments</div><p style="font-size:12.5px;line-height:1.55;margin:4px 0 0">${esc(W.appt)}</p><div class="fsec" style="margin-top:10px">A typical stretch</div><p style="font-size:12.5px;line-height:1.55;margin:4px 0 0">Feed, a little awake time (${esc(W.awake.toLowerCase())}), then sleep. Repeat around the clock.</p></div></div>
+    <p class="muted" style="font-size:11px;margin:16px 0 0">Every baby is different. These are rough ranges, not targets.</p></div>`;
+  const open=UI.bbOpen||{};
+  const guide=`<h2 class="labh">Day to day</h2><div class="lsec bbguide">${BABY_GUIDE.map((x,i)=>`<div class="bbg${open[i]?' open':''}"><button class="bbgh" data-act="bbg" data-i="${i}" aria-expanded="${!!open[i]}"><span><h3>${esc(x.t)}</h3><span class="muted">${esc(x.s)}</span></span>${ic('down')}</button>${open[i]?`<ul class="affl plain" style="margin-top:10px">${x.p.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}</div>`).join('')}</div>
     <p class="muted" style="font-size:11px;line-height:1.6;margin:22px 0 0">A general guide only. Your midwife, child health nurse and GP know her best.</p>`;
   return `<div class="head"><div class="tg"><div class="kick">Welcome home</div><h1 class="h1">Baby girl</h1></div></div>
-    <div class="labtop">${about}${help}</div>${todo}<div style="height:20px"></div>${urgent}${guide}` }
+    <div class="labtop">${about}${help}</div>${todo}${weeks}${guide}<div style="height:20px"></div>${urgent}` }
 document.addEventListener('change',e=>{ const k=e.target&&e.target.dataset&&e.target.dataset.babyf; if(!k) return; const d=JSON.parse(JSON.stringify(babyData())); d.about=d.about||{}; d.about[k]=e.target.value.trim(); saveBaby(d,true) });
 /* ---------- home ---------- */
 function favWidgets(){ const fs=sortedLists().filter(L=>L.fav); if(!fs.length) return '';
@@ -1494,6 +1533,8 @@ document.addEventListener('click',async e=>{
     case 'labtick': { const d=labData(); const i=d.pack.find(x=>x.id===id); if(i){ i.done=!i.done; saveLab(d) } break }
     case 'bbtick': { const d=babyData(); const i=d.todo.find(x=>x.id===id); if(i){ i.done=!i.done; saveBaby(d) } break }
     case 'bbrm': { const d=babyData(); d.todo=d.todo.filter(x=>x.id!==id); saveBaby(d); break }
+    case 'bbwk': UI.bbWk=+t.dataset.i; render(); break
+    case 'bbg': { UI.bbOpen=UI.bbOpen||{}; const i=+t.dataset.i; UI.bbOpen[i]=!UI.bbOpen[i]; render(); break }
     case 'bbdone': UI.bbDone=!UI.bbDone; render(); break
     case 'labpacked': UI.labPacked=!UI.labPacked; render(); break
     case 'labrm': { const d=labData(); d.pack=d.pack.filter(x=>x.id!==id); saveLab(d); break }
