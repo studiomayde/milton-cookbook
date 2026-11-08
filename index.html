@@ -317,6 +317,7 @@ body.secsorting{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .affl.plain li{padding:5px 0;font-size:12.5px}
 .labpack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 40px}
 .labpack .it .nm{font-size:12.5px}
+.labdone{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
 .labh{font-family:var(--serif);font-weight:400;font-size:34px;margin:40px 0 16px}
 .labst{display:flex;flex-direction:column;gap:20px}
 .labst .lsh{padding-bottom:4px}
@@ -1149,6 +1150,7 @@ function labMigrate(){ if(!canWrite()||S.mode!=='cloud'||!Store.ready||labMigrat
   L.secs=secsOf(L).filter(z=>z.id!==sec.id); Store.set('lists',L.id,L);
   saveLab(d); toast(`Moved ${sec.name} from ${L.name}: ${added} added, ${merged} already here.`) }
 function saveLab(d){ S.labour=d; Store.set('settings','labour',Object.assign({id:'labour'},d)); render() }
+function labRow(i,w){ return `<div class="it"><button class="itmain" data-act="labtick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span>${i.note?`<span class="muted">· ${esc(i.note)}</span>`:''}</span></button>${w?`<button class="xbtn" data-act="labrm" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
 function viewLabour(){ const d=labData(); const w=canWrite(); const done=d.pack.filter(i=>i.done).length;
   const affirm=`<div class="lsec labaff"><div class="lsh"><h3>Affirmations</h3></div><ul class="affl">${d.affirm.map(a=>`<li><span>${esc(a.t)}</span>${w?`<button class="xbtn" data-act="labaffrm" data-id="${esc(a.id)}" aria-label="Remove">${ic('x')}</button>`:''}</li>`).join('')}</ul>
     ${w?`<form class="row" data-form="labaff" style="margin-top:12px"><label class="search" style="border-radius:6px">${ic('plus')}<input id="labaff" placeholder="Add an affirmation" autocomplete="off"></label></form>`:''}</div>`;
@@ -1157,7 +1159,9 @@ function viewLabour(){ const d=labData(); const w=canWrite(); const done=d.pack.
     <p class="muted" style="font-size:11px;line-height:1.6;margin:14px 0 0">A general guide only. Always follow your own midwife or doctor’s advice.</p></div>`;
   const groups=LAB_GROUPS.concat([...new Set(d.pack.map(i=>i.g))].filter(g=>!LAB_GROUPS.includes(g)));
   const pack=`<div class="lsec"><div class="lsh"><h3>What to pack</h3><span class="row" style="gap:16px"><span class="muted" style="font-size:12px">${done} of ${d.pack.length} packed</span>${w&&done?`<button class="link" data-act="labreset">Untick all</button>`:''}</span></div>
-    <div class="labpack">${groups.map(G=>{ const its=d.pack.filter(i=>i.g===G); if(!its.length) return ''; return `<div><div class="fsec">${esc(G)}</div>${its.map(i=>`<div class="it"><button class="itmain" data-act="labtick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span>${i.note?`<span class="muted">· ${esc(i.note)}</span>`:''}</span></button>${w?`<button class="xbtn" data-act="labrm" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>`).join('')}</div>` }).join('')}</div>
+    <div class="labpack">${groups.map(G=>{ const its=d.pack.filter(i=>i.g===G&&!i.done); if(!its.length) return ''; return `<div><div class="fsec">${esc(G)}</div>${its.map(i=>labRow(i,w)).join('')}</div>` }).join('')}</div>
+    ${done?`<div class="labdone"><button class="link" data-act="labpacked">${UI.labPacked?'Hide':'Show'} packed (${done})</button>${UI.labPacked?`<div class="labpack" style="margin-top:6px">${d.pack.filter(i=>i.done).map(i=>labRow(i,w)).join('')}</div>`:''}</div>`:''}
+    
     ${w?`<form class="row laddf" data-form="labpack" style="margin-top:14px"><label class="search" style="border-radius:6px">${ic('plus')}<input id="labpack" placeholder="Add to the bag" autocomplete="off"></label><select id="labgrp" class="in" style="width:auto;padding:9px 34px 9px 12px">${groups.map(G=>`<option>${esc(G)}</option>`).join('')}</select></form>`:''}</div>`;
   const stages=`<h2 class="labh">Stages of labour</h2><div class="labst">${LAB_STAGES.map(x=>`<div class="lsec"><div class="kick">${esc(x.k)}</div><div class="lsh"><h3>${esc(x.t)}</h3></div><p class="muted" style="font-size:12px;margin:0 0 14px">${esc(x.sub)}</p>
     <div class="labcols"><div><div class="fsec">What’s happening</div><ul class="affl plain">${x.what.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div><div><div class="fsec">What helps</div><ul class="affl plain">${x.help.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div></div></div>`).join('')}</div>`;
@@ -1435,6 +1439,7 @@ document.addEventListener('click',async e=>{
     case 'binadd': readBinDraft(); UI.binDraft.bins.push({id:rid().slice(-6),name:'New bin',colour:'#3d6fb5',freq:'fortnightly',start:''}); render(); break;
     case 'binrm': readBinDraft(); UI.binDraft.bins.splice(+t.dataset.i,1); render(); break;
     case 'labtick': { const d=labData(); const i=d.pack.find(x=>x.id===id); if(i){ i.done=!i.done; saveLab(d) } break }
+    case 'labpacked': UI.labPacked=!UI.labPacked; render(); break
     case 'labrm': { const d=labData(); d.pack=d.pack.filter(x=>x.id!==id); saveLab(d); break }
     case 'labaffrm': { const d=labData(); d.affirm=d.affirm.filter(x=>x.id!==id); saveLab(d); break }
     case 'labreset': { const d=labData(); d.pack.forEach(i=>i.done=false); saveLab(d); toast('All unticked.'); break }
