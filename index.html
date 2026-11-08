@@ -651,6 +651,7 @@ const Store={data:{},subs:{},chains:{},pending:{},since:null,
     if(/access_token=/.test(location.hash)) history.replaceState(null,'',location.pathname+location.search);
     S.mode='cloud';
     await this.pull(true);
+    this.ready=true;
     setInterval(()=>{ if(document.visibilityState==='visible') this.pull() },5000);
     startLive();
     window.addEventListener('focus',()=>this.pull()); window.addEventListener('online',()=>this.pull());
@@ -1135,6 +1136,18 @@ const LAB_STAGES=[
 let LAB_DEF=null;
 function labData(){ if(S.labour) return S.labour; if(LAB_DEF) return LAB_DEF; const g=n=>({id:rid().slice(-8),name:n,done:false});
   return LAB_DEF={affirm:LAB_AFFIRM.map(t=>({id:rid().slice(-8),t})),pack:LAB_GROUPS.flatMap(G=>LAB_PACK[G].map(n=>Object.assign(g(n),{g:G})))} }
+/* one-time: move the "hospital bag" heading from another list into the Labour packing list, merging duplicates */
+function labWords(t){ return String(t||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(w=>w&&!['and','a','the','for','with','of','x'].includes(w)).map(w=>w.length>3?w.replace(/s$/,''):w) }
+function labMigrate(){ if(!canWrite()||S.mode!=='cloud'||!Store.ready||labMigrate.ran) return; const cur=S.labour; if(cur&&cur.moved) return;
+  let L=null, sec=null; for(const x of S.lists){ const sc=secsOf(x).find(z=>/hospital\s*bag/i.test(z.name||'')); if(sc){ L=x; sec=sc; break } }
+  if(!L) return; labMigrate.ran=true;
+  const its=S.litems.filter(i=>i.list===L.id&&i.sec===sec.id); const d=JSON.parse(JSON.stringify(labData())); let added=0, merged=0;
+  its.forEach(i=>{ const w=labWords(i.name); const hit=w.length&&d.pack.find(p=>{ const pw=labWords(p.name); return w.every(x=>pw.includes(x)) });
+    if(hit){ merged++; if(i.done) hit.done=true; if(i.note&&!hit.note) hit.note=i.note }
+    else if(!d.pack.some(p=>labWords(p.name).join(' ')===w.join(' '))){ added++; d.pack.push({id:rid().slice(-8),name:i.name,done:!!i.done,g:'For labour',note:i.note||''}) } else merged++ });
+  d.moved=true; S.litems=S.litems.filter(i=>!its.includes(i)); its.forEach(i=>Store.del('litems',i.id));
+  L.secs=secsOf(L).filter(z=>z.id!==sec.id); Store.set('lists',L.id,L);
+  saveLab(d); toast(`Moved ${sec.name} from ${L.name}: ${added} added, ${merged} already here.`) }
 function saveLab(d){ S.labour=d; Store.set('settings','labour',Object.assign({id:'labour'},d)); render() }
 function viewLabour(){ const d=labData(); const w=canWrite(); const done=d.pack.filter(i=>i.done).length;
   const affirm=`<div class="lsec labaff"><div class="lsh"><h3>Affirmations</h3></div><ul class="affl">${d.affirm.map(a=>`<li><span>${esc(a.t)}</span>${w?`<button class="xbtn" data-act="labaffrm" data-id="${esc(a.id)}" aria-label="Remove">${ic('x')}</button>`:''}</li>`).join('')}</ul>
@@ -1144,7 +1157,7 @@ function viewLabour(){ const d=labData(); const w=canWrite(); const done=d.pack.
     <p class="muted" style="font-size:11px;line-height:1.6;margin:14px 0 0">A general guide only. Always follow your own midwife or doctor’s advice.</p></div>`;
   const groups=LAB_GROUPS.concat([...new Set(d.pack.map(i=>i.g))].filter(g=>!LAB_GROUPS.includes(g)));
   const pack=`<div class="lsec"><div class="lsh"><h3>What to pack</h3><span class="row" style="gap:16px"><span class="muted" style="font-size:12px">${done} of ${d.pack.length} packed</span>${w&&done?`<button class="link" data-act="labreset">Untick all</button>`:''}</span></div>
-    <div class="labpack">${groups.map(G=>{ const its=d.pack.filter(i=>i.g===G); if(!its.length) return ''; return `<div><div class="fsec">${esc(G)}</div>${its.map(i=>`<div class="it"><button class="itmain" data-act="labtick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span></span></button>${w?`<button class="xbtn" data-act="labrm" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>`).join('')}</div>` }).join('')}</div>
+    <div class="labpack">${groups.map(G=>{ const its=d.pack.filter(i=>i.g===G); if(!its.length) return ''; return `<div><div class="fsec">${esc(G)}</div>${its.map(i=>`<div class="it"><button class="itmain" data-act="labtick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span>${i.note?`<span class="muted">· ${esc(i.note)}</span>`:''}</span></button>${w?`<button class="xbtn" data-act="labrm" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>`).join('')}</div>` }).join('')}</div>
     ${w?`<form class="row laddf" data-form="labpack" style="margin-top:14px"><label class="search" style="border-radius:6px">${ic('plus')}<input id="labpack" placeholder="Add to the bag" autocomplete="off"></label><select id="labgrp" class="in" style="width:auto;padding:9px 34px 9px 12px">${groups.map(G=>`<option>${esc(G)}</option>`).join('')}</select></form>`:''}</div>`;
   const stages=`<h2 class="labh">Stages of labour</h2><div class="labst">${LAB_STAGES.map(x=>`<div class="lsec"><div class="kick">${esc(x.k)}</div><div class="lsh"><h3>${esc(x.t)}</h3></div><p class="muted" style="font-size:12px;margin:0 0 14px">${esc(x.sub)}</p>
     <div class="labcols"><div><div class="fsec">What’s happening</div><ul class="affl plain">${x.what.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div><div><div class="fsec">What helps</div><ul class="affl plain">${x.help.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div></div></div>`).join('')}</div>`;
@@ -1369,6 +1382,7 @@ function render(){
   const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():UI.view==='dash'?viewDash():UI.view==='people'?viewPeople():UI.view==='bins'?viewBins():UI.view==='labour'?viewLabour():UI.view==='account'?viewAccount():viewShopping();
   $('#view').innerHTML=v;
   masonry();
+  if(UI.view==='labour') setTimeout(labMigrate,0);
   for(const id in keepVals){ const el=document.getElementById(id); if(el) el.value=keepVals[id] }
   $('#sheet').innerHTML=sheetHTML();
   if(fid){ const el=document.getElementById(fid); if(el){ el.focus({preventScroll:true}); if(sel&&el.setSelectionRange) try{ el.setSelectionRange(sel[0],sel[1]) }catch(e){} } }
