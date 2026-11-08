@@ -319,6 +319,15 @@ body.secsorting{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .labpack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 40px}
 .labpack .it .nm{font-size:12.5px}
 .labdone{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+.bbabout{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 16px}
+.bbf{display:flex;flex-direction:column;gap:6px;min-width:0}.bbf .in{padding:10px 12px}.bbf .lbl{font-size:9px}
+.bbtel{list-style:none;margin:0;padding:0}
+.bbtel li{border-top:1px solid var(--line);padding:9px 0;display:flex;flex-direction:column;gap:2px}
+.bbtel li:first-child{border-top:0}
+.bbtel a{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--fg);text-decoration:none}
+.bbtel a b{font-weight:600;white-space:nowrap}.bbtel .muted{font-size:11px}
+.bbguide{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+@media (max-width:860px){.bbabout{grid-template-columns:repeat(2,minmax(0,1fr))}.bbguide{grid-template-columns:1fr;gap:14px}}
 .labh{font-family:var(--serif);font-weight:400;font-size:34px;margin:40px 0 16px}
 .labst{display:flex;flex-direction:column;gap:20px}
 .labst .lsh{padding-bottom:4px}
@@ -583,6 +592,7 @@ const IC={
   shuffle:'<path d="M4 7h3.5c4 0 5 10 9 10H20M4 17h3.5c1.6 0 2.7-1.6 3.6-3.6M13 9.6C13.9 8.2 14.9 7 16.5 7H20M17.5 4.5 20 7l-2.5 2.5M17.5 14.5 20 17l-2.5 2.5"/>',
   plus:'<path d="M12 5v14M5 12h14"/>', check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   back:'<path d="m15 6-6 6 6 6"/>', right:'<path d="m9 6 6 6-6 6"/>',
+  bub:'<circle cx="12" cy="9" r="5"/><path d="M10 8.5h.01M14 8.5h.01M10.5 11c.8.6 2.2.6 3 0M5.5 20c1.2-3 3.6-4.5 6.5-4.5s5.3 1.5 6.5 4.5"/>',
   bloom:'<circle cx="12" cy="6.5" r="3"/><circle cx="12" cy="17.5" r="3"/><circle cx="6.5" cy="12" r="3"/><circle cx="17.5" cy="12" r="3"/><circle cx="12" cy="12" r="1.2"/>',
   heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/>',
   edit:'<path d="M4 20h4L19 9l-4-4L4 16v4Z"/>', trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
@@ -831,7 +841,7 @@ function renderSide(){ setTimeout(()=>{ UI.justOpened=null },0);
   const FK={lists:'lists',home:'recipes'};
   $('#side').innerHTML=`
     <button class="logo" data-act="go" data-view="dash">Milton Manor</button>
-    <div class="secnav">${[['dash','Home','home',UI.view==='dash'],['lists','Lists','list',UI.view==='lists'&&!onKD()],['dates','Key dates','kdate',onKD()],['shopping','Groceries','apple',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn],['bins','Bins','bin',UI.view==='bins'],['labour','Labour','bloom',UI.view==='labour']].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
+    <div class="secnav">${[['dash','Home','home',UI.view==='dash'],['lists','Lists','list',UI.view==='lists'&&!onKD()],['dates','Key dates','kdate',onKD()],['shopping','Groceries','apple',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn],['bins','Bins','bin',UI.view==='bins'],['labour','Labour','bloom',UI.view==='labour'],['baby','Baby girl','bub',UI.view==='baby']].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
       return `<div class="secg${open?' open':''}"><div class="secrow"><button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>${k?`<button class="fx" data-act="fold" data-k="${k}" aria-expanded="${!!open}" aria-label="${open?'Hide':'Show'} ${x[1]}">${ic('down')}</button>`:''}</div>${open?`<div class="nav subnav${UI.justOpened===k?' anim':''}">${SUB[x[0]]}</div>`:''}</div>` }).join('')}</div>
     ${S.me?`<div class="acct"><span class="muted">${esc(S.me.email||'')}</span><span class="row" style="gap:16px">${S.me.role==='owner'?`<button class="link${UI.view==='people'?' on':''}" data-act="go" data-view="people">People</button>`:''}<button class="link${UI.view==='account'?' on':''}" data-act="go" data-view="account">Change password</button><button class="link" data-act="signout">Sign out</button></span></div>`:''}`;
 }
@@ -1171,6 +1181,45 @@ function viewLabour(){ const d=labData(); const w=canWrite(); const done=d.pack.
     <div class="labcols"><div><div class="fsec">What’s happening</div><ul class="affl plain">${x.what.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div><div><div class="fsec">What helps</div><ul class="affl plain">${x.help.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div></div></div>`).join('')}</div>`;
   return `<div class="head"><div class="tg"><div class="kick">You’ve got this</div><h1 class="h1">Labour</h1></div></div>
     <div class="labtop">${affirm}${call}</div>${pack}${stages}` }
+/* ---------- baby girl ---------- */
+const BABY_GROUPS=['Before we leave hospital','First week home','First month','6 to 8 weeks','Later on'];
+const BABY_TODO={'Before we leave hospital':['Vitamin K and hepatitis B vaccine given','Newborn hearing screen done','Heel prick (newborn bloodspot) test done','Collect her Purple Book','Newborn Child Declaration signed by the midwife','Birth registration details from the hospital','Capsule fitted and harness checked'],
+ 'First week home':['Lodge the Newborn Child Declaration on myGov (Medicare and Centrelink)','Add her to our private health insurance','Child health nurse first visit (they call before 14 days)','Check Parental Leave Pay claim is lodged','Share the news and photos'],
+ 'First month':['Register her birth with WA Births, Deaths and Marriages (within 60 days)','Order her birth certificate','Choose a GP for her','Book the 6-week check for May and baby','Set up her My Health Record (optional)'],
+ '6 to 8 weeks':['6-week check with the GP for May and baby','First immunisations (from 6 weeks)','8-week child health nurse check'],
+ 'Later on':['4-month immunisations and child health check','6-month immunisations','12-month immunisations and child health check']};
+const BABY_FIELDS=[['name','Name'],['born','Born'],['time','Time'],['weight','Weight'],['length','Length'],['head','Head'],['place','Place'],['gp','Her GP'],['nurse','Child health nurse']];
+const BABY_GUIDE=[
+ {t:'Feeding',p:['Newborns feed often, usually 8 to 12 times in 24 hours, including overnight.','Follow her cues: rooting, sucking on hands, turning her head. Crying is a late sign.','Expect more frequent feeds during growth spurts and cluster feeding in the evenings.','If breastfeeding is sore or she isn’t latching well, call the breastfeeding helpline early.']},
+ {t:'Safe sleep',p:['Always on her back, from the very first sleep.','Face and head uncovered. Firm, flat mattress, no pillows, bumpers or soft toys.','Her own cot in our room for the first 6 to 12 months.','Keep her smoke-free, before and after birth.','Swaddle with arms free once she starts to roll, then move to a safe sleeping bag.']},
+ {t:'Nappies',p:['From about day 5, around 6 or more heavy wet nappies a day.','Her first poos are dark and sticky (meconium), then turn mustard yellow.','Fewer wet nappies, dark urine or a dry mouth can mean she isn’t getting enough. Call for advice.']},
+ {t:'Bath and cord care',p:['A bath every 2 to 3 days is plenty. Test the water with your elbow.','Keep the cord stump clean and dry. Fold the nappy below it.','The stump usually falls off within 1 to 2 weeks.','Check with a doctor if it smells, oozes or the skin around it turns red.']},
+ {t:'Crying and settling',p:['Run through the basics: hungry, wet, tired, too hot or cold, needs a cuddle.','Try a swaddle, gentle rocking, shushing, white noise or a walk in the pram.','Crying often peaks around 6 to 8 weeks, then eases.','If it all feels too much, put her safely in her cot, step out for a few minutes and call someone.']},
+ {t:'Looking after May',p:['Rest whenever she sleeps. Let Ben and family handle meals and visitors.','Eat well and drink plenty of water, especially when feeding.','Bleeding (lochia) slowly lightens over a few weeks. Large clots or heavy bleeding need a call.','Baby blues in the first week are common. Low mood or anxiety that lasts more than two weeks is worth talking about.']}];
+let BABY_DEF=null;
+function babyData(){ if(S.baby) return S.baby; if(BABY_DEF) return BABY_DEF;
+  return BABY_DEF={about:{},todo:BABY_GROUPS.flatMap(G=>BABY_TODO[G].map(n=>({id:rid().slice(-8),name:n,done:false,g:G})))} }
+function saveBaby(d,quiet){ S.baby=d; Store.set('settings','baby',Object.assign({id:'baby'},d)); if(!quiet) render() }
+function babyRow(i,w){ return `<div class="it"><button class="itmain" data-act="bbtick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span></span></button>${w?`<button class="xbtn" data-act="bbrm" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
+function viewBaby(){ const d=babyData(); const w=canWrite(); const a=d.about||{}; const done=d.todo.filter(i=>i.done).length;
+  const ph={born:'e.g. 2 Dec 2026',weight:'kg',length:'cm',head:'cm',time:'e.g. 4.12am'};
+  const about=`<div class="lsec"><div class="lsh"><h3>About her</h3></div><div class="bbabout">${BABY_FIELDS.map(([k,l])=>`<label class="bbf"><span class="lbl">${l}</span>${w?`<input class="in" id="bbf-${k}" data-babyf="${k}" value="${esc(a[k]||'')}" placeholder="${ph[k]||''}" autocomplete="off">`:`<span>${esc(a[k]||'')}</span>`}</label>`).join('')}</div></div>`;
+  const tel=(n,num,when)=>`<li><a href="tel:${num.replace(/[^0-9+]/g,'')}"><span>${esc(n)}</span><b>${esc(num)}</b></a>${when?`<span class="muted">${esc(when)}</span>`:''}</li>`;
+  const help=`<div class="lsec"><div class="lsh"><h3>Helplines</h3></div><ul class="bbtel">
+    ${tel('Emergency','000','')}${tel('Healthdirect nurse','1800 022 222','24 hours')}${tel('Ngala Parenting Line','(08) 9368 9368','7 days, 8am to 8pm')}${tel('Breastfeeding Helpline','1800 686 268','24 hours')}${tel('Child health nurse advice','1300 749 869','Weekdays, 8.30am to 5pm')}${tel('Pregnancy, Birth and Baby','1800 882 436','')}${tel('PANDA (parent mental health)','1300 726 306','Weekdays')}${tel('Poisons Information','13 11 26','24 hours')}</ul></div>`;
+  const groups=BABY_GROUPS.concat([...new Set(d.todo.map(i=>i.g))].filter(g=>!BABY_GROUPS.includes(g)));
+  const todo=`<div class="lsec"><div class="lsh"><h3>To do</h3><span class="muted" style="font-size:12px">${done} of ${d.todo.length} done</span></div>
+    <div class="labpack">${groups.map(G=>{ const its=d.todo.filter(i=>i.g===G&&!i.done); if(!its.length) return ''; return `<div><div class="fsec">${esc(G)}</div>${its.map(i=>babyRow(i,w)).join('')}</div>` }).join('')}</div>
+    ${done?`<div class="labdone"><button class="link" data-act="bbdone">${UI.bbDone?'Hide':'Show'} done (${done})</button>${UI.bbDone?`<div class="labpack" style="margin-top:6px">${d.todo.filter(i=>i.done).map(i=>babyRow(i,w)).join('')}</div>`:''}</div>`:''}
+    ${w?`<form class="row laddf" data-form="bbtodo" style="margin-top:14px"><label class="search" style="border-radius:6px">${ic('plus')}<input id="bbtodo" placeholder="Add a to do" autocomplete="off"></label><select id="bbgrp" class="in" style="width:auto;padding:9px 34px 9px 12px">${groups.map(G=>`<option>${esc(G)}</option>`).join('')}</select></form>`:''}</div>`;
+  const urgent=`<div class="lsec"><div class="lsh"><h3>When to get help</h3></div><div class="labcols">
+    <div><div class="fsec">Call 000 if she</div><ul class="affl plain"><li>Is struggling to breathe, or her lips or face turn blue or grey</li><li>Is floppy, unresponsive or very hard to wake</li><li>Has a seizure</li><li>Has a rash that doesn’t fade when you press a glass on it</li></ul></div>
+    <div><div class="fsec">See a doctor the same day if she</div><ul class="affl plain"><li>Has a temperature of 38°C or more (under 3 months old)</li><li>Isn’t feeding well, or has fewer wet nappies</li><li>Looks yellow in the first 24 hours, or the yellow is spreading or deepening</li><li>Is vomiting green, or vomiting forcefully again and again</li><li>Is unusually sleepy, or her cry sounds different</li><li>Just doesn’t seem right to you. Trust your instincts.</li></ul></div></div></div>`;
+  const guide=`<h2 class="labh">Day to day</h2><div class="bbguide">${BABY_GUIDE.map(x=>`<div class="lsec"><div class="lsh"><h3>${esc(x.t)}</h3></div><ul class="affl plain">${x.p.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div>`).join('')}</div>
+    <p class="muted" style="font-size:11px;line-height:1.6;margin:22px 0 0">A general guide only. Your midwife, child health nurse and GP know her best.</p>`;
+  return `<div class="head"><div class="tg"><div class="kick">Welcome home</div><h1 class="h1">Baby girl</h1></div></div>
+    <div class="labtop">${about}${help}</div>${todo}<div style="height:20px"></div>${urgent}${guide}` }
+document.addEventListener('change',e=>{ const k=e.target&&e.target.dataset&&e.target.dataset.babyf; if(!k) return; const d=JSON.parse(JSON.stringify(babyData())); d.about=d.about||{}; d.about[k]=e.target.value.trim(); saveBaby(d,true) });
 /* ---------- home ---------- */
 function favWidgets(){ const fs=sortedLists().filter(L=>L.fav); if(!fs.length) return '';
   const ws=fs.map(L=>{ const todo=itemsOf(L.id).filter(i=>!i.done); const secs=secsOf(L);
@@ -1387,7 +1436,7 @@ function render(){
   if(locked){ $('#gate').innerHTML=gateHTML(); return }
   if(false){ $('#gate').innerHTML=`<div class="box"><div class="kick">Milton Manor</div><div class="serif">${S.mode==='nokey'?'Open Milton Manor from the family link':'This link no longer opens Milton Manor'}</div><p class="muted" style="margin:0;font-size:14px">${S.mode==='nokey'?'Ask May to send you the link. Once you open it on this device, it will remember you.':'Ask May for the current family link.'}</p></div>`; return }
   renderSide(); renderTop();
-  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():UI.view==='dash'?viewDash():UI.view==='people'?viewPeople():UI.view==='bins'?viewBins():UI.view==='labour'?viewLabour():UI.view==='account'?viewAccount():viewShopping();
+  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():UI.view==='dash'?viewDash():UI.view==='people'?viewPeople():UI.view==='bins'?viewBins():UI.view==='labour'?viewLabour():UI.view==='baby'?viewBaby():UI.view==='account'?viewAccount():viewShopping();
   $('#view').innerHTML=v;
   masonry();
   if(UI.view==='labour') setTimeout(labMigrate,0);
@@ -1443,6 +1492,9 @@ document.addEventListener('click',async e=>{
     case 'binadd': readBinDraft(); UI.binDraft.bins.push({id:rid().slice(-6),name:'New bin',colour:'#3d6fb5',freq:'fortnightly',start:''}); render(); break;
     case 'binrm': readBinDraft(); UI.binDraft.bins.splice(+t.dataset.i,1); render(); break;
     case 'labtick': { const d=labData(); const i=d.pack.find(x=>x.id===id); if(i){ i.done=!i.done; saveLab(d) } break }
+    case 'bbtick': { const d=babyData(); const i=d.todo.find(x=>x.id===id); if(i){ i.done=!i.done; saveBaby(d) } break }
+    case 'bbrm': { const d=babyData(); d.todo=d.todo.filter(x=>x.id!==id); saveBaby(d); break }
+    case 'bbdone': UI.bbDone=!UI.bbDone; render(); break
     case 'labpacked': UI.labPacked=!UI.labPacked; render(); break
     case 'labrm': { const d=labData(); d.pack=d.pack.filter(x=>x.id!==id); saveLab(d); break }
     case 'labaffrm': { const d=labData(); d.affirm=d.affirm.filter(x=>x.id!==id); saveLab(d); break }
@@ -1595,6 +1647,7 @@ document.addEventListener('submit',async e=>{
   if(f==='newpass'){ const a=$('#np1').value, b=$('#np2').value; if(a.length<8){ toast('Choose a password with at least 8 characters.'); return } if(a!==b){ toast("The two passwords don't match."); return }
     try{ const {error}=await sb.auth.updateUser({password:a}); if(error){ toast(/different|same/i.test(error.message)?'That is already your password. Choose a new one.':"Couldn't change your password. Try again."); return } $('#np1').value=''; $('#np2').value=''; toast('Password changed.'); go('dash') }catch(err){ toast("Can't connect right now. Try again.") } return }
   if(f==='addperson'){ const v=$('#newperson').value.trim(); if(!v) return; try{ await rpc('cookbook_member_add',{p_email:v}); $('#newperson').value=''; toast(`${v} can now sign in.`); loadPeople() }catch(err){ toast("Couldn't add that email. Check it and try again.") } return }
+  if(f==='bbtodo'){ const v=$('#bbtodo').value.trim(); if(!v) return; $('#bbtodo').value=''; const g=$('#bbgrp').value; const d=babyData(); d.todo.push({id:rid().slice(-8),name:v.charAt(0).toUpperCase()+v.slice(1),done:false,g}); saveBaby(d); setTimeout(()=>{ const i=$('#bbtodo'); if(i) i.focus() },30); return }
   if(f==='labaff'){ const v=$('#labaff').value.trim(); if(!v) return; $('#labaff').value=''; const d=labData(); d.affirm.push({id:rid().slice(-8),t:v}); saveLab(d); setTimeout(()=>{ const i=$('#labaff'); if(i) i.focus() },30); return }
   if(f==='labpack'){ const v=$('#labpack').value.trim(); if(!v) return; $('#labpack').value=''; const g=$('#labgrp').value; const d=labData(); d.pack.push({id:rid().slice(-8),name:v.charAt(0).toUpperCase()+v.slice(1),done:false,g}); saveLab(d); setTimeout(()=>{ const i=$('#labpack'); if(i) i.focus() },30); return }
   if(f==='newlist'){ const v=$('#newlist').value.trim(); if(!v) return; $('#newlist').value=''; newList(v); return }
@@ -1822,7 +1875,7 @@ Store.init().then(()=>{
   Store.sub('plan',d=>{ S.plan={}; d.forEach(p=>S.plan[p.id]=p); if(UI.view!=='edit') soon() });
   Store.sub('ticks',d=>{ S.ticks={}; d.forEach(t=>S.ticks[t.id]=t); if(UI.view!=='edit') soon() });
   Store.sub('extras',d=>{ S.extras=d; if(UI.view!=='edit') soon() });
-  Store.sub('settings',d=>{ const b=d.find(x=>x.id==='bins'); S.bins=b&&Array.isArray(b.bins)?b:null; const lb=d.find(x=>x.id==='labour'); S.labour=lb&&Array.isArray(lb.pack)?lb:null; if(UI.view!=='edit') soon() });
+  Store.sub('settings',d=>{ const b=d.find(x=>x.id==='bins'); S.bins=b&&Array.isArray(b.bins)?b:null; const lb=d.find(x=>x.id==='labour'); S.labour=lb&&Array.isArray(lb.pack)?lb:null; const bb=d.find(x=>x.id==='baby'); S.baby=bb&&Array.isArray(bb.todo)?bb:null; if(UI.view!=='edit') soon() });
   Store.sub('lists',d=>{ S.lists=d; choresSoon(); if(UI.view!=='edit') soon(); else renderSide() });
   Store.sub('litems',d=>{ S.litems=d; choresSoon(); if(UI.view!=='edit') soon() });
   Store.sub('regulars',d=>{ S.regs=d; if(UI.view!=='edit') soon() });
