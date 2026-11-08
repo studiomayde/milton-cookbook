@@ -1112,12 +1112,12 @@ function datesWidget(){ const dl=S.lists.filter(listHasDates); if(!dl.length) re
 
 
 /* ---------- labour ---------- */
-const LAB_GROUPS=['For labour','For after the birth','For baby','For your partner'];
+const LAB_GROUPS=['For labour','For after the birth','For baby','For Ben'];
 const LAB_AFFIRM=['My body knows how to birth my baby.','Each surge brings my baby closer to me.','I breathe in calm and breathe out tension.','I can do anything for one minute.','I trust my body and I trust my baby.','I am strong, I am safe, I am supported.','I soften, I open, I let go.','My baby and I are working together.','I meet each wave and let it pass.','Soon I will hold my baby in my arms.'];
 const LAB_PACK={'For labour':['Hospital card, Medicare card and birth plan','Comfy oversized t-shirt or nightie','Socks and slippers','Lip balm','Hair ties and clip','Water bottle with a straw','Electrolytes and snacks','Long phone charging cable','Headphones and playlist','TENS machine','Diffuser and scent','Heat pack','Massage oil or roller','Glasses'],
  'For after the birth':['Nursing bras','Maternity pads','High-waisted comfy undies','Breast pads','Nipple cream','Pyjamas that open at the front','Toiletries and towel','Loose going-home outfit'],
  'For baby':['Bodysuits (3 to 4)','Wondersuits (3 to 4)','Beanie, socks and mittens','Swaddles or wraps (2 to 3)','Nappies and wipes','Going-home outfit','Capsule installed in the car'],
- 'For your partner':['Change of clothes','Snacks and drinks','Toiletries','Phone charger','Swimmers (for the shower or bath)','Coins or app for parking','Pillow']};
+ 'For Ben':['Change of clothes','Snacks and drinks','Toiletries','Phone charger','Swimmers (for the shower or bath)','Coins or app for parking','Pillow']};
 const LAB_STAGES=[
  {k:'Stage one',t:'Early labour',sub:'The latent phase · can last hours or days, especially with a first baby',
   what:['Your cervix softens and starts to open, up to about 4 to 6 cm.','Contractions are irregular, often mild, and may come and go.','You might lose your mucus plug (a "show") or feel period-like cramps and back ache.'],
@@ -1135,7 +1135,7 @@ const LAB_STAGES=[
   what:['Gentle contractions deliver the placenta.','You can have an injection to speed this up (active management). Talk about it with your care team beforehand.'],
   help:['Skin to skin with your baby straight away.','A first feed helps your uterus contract.','Keep warm, eat something, and soak it in.']}];
 let LAB_DEF=null;
-function labData(){ if(S.labour) return S.labour; if(LAB_DEF) return LAB_DEF; const g=n=>({id:rid().slice(-8),name:n,done:false});
+function labData(){ if(S.labour){ S.labour.pack.forEach(i=>{ if(i.g==='For your partner') i.g='For Ben' }); return S.labour } if(LAB_DEF) return LAB_DEF; const g=n=>({id:rid().slice(-8),name:n,done:false});
   return LAB_DEF={affirm:LAB_AFFIRM.map(t=>({id:rid().slice(-8),t})),pack:LAB_GROUPS.flatMap(G=>LAB_PACK[G].map(n=>Object.assign(g(n),{g:G})))} }
 /* one-time: move the "hospital bag" heading from another list into the Labour packing list, merging duplicates */
 function labWords(t){ return String(t||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(w=>w&&!['and','a','the','for','with','of','x'].includes(w)).map(w=>w.length>3?w.replace(/s$/,''):w) }
