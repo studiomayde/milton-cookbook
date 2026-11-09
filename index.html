@@ -652,7 +652,7 @@ function mins(s){if(!s)return 0;s=String(s).toLowerCase();let m=0;const h=s.matc
 function fmtMins(m){if(!m)return'';if(m<60)return m+' min';const h=Math.floor(m/60),r=m%60;return h+' hr'+(r?' '+r:'')}
 
 /* ---------- state ---------- */
-const S={bins:null,lists:[],litems:[],recipes:[],cols:[],plan:{},ticks:{},extras:[],regs:[],qty:{},qtyLocal:{},hlog:{},readOnly:false,mode:'loading',loaded:{}};
+const S={bins:null,lists:[],litems:[],recipes:[],cols:[],plan:{},ticks:{},extras:[],regs:[],qty:{},qtyLocal:{},hlog:{},hcfg:null,readOnly:false,mode:'loading',loaded:{}};
 const UI={view:'dash',list:{kind:'all'},status:'all',sort:'new',q:'',rid:null,editId:null,pmode:'week',week:mondayOf(TODAY),day:TODAY,month:TODAY.slice(0,8)+'01',extraCols:[],extraDay:[],swap:null,sheet:null,cook:{},trolley:true,regEdit:false,regGroup:'Food',draft:null,addingCol:false,lid:null,ldone:true,lrename:false};
 let sample=null;
 const photosHere=()=>true;
@@ -1131,18 +1131,19 @@ function readBinDraft(){ const c=UI.binDraft; if(!c) return; const v=$('#binday'
   c.bins.forEach((b,i)=>{ const n=document.querySelector(`[data-binname="${i}"]`); if(n) b.name=n.value.trim()||b.name; const col=document.querySelector(`[data-bincolour="${i}"]`); if(col) b.colour=col.value; const fr=document.querySelector(`[data-binfreq="${i}"]`); if(fr) b.freq=fr.value;
     const t=document.querySelector(`[data-binthis="${i}"]`); if(b.freq==='fortnightly'&&t) b.start=t.checked?first:addDays(first,7); if(b.freq!=='fortnightly') b.start='' }) }
 /* ---------- Ben's daily tasks: tick each day, keep the chain going ---------- */
-const HABITS=[{id:'vitamins',name:'Take vitamins'},{id:'creatine',name:'Take creatine'},{id:'floss',name:'Floss'},{id:'stretch',name:'Stretch'},{id:'meditate',name:'Meditate'}];
-const hDone=(d,k)=>{ const x=S.hlog[d]; if(!x||!x.done) return false; return k==='*'?HABITS.every(h=>x.done[h.id]):!!x.done[k] };
+const HABITS_DEFAULT=[{id:'vitamins',name:'Take vitamins'},{id:'creatine',name:'Take creatine'},{id:'floss',name:'Floss'},{id:'stretch',name:'Stretch'},{id:'meditate',name:'Meditate'}];
+const habits=()=>S.hcfg&&Array.isArray(S.hcfg.tasks)?S.hcfg.tasks:HABITS_DEFAULT;
+const hDone=(d,k)=>{ const x=S.hlog[d]; if(!x||!x.done) return false; if(k!=='*') return !!x.done[k]; const hs=habits().filter(h=>!h.from||h.from<=d); return hs.length>0&&hs.every(h=>x.done[h.id]) };
 function hStreak(k){ let d=hDone(TODAY,k)?TODAY:addDays(TODAY,-1), n=0; while(hDone(d,k)&&n<5000){ n++; d=addDays(d,-1) } return n }
 function hBest(k){ const ds=Object.keys(S.hlog).filter(d=>d<=TODAY&&hDone(d,k)).sort(); let best=0, run=0, prev=null; for(const d of ds){ run=prev&&addDays(prev,1)===d?run+1:1; if(run>best) best=run; prev=d } return best }
-function viewHabits(){ const w=canWrite(); const days=[...Array(7)].map((_,i)=>addDays(TODAY,i-6)); const doneToday=HABITS.filter(h=>hDone(TODAY,h.id)).length; const all=hStreak('*'), allBest=hBest('*');
+function viewHabits(){ const w=canWrite(); const days=[...Array(7)].map((_,i)=>addDays(TODAY,i-6)); const doneToday=habits().filter(h=>hDone(TODAY,h.id)).length; const all=hStreak('*'), allBest=hBest('*');
   const dlab=n=>n+' day'+(n===1?'':'s');
   const row=h=>{ const on=hDone(TODAY,h.id), st=hStreak(h.id), best=hBest(h.id);
-    return `<div class="it lit hrow"><button class="itmain" data-act="htick" data-d="${TODAY}" data-k="${h.id}"${w?'':' disabled'}><span class="cb${on?' on':''}">${on?ic('check'):''}</span><span class="nm"><span class="${on?'done':''}">${esc(h.name)}</span></span></button><span class="hstreak${st?' hot':''}">${st?dlab(st)+' in a row':'Start today'}${best>st?` <span class="muted">· best ${best}</span>`:''}</span>
+    return `<div class="it lit hrow"><button class="itmain" data-act="htick" data-d="${TODAY}" data-k="${h.id}"${w?'':' disabled'}><span class="cb${on?' on':''}">${on?ic('check'):''}</span><span class="nm"><span class="${on?'done':''}">${esc(h.name)}</span></span></button><span class="hstreak${st?' hot':''}">${st?dlab(st)+' in a row':'Start today'}${best>st?` <span class="muted">· best ${best}</span>`:''}</span>${w?(UI.hrm===h.id?`<span class="row" style="gap:12px"><button class="link" data-act="hrm" data-k="${h.id}">Remove</button><button class="link" style="color:var(--muted)" data-act="hrmx">Keep</button></span>`:`<button class="xbtn" data-act="hrm" data-k="${h.id}" aria-label="Remove ${esc(h.name)}">${ic('x')}</button>`):''}
       <div class="hchain">${days.map(d=>{ const c=hDone(d,h.id); const dt=parse(d); return `<button class="hc${c?' on':''}${d===TODAY?' today':''}" data-act="htick" data-d="${d}" data-k="${h.id}" title="${esc(shortDate(d))}${c?' · done':''}" aria-label="${esc(h.name)}, ${esc(shortDate(d))}, ${c?'done':'not done'}" aria-pressed="${c}"${w?'':' disabled'}>${DAYS_LONG[dt.getDay()].charAt(0)}</button>` }).join('')}</div></div>` };
-  return `<div class="head"><div class="tg"><div class="kick">${esc(DAYS_LONG[parse(TODAY).getDay()])} ${parse(TODAY).getDate()} ${esc(MONTHS[parse(TODAY).getMonth()])}</div><h1 class="h1">Ben's daily tasks</h1><div class="sub">${doneToday} of ${HABITS.length} done today  ·  All ${HABITS.length}: ${all?dlab(all)+' in a row':'no streak yet'}${allBest>all?`  ·  best ${allBest}`:''}</div></div></div>
-    <div class="progress"><i style="width:${Math.round(doneToday/HABITS.length*100)}%"></i></div>
-    <div class="lwrap"><div class="lsec">${HABITS.map(row).join('')}</div>
+  return `<div class="head"><div class="tg"><div class="kick">${esc(DAYS_LONG[parse(TODAY).getDay()])} ${parse(TODAY).getDate()} ${esc(MONTHS[parse(TODAY).getMonth()])}</div><h1 class="h1">Ben's daily tasks</h1><div class="sub">${doneToday} of ${habits().length} done today  ·  All ${habits().length}: ${all?dlab(all)+' in a row':'no streak yet'}${allBest>all?`  ·  best ${allBest}`:''}</div></div></div>
+    <div class="progress"><i style="width:${Math.round(doneToday/habits().length*100)}%"></i></div>
+    <div class="lwrap"><div class="lsec">${habits().map(row).join('')}${w?`<form class="secadd" data-form="habitadd">${ic('plus')}<input id="habitnew" placeholder="Add a daily task, e.g. Drink 2L of water" autocomplete="off"><button class="btn sm" type="submit">Add</button></form>`:''}</div>
     <p class="muted" style="font-size:12px;margin:0">Tick each task today. The squares show the last 7 days: tap one to fill in a day you missed ticking. A streak keeps going until a full day passes without the task, so today isn't counted against you until it's over.</p></div>` }
 function viewBins(){ const setup=!S.bins||UI.binSet; const nx=nextCollections(9);
   const head=`<div class="head"><div class="tg"><div class="kick">${esc(longDate(TODAY))}</div><h1 class="h1">Bins</h1></div>${S.bins?`<div class="row" style="gap:12px"><button class="btn" data-act="binics">${ic('cal')} Add reminders to calendar</button><button class="btn" data-act="binset">${ic('edit')} Edit</button></div>`:''}</div>`;
@@ -1591,7 +1592,9 @@ document.addEventListener('click',async e=>{
     case 'fold': { const k=t.dataset.k; const op=!FOLD[k]; for(const x of Object.keys(FOLD)) FOLD[x]=false; FOLD[k]=op; if(op) UI.justOpened=k; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
     case 'idealist': newList(t.dataset.name); break;
     case 'addlist': UI.addingList=true; render(); setTimeout(()=>{ const i=$('#sidelist'); if(i) i.focus() },20); break;
-    case 'htick': { if(!canWrite()) break; const d=t.dataset.d, k=t.dataset.k; const doc=Object.assign({done:{}},S.hlog[d]||{}); doc.done=Object.assign({},doc.done); if(doc.done[k]) delete doc.done[k]; else doc.done[k]=true; S.hlog[d]=Object.assign({id:d},doc); render(); Store.set('habitlog',d,doc); if(d===TODAY&&HABITS.every(h=>doc.done[h.id])) toast('All done for today.'); break }
+    case 'hrm': { if(!canWrite()) break; const k=t.dataset.k; if(UI.hrm!==k){ UI.hrm=k; render(); break } UI.hrm=null; const gone=habits().find(h=>h.id===k); const doc={tasks:habits().filter(h=>h.id!==k)}; S.hcfg=Object.assign({id:'tasks'},doc); render(); Store.set('habitcfg','tasks',doc); toast(`Removed ${gone?gone.name:'the task'}. Its past ticks are kept.`); break }
+    case 'hrmx': UI.hrm=null; render(); break;
+    case 'htick': { if(!canWrite()) break; const d=t.dataset.d, k=t.dataset.k; const doc=Object.assign({done:{}},S.hlog[d]||{}); doc.done=Object.assign({},doc.done); if(doc.done[k]) delete doc.done[k]; else doc.done[k]=true; S.hlog[d]=Object.assign({id:d},doc); render(); Store.set('habitlog',d,doc); if(d===TODAY&&habits().every(h=>doc.done[h.id])) toast('All done for today.'); break }
     case 'actclear': { const A=actList(false); if(!A) break; const gone=itemsOf(A.id).filter(i=>i.done); S.litems=S.litems.filter(x=>!gone.includes(x)); gone.forEach(i=>Store.del('litems',i.id)); render(); toast(`Cleared ${gone.length} done action${gone.length===1?'':'s'}.`); break }
     case 'ltodo': { const i=S.litems.find(x=>x.id===id); if(!i) break; i.todo=!i.todo;
       if(i.todo){ const lo=lastOccOn(i,false); if(lo&&lo<TODAY&&lo>(i.choreOcc||'')) i.choreOcc=lo; actList(true) }
@@ -1729,6 +1732,7 @@ document.addEventListener('submit',async e=>{
   if(f==='labpack'){ const v=$('#labpack').value.trim(); if(!v) return; $('#labpack').value=''; const g=$('#labgrp').value; const d=labData(); d.pack.push({id:rid().slice(-8),name:v.charAt(0).toUpperCase()+v.slice(1),done:false,g}); saveLab(d); setTimeout(()=>{ const i=$('#labpack'); if(i) i.focus() },30); return }
   if(f==='newlist'){ const v=$('#newlist').value.trim(); if(!v) return; $('#newlist').value=''; newList(v); return }
   if(f==='renlist'){ const v=$('#renlist').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); UI.lrename=false; if(L&&v&&v!==L.name){ L.name=v; Store.set('lists',L.id,L); toast(`Renamed to ${v}.`) } render(); return }
+  if(f==='habitadd'){ const v=$('#habitnew').value.trim(); if(!v) return; const name=v.charAt(0).toUpperCase()+v.slice(1); if(habits().some(h=>h.name.toLowerCase()===name.toLowerCase())){ toast('That task is already on the list.'); return } const doc={tasks:habits().concat([{id:slug(name).slice(0,24)+'-'+rid().slice(-4),name,from:TODAY}])}; S.hcfg=Object.assign({id:'tasks'},doc); render(); Store.set('habitcfg','tasks',doc); setTimeout(()=>{ const i=$('#habitnew'); if(i) i.focus() },20); return }
   if(f==='newsec'){ const v=$('#newsec').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); UI.addingSec=false; if(L&&v){ L.secs=secsOf(L).concat([{id:rid().slice(-8),name:v.charAt(0).toUpperCase()+v.slice(1)}]); Store.set('lists',L.id,L); const sid=L.secs[L.secs.length-1].id; render(); setTimeout(()=>{ const i=document.getElementById('si-'+sid); if(i) i.focus() },30) } else render(); return }
   if(f==='rensec'){ const v=$('#rensec').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); const sc=L&&secsOf(L).find(x=>x.id===e.target.dataset.sec); UI.secRename=null; if(sc&&v&&v!==sc.name){ sc.name=v; Store.set('lists',L.id,L) } render(); return }
   if(f==='secitem'){ const sid=e.target.dataset.sec; const inp=e.target.querySelector('input'); const v=inp.value.trim(); if(!v||!UI.lid) return; const iid=Store.newId('litems'); const doc={list:UI.lid,sec:sid,name:v.charAt(0).toUpperCase()+v.slice(1),note:'',done:false,at:Date.now()}; const sdt=e.target.querySelector('.secdate'), srp=e.target.querySelector('.secrep'); if(sdt&&sdt.value){ doc.date=sdt.value; if(srp&&srp.value){ const [n,u]=srp.value.split(':'); doc.rep={n:+n,unit:u} } sdt.value=''; if(srp) srp.value='' } S.litems.push(Object.assign({id:iid},doc)); inp.value=''; render(); Store.set('litems',iid,doc); setTimeout(()=>{ const i=document.getElementById('si-'+sid); if(i) i.focus() },20); return }
@@ -1956,6 +1960,7 @@ Store.init().then(()=>{
   Store.sub('lists',d=>{ S.lists=d; choresSoon(); if(UI.view!=='edit') soon(); else renderSide() });
   Store.sub('litems',d=>{ S.litems=d; choresSoon(); if(UI.view!=='edit') soon() });
   Store.sub('regulars',d=>{ S.regs=d; if(UI.view!=='edit') soon() });
+  Store.sub('habitcfg',d=>{ S.hcfg=d.find(x=>x.id==='tasks')||null; if(UI.view!=='edit') soon() });
   Store.sub('habitlog',d=>{ S.hlog={}; d.forEach(x=>S.hlog[x.id]=x); if(UI.view!=='edit') soon() });
   Store.sub('qty',d=>{ S.qty={}; d.forEach(q=>S.qty[q.id]=q); if(UI.view!=='edit') soon() });
 });
