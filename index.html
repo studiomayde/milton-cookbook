@@ -258,6 +258,38 @@ textarea.in{resize:vertical;line-height:1.55}
 .wg .wh{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
 .wg h2{font-family:var(--serif);font-weight:400;font-size:30px;line-height:1;margin:6px 0 0}
 .wg .wl{white-space:nowrap}
+.lsec.pnadd{flex-direction:row;gap:20px;align-items:center}
+.pnaddl{flex:1;min-width:0}
+.pnart{width:120px;height:120px;flex:none}
+.pnshoot{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.pnbusy{display:flex;align-items:center;gap:10px;font-size:12.5px;padding:10px 0}
+.pnspin{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--fg);animation:pnspin .8s linear infinite}
+@keyframes pnspin{to{transform:rotate(360deg)}}
+.pnrow{display:grid;grid-template-columns:minmax(0,2fr) 80px 104px 140px minmax(0,1.2fr) 28px;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.pnrow .in{padding:8px 10px;font-size:12px;min-width:0}
+.pnrow.low{background:#fff4dc;margin:0 -10px;padding:8px 10px;border-radius:6px}
+.pnlow{background:#fff4dc;padding:1px 5px;border-radius:4px;font-weight:500}
+.pnsrc{font-size:11px;color:var(--muted);line-height:1.35}
+.pnsrc small{display:block;font-size:10.5px;color:var(--faint)}
+.pnb{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:500;padding:3px 9px;border-radius:999px;white-space:nowrap;margin-left:auto}
+.pnb i{font-style:normal;font-weight:400;opacity:.7}
+.pnb.gone{background:#f6d4cf;color:#8a2a1c}.pnb.soon{background:#fbe3b8;color:#7a4b06}.pnb.week{background:#e9eef7;color:#2c3e66}.pnb.later{background:var(--soft);color:var(--muted)}.pnb.none{background:transparent;color:var(--faint)}
+.pnitem .itmain{max-width:none;flex:1 1 auto}
+.pnitem .pnd{width:118px;margin-left:8px}
+.pngrid{display:flex;flex-direction:column;gap:16px}
+.pnitem .nm{white-space:normal}
+.pnsoon{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 16px;border-radius:10px;background:#fdf1e2}
+.pnchip{display:inline-flex;align-items:center;gap:6px;font-size:12px;background:var(--bg);border-radius:999px;padding:4px 6px 4px 12px}
+.pnchip .pnb{margin-left:0}
+.pncards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:6px}
+.pncard{background:var(--bg);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.pncard h4{font-family:var(--serif);font-weight:400;font-size:22px;line-height:1.15;margin:2px 0 0}
+.pncard p{margin:0;font-size:12px;line-height:1.5}
+.pncard details{font-size:12px;line-height:1.55;margin-top:6px}
+.pncard summary{cursor:pointer;font-weight:500}
+.pncard ul,.pncard ol{padding-left:18px;margin:8px 0}
+.pncard .link{align-self:flex-start;margin-top:4px}
+@media (max-width:860px){.pnart{display:none}.pncards{grid-template-columns:1fr}.pnrow{grid-template-columns:repeat(3,minmax(0,1fr)) 28px;row-gap:6px}.pnrow .pn-n{grid-column:1/4;order:1}.pnrow .xbtn{order:2}.pnrow .pn-q{order:3}.pnrow .pn-l{order:4}.pnrow .pn-d{order:5;grid-column:3/5}.pnrow .pnsrc{order:6;grid-column:1/-1}.pnitem{flex-wrap:wrap}.pnitem .pnd{width:118px}}
 .hrow{flex-wrap:wrap;row-gap:8px}
 .hrow .itmain{max-width:none;flex:1 1 auto}
 .hstreak{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap}
@@ -676,7 +708,7 @@ function mins(s){if(!s)return 0;s=String(s).toLowerCase();let m=0;const h=s.matc
 function fmtMins(m){if(!m)return'';if(m<60)return m+' min';const h=Math.floor(m/60),r=m%60;return h+' hr'+(r?' '+r:'')}
 
 /* ---------- state ---------- */
-const S={bins:null,lists:[],litems:[],recipes:[],cols:[],plan:{},ticks:{},extras:[],regs:[],qty:{},qtyLocal:{},hlog:{},hcfg:null,readOnly:false,mode:'loading',loaded:{}};
+const S={bins:null,lists:[],litems:[],recipes:[],cols:[],plan:{},ticks:{},extras:[],regs:[],qty:{},qtyLocal:{},hlog:{},hcfg:null,pantry:[],readOnly:false,mode:'loading',loaded:{}};
 const UI={view:'dash',list:{kind:'all'},status:'all',sort:'new',q:'',rid:null,editId:null,pmode:'week',week:mondayOf(TODAY),day:TODAY,month:TODAY.slice(0,8)+'01',extraCols:[],extraDay:[],swap:null,sheet:null,cook:{},trolley:true,regEdit:false,regGroup:'Food',draft:null,addingCol:false,lid:null,ldone:true,lrename:false};
 let sample=null;
 const photosHere=()=>true;
@@ -887,7 +919,7 @@ function renderSide(){ setTimeout(()=>{ UI.justOpened=null },0);
   const FK={lists:'lists',home:'recipes'};
   $('#side').innerHTML=`
     <button class="logo" data-act="go" data-view="dash">Milton Manor</button>
-    <div class="secnav">${[['dash','Home','home',UI.view==='dash'],['lists','Lists','list',UI.view==='lists'&&!onKD()],['dates','Key dates','kdate',onKD()],['shopping','Groceries','apple',shopOn],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn],['bins','Bins','bin',UI.view==='bins'],['labour','Labour','bloom',UI.view==='labour'],['baby','Baby girl','bub',UI.view==='baby'],['habits','Ben\'s daily tasks','check',UI.view==='habits']].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
+    <div class="secnav">${[['dash','Home','home',UI.view==='dash'],['lists','Lists','list',UI.view==='lists'&&!onKD()],['dates','Key dates','kdate',onKD()],['shopping','Groceries','apple',shopOn],['pantry','Pantry','bag',UI.view==='pantry'],['home','Recipes','book',['home','recipe','search','edit'].includes(UI.view)],['planner','Meal planner','cal',plannerOn],['bins','Bins','bin',UI.view==='bins'],['labour','Labour','bloom',UI.view==='labour'],['baby','Baby girl','bub',UI.view==='baby'],['habits','Ben\'s daily tasks','check',UI.view==='habits']].map(x=>{ const k=FK[x[0]]; const open=k&&FOLD[k];
       return `<div class="secg${open?' open':''}"><div class="secrow"><button class="sec${x[3]?' on':''}" data-act="go" data-view="${x[0]}"${x[3]?' aria-current="page"':''}>${ic(x[2])}<span>${x[1]}</span></button>${k?`<button class="fx" data-act="fold" data-k="${k}" aria-expanded="${!!open}" aria-label="${open?'Hide':'Show'} ${x[1]}">${ic('down')}</button>`:''}</div>${open?`<div class="nav subnav${UI.justOpened===k?' anim':''}">${SUB[x[0]]}</div>`:''}</div>` }).join('')}</div>
     ${S.me?`<div class="acct"><span class="muted">${esc(S.me.email||'')}</span><span class="row" style="gap:16px">${S.me.role==='owner'?`<button class="link${UI.view==='people'?' on':''}" data-act="go" data-view="people">People</button>`:''}<button class="link${UI.view==='account'?' on':''}" data-act="go" data-view="account">Change password</button><button class="link" data-act="signout">Sign out</button></span></div>`:''}`;
 }
@@ -1154,6 +1186,50 @@ function binSettingsHTML(){ const c=UI.binDraft||(UI.binDraft=JSON.parse(JSON.st
 function readBinDraft(){ const c=UI.binDraft; if(!c) return; const v=$('#binday'); if(v) c.day=+v.value; const first=nextDow(TODAY,+c.day);
   c.bins.forEach((b,i)=>{ const n=document.querySelector(`[data-binname="${i}"]`); if(n) b.name=n.value.trim()||b.name; const col=document.querySelector(`[data-bincolour="${i}"]`); if(col) b.colour=col.value; const fr=document.querySelector(`[data-binfreq="${i}"]`); if(fr) b.freq=fr.value;
     const t=document.querySelector(`[data-binthis="${i}"]`); if(b.freq==='fortnightly'&&t) b.start=t.checked?first:addDays(first,7); if(b.freq!=='fortnightly') b.start='' }) }
+/* ---------- pantry: photos in, use-by dates and recipe ideas out ---------- */
+const PAN_LOCS=[['fridge','Fridge'],['freezer','Freezer'],['pantry','Pantry']];
+const PAN_WHERE=[['shopping','New shop'],['fridge','Fridge'],['freezer','Freezer'],['pantry','Pantry']];
+const PAN_URL=SB_URL+'/functions/v1/pantry';
+function panDays(i){ return i.date?daysTo(i.date):null }
+function panBadge(i){ const n=panDays(i); if(n==null) return `<span class="pnb none">No date</span>`;
+  const cls=n<0?'gone':n<=2?'soon':n<=7?'week':'later'; const est=i.dtype==='estimate'?'<i>est.</i>':'';
+  const txt=n<0?(n===-1?'Yesterday':Math.abs(n)+' days ago'):n===0?'Today':n===1?'Tomorrow':n<14?n+' days':Math.round(n/7)+' weeks';
+  return `<span class="pnb ${cls}" title="${esc((i.dtype==='use_by'?'Use by ':i.dtype==='best_before'?'Best before ':'Estimated ')+shortDate(i.date))}">${txt}${est}</span>` }
+function panSorted(list){ return list.slice().sort((a,b)=>{ const x=a.date||'9999', y=b.date||'9999'; return x<y?-1:x>y?1:(a.name||'').localeCompare(b.name||'') }) }
+async function panResize(file){ const img=await new Promise((res,rej)=>{ const u=URL.createObjectURL(file); const im=new Image(); im.onload=()=>{ URL.revokeObjectURL(u); res(im) }; im.onerror=rej; im.src=u });
+  const max=1568, s=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)); const c=document.createElement('canvas'); c.width=Math.round(img.naturalWidth*s); c.height=Math.round(img.naturalHeight*s);
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height); return c.toDataURL('image/jpeg',.85).split(',')[1] }
+async function panCall(body){ const r=await fetch(PAN_URL,{method:'POST',headers:await authHeaders(),body:JSON.stringify(Object.assign({today:TODAY},body))}); const d=await r.json().catch(()=>({error:'bad_response'}));
+  if(!r.ok||d.error){ const e=d.error||('http_'+r.status); throw new Error(e==='no_api_key'?'The Claude API key isn’t set up in Supabase yet.':e==='not_allowed'?'You need to be signed in.':/^claude_/.test(e)?'Claude couldn’t read that. Try again in a moment.':'Couldn’t reach the pantry service. Check your connection.') } return d }
+async function panScan(files){ if(!files||!files.length) return; const list=[...files].slice(0,6); if(files.length>6) toast('Reading the first 6 photos. Add the rest in another batch.');
+  UI.pScan={busy:true,n:list.length,items:null}; render();
+  try{ const images=[]; for(const f of list) images.push({type:'image/jpeg',data:await panResize(f)});
+    const d=await panCall({action:'scan',where:UI.pWhere||'shopping',images});
+    UI.pScan={busy:false,items:(d.items||[]).map((x,k)=>({k,name:x.name||'',qty:x.qty||'',loc:PAN_LOCS.some(l=>l[0]===x.location)?x.location:'fridge',date:/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')?x.date:'',dtype:x.date_type||'none',conf:x.confidence||'high',note:x.note||'',cat:x.category||'other'}))};
+    if(!UI.pScan.items.length) toast('No food found in those photos.') }
+  catch(err){ UI.pScan={busy:false,items:null}; toast(err.message) } render() }
+function panReviewRead(){ document.querySelectorAll('.pnrev [data-k]').forEach(row=>{ const it=UI.pScan.items.find(x=>x.k===+row.dataset.k); if(!it) return;
+  const g=s=>row.querySelector(s); it.name=g('.pn-n').value.trim(); it.qty=g('.pn-q').value.trim(); it.loc=g('.pn-l').value; const nd=g('.pn-d').value; if(nd!==it.date){ it.date=nd; if(it.dtype==='none'&&nd) it.dtype='best_before' } }) }
+function viewPantry(){ const w=canWrite(); const all=S.pantry||[]; const soon=panSorted(all.filter(i=>i.date&&panDays(i)<=2)); const sc=UI.pScan||{}; const R=UI.pRec||{};
+  const where=UI.pWhere||'shopping';
+  const add=`<div class="lsec pnadd"><div class="pnaddl"><div class="lsh"><h3>Add food</h3></div><p class="muted" style="margin:0 0 12px;font-size:12px;line-height:1.55">Snap your shopping, or a shelf of the fridge or pantry. Claude reads the use-by dates, and estimates them for fresh food without a label. You check the list before anything is saved.</p>
+    <div class="seg" style="margin-bottom:12px">${PAN_WHERE.map(([k,l])=>`<button class="${where===k?'on':''}" data-act="pnwhere" data-k="${k}">${l}</button>`).join('')}</div>
+    ${w?(sc.busy?`<div class="pnbusy"><span class="pnspin"></span>Reading ${sc.n} photo${sc.n===1?'':'s'}… this takes about 20 seconds</div>`:`<label class="btn solid pnshoot">${ic('camera')} Take or choose photos<input id="pnfile" type="file" accept="image/*" multiple hidden></label>`):''}</div>
+    <svg class="pnart" viewBox="0 0 120 120" aria-hidden="true"><rect x="22" y="10" width="76" height="102" rx="10" fill="#eef3f1" stroke="var(--fg)" stroke-width="1.6"/><path d="M22 46h76" stroke="var(--fg)" stroke-width="1.6"/><path d="M30 24v12M30 56v14" stroke="var(--fg)" stroke-width="2.2" stroke-linecap="round"/><circle cx="72" cy="30" r="8" fill="#f3c9c1" stroke="var(--fg)" stroke-width="1.4"/><rect x="44" y="62" width="14" height="22" rx="3" fill="#f6d9a8" stroke="var(--fg)" stroke-width="1.4"/><path d="M66 84c0-10 6-16 14-16 0 9-5 16-14 16Z" fill="#cfe3b5" stroke="var(--fg)" stroke-width="1.4"/><rect x="40" y="92" width="44" height="10" rx="3" fill="#c9d6ef" stroke="var(--fg)" stroke-width="1.4"/></svg></div>`;
+  const review=sc.items&&sc.items.length?`<div class="lsec pnrev"><div class="lsh"><h3>Check before saving</h3><span class="muted" style="font-size:12px">${sc.items.length} item${sc.items.length===1?'':'s'} found</span></div>
+    <p class="muted" style="margin:0 0 10px;font-size:12px">Fix anything misread. <b class="pnlow">Highlighted</b> rows are ones Claude wasn’t sure about.</p>
+    ${sc.items.map(it=>`<div class="pnrow${it.conf==='low'?' low':''}" data-k="${it.k}"><input class="in pn-n" value="${esc(it.name)}" aria-label="Name"><input class="in pn-q" value="${esc(it.qty)}" placeholder="Qty" aria-label="Quantity"><select class="in pn-l" aria-label="Where">${PAN_LOCS.map(([k,l])=>`<option value="${k}"${it.loc===k?' selected':''}>${l}</option>`).join('')}</select><input class="in pn-d" type="date" value="${esc(it.date)}" aria-label="Date"><span class="pnsrc">${it.dtype==='use_by'?'Use by':it.dtype==='best_before'?'Best before':it.dtype==='estimate'?'Estimate':'No date'}${it.note?`<small>${esc(it.note)}</small>`:''}</span><button class="xbtn" data-act="pnrevx" data-k="${it.k}" aria-label="Remove ${esc(it.name)}">${ic('x')}</button></div>`).join('')}
+    <div class="row" style="gap:16px;margin-top:14px"><button class="btn solid" data-act="pnsave">Save ${sc.items.length} item${sc.items.length===1?'':'s'}</button><button class="link" data-act="pndiscard">Discard</button></div></div>`:'';
+  const row=i=>`<div class="it lit pnitem"><button class="itmain" data-act="pnused" data-id="${esc(i.id)}"${w?'':' disabled'} title="Tick when used up"><span class="cb"></span><span class="nm"><span>${esc(i.name)}</span>${i.qty?` <span class="muted">· ${esc(i.qty)}</span>`:''}</span></button>${panBadge(i)}${w?`<input class="ldate pnd" type="date" data-pnid="${esc(i.id)}" value="${esc(i.date||'')}" aria-label="Date for ${esc(i.name)}">`:''}</div>`;
+  const groups=PAN_LOCS.map(([k,l])=>{ const its=panSorted(all.filter(i=>(i.loc||'fridge')===k)); return `<div class="lsec"><div class="lsh"><h3>${l}</h3><span class="count">${its.length}</span></div>${its.length?its.map(row).join(''):'<p class="muted" style="margin:6px 0 4px;font-size:12px">Nothing here yet.</p>'}</div>` }).join('');
+  const manual=w?`<form class="row laddf" data-form="pnadd" style="flex-wrap:nowrap"><label class="search" style="border-radius:6px">${ic('plus')}<input id="pnname" placeholder="Add an item by hand" autocomplete="off"></label><select id="pnloc" class="in" style="width:auto;padding:9px 34px 9px 12px">${PAN_LOCS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select><input id="pndate" class="in" type="date" style="width:auto" aria-label="Use by"><button class="btn solid" type="submit">Add</button></form>`:'';
+  const recipes=`<div class="lsec pnrecs"><div class="lsh"><h3>Recipe ideas</h3>${w&&all.length&&!R.busy?`<button class="btn" data-act="pnrecipes">${ic('shuffle')} ${R.list?'More ideas':'Suggest recipes'}</button>`:''}</div>
+    ${R.busy?`<div class="pnbusy"><span class="pnspin"></span>Thinking up recipes that use what’s about to expire…</div>`:R.list?`<div class="pncards">${R.list.map((r,n)=>`<div class="pncard"><div class="kick">${esc(r.time||'')}${r.serves?' · serves '+esc(r.serves):''}</div><h4>${esc(r.title)}</h4><p>${esc(r.why||'')}</p><div class="plsee">${(r.uses||[]).map(u=>`<span>${esc(u)}</span>`).join('')}</div>${r.extra&&r.extra.length?`<p class="muted" style="font-size:11.5px;margin:8px 0 0">Also need: ${esc(r.extra.join(', '))}</p>`:''}
+      <details><summary>Ingredients and method</summary><ul>${(r.ingredients||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul><ol>${(r.method||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ol></details>${w?`<button class="link" data-act="pnkeep" data-n="${n}">${R.saved&&R.saved[n]?'Saved to Recipes':'Save to my recipes'}</button>`:''}</div>`).join('')}</div>`:`<p class="muted" style="margin:4px 0 0;font-size:12px">${all.length?'Get a few ideas built around what’s about to expire.':'Add some food first, then ask for ideas.'}</p>`}</div>`;
+  const soonHTML=soon.length?`<div class="pnsoon"><span class="kick">Use soon</span>${soon.map(i=>`<span class="pnchip">${esc(i.name)} ${panBadge(i)}</span>`).join('')}</div>`:'';
+  return `<div class="head"><div class="tg"><div class="kick">In the house</div><h1 class="h1">Pantry</h1><div class="sub">${all.length} item${all.length===1?'':'s'}${soon.length?`  ·  ${soon.length} to use soon`:''}</div></div></div>
+    <div class="lwrap" style="max-width:900px">${add}${review}${soonHTML}${recipes}<div class="pngrid">${groups}</div>${manual}
+    <p class="muted" style="font-size:11px;line-height:1.6;margin:0">Estimated dates are a guide only. Trust your eyes and nose, and always follow use-by dates on meat, seafood and dairy.</p></div>` }
 /* ---------- Ben's daily tasks: tick each day, keep the chain going ---------- */
 const HABITS_DEFAULT=[{id:'vitamins',name:'Take vitamins'},{id:'creatine',name:'Take creatine'},{id:'floss',name:'Floss'},{id:'stretch',name:'Stretch'},{id:'meditate',name:'Meditate'}];
 const habits=()=>S.hcfg&&Array.isArray(S.hcfg.tasks)?S.hcfg.tasks:HABITS_DEFAULT;
@@ -1395,6 +1471,10 @@ function viewBaby(){ const d=babyData(); const w=canWrite(); const a=d.about||{}
   const note=`<p class="muted" style="font-size:11px;line-height:1.6;margin:22px 0 0">A general guide only. Your midwife, child health nurse and GP know her best.</p>`;
   return `<div class="head"><div class="tg"><div class="kick">Welcome home</div><h1 class="h1">Baby girl</h1></div></div>
     <div class="labtop">${about}${help}</div>${todo}${weeks}${playHTML()}${cues}<div style="height:20px"></div>${urgent}${note}` }
+document.addEventListener('change',e=>{ const t=e.target; if(!t) return;
+  if(t.id==='pnfile'){ const fs=t.files; panScan(fs); t.value=''; return }
+  if(t.dataset&&t.dataset.pnid){ const it=S.pantry.find(x=>x.id===t.dataset.pnid); if(it){ it.date=t.value; it.dtype=t.value?'set':'none'; const c=Object.assign({},it); delete c.id; Store.set('pantry',it.id,c); render() } } });
+document.addEventListener('input',e=>{ if(e.target&&e.target.closest&&e.target.closest('.pnrev')&&UI.pScan&&UI.pScan.items) panReviewRead() });
 document.addEventListener('change',e=>{ const k=e.target&&e.target.dataset&&e.target.dataset.babyf; if(!k) return; const d=JSON.parse(JSON.stringify(babyData())); d.about=d.about||{}; d.about[k]=e.target.value.trim(); saveBaby(d,true) });
 /* ---------- home ---------- */
 function favWidgets(){ const fs=sortedLists().filter(L=>L.fav); if(!fs.length) return '';
@@ -1612,7 +1692,7 @@ function render(){
   if(locked){ $('#gate').innerHTML=gateHTML(); return }
   if(false){ $('#gate').innerHTML=`<div class="box"><div class="kick">Milton Manor</div><div class="serif">${S.mode==='nokey'?'Open Milton Manor from the family link':'This link no longer opens Milton Manor'}</div><p class="muted" style="margin:0;font-size:14px">${S.mode==='nokey'?'Ask May to send you the link. Once you open it on this device, it will remember you.':'Ask May for the current family link.'}</p></div>`; return }
   renderSide(); renderTop();
-  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():UI.view==='dash'?viewDash():UI.view==='people'?viewPeople():UI.view==='bins'?viewBins():UI.view==='labour'?viewLabour():UI.view==='baby'?viewBaby():UI.view==='habits'?viewHabits():UI.view==='account'?viewAccount():viewShopping();
+  const v=UI.view==='search'?viewSearch():UI.view==='home'?viewHome():UI.view==='recipe'?viewRecipe():UI.view==='edit'?viewEdit():UI.view==='planner'?viewPlanner():UI.view==='lists'?viewLists():UI.view==='dash'?viewDash():UI.view==='people'?viewPeople():UI.view==='bins'?viewBins():UI.view==='labour'?viewLabour():UI.view==='baby'?viewBaby():UI.view==='habits'?viewHabits():UI.view==='pantry'?viewPantry():UI.view==='account'?viewAccount():viewShopping();
   $('#view').innerHTML=v;
   masonry();
   if(UI.view==='labour') setTimeout(labMigrate,0);
@@ -1693,6 +1773,15 @@ document.addEventListener('click',async e=>{
     case 'fold': { const k=t.dataset.k; const op=!FOLD[k]; for(const x of Object.keys(FOLD)) FOLD[x]=false; FOLD[k]=op; if(op) UI.justOpened=k; try{ localStorage.setItem('milton-open',JSON.stringify(FOLD)) }catch(err){} renderSide(); break }
     case 'idealist': newList(t.dataset.name); break;
     case 'addlist': UI.addingList=true; render(); setTimeout(()=>{ const i=$('#sidelist'); if(i) i.focus() },20); break;
+    case 'pnwhere': UI.pWhere=t.dataset.k; if(UI.pScan&&UI.pScan.items) panReviewRead(); render(); break
+    case 'pnrevx': { panReviewRead(); UI.pScan.items=UI.pScan.items.filter(x=>x.k!==+t.dataset.k); render(); break }
+    case 'pndiscard': UI.pScan=null; render(); break
+    case 'pnsave': { panReviewRead(); const its=(UI.pScan.items||[]).filter(x=>x.name); const now=Date.now(); its.forEach((x,n)=>{ const pid=Store.newId('pantry'); const doc={name:x.name,qty:x.qty,loc:x.loc,date:x.date||'',dtype:x.date?x.dtype:'none',cat:x.cat,note:x.note,at:now+n}; S.pantry.push(Object.assign({id:pid},doc)); Store.set('pantry',pid,doc) }); UI.pScan=null; render(); toast(`Saved ${its.length} item${its.length===1?'':'s'} to the pantry.`); break }
+    case 'pnused': { if(!canWrite()) break; const it=S.pantry.find(x=>x.id===id); if(!it) break; S.pantry=S.pantry.filter(x=>x.id!==id); render(); Store.del('pantry',id); toast(`${it.name} used up.`); break }
+    case 'pnrecipes': { const items=S.pantry.map(i=>({name:i.name,qty:i.qty,location:i.loc,date:i.date,date_type:i.dtype})); UI.pRec={busy:true}; render();
+      try{ const d=await panCall({action:'recipes',items,count:4}); UI.pRec={list:d.recipes||[],saved:{}} }catch(err){ UI.pRec={}; toast(err.message) } render(); break }
+    case 'pnkeep': { const R=UI.pRec; const n=+t.dataset.n; const r=R&&R.list&&R.list[n]; if(!r||R.saved[n]) break; const now=Date.now(); const rid2=Store.newId('recipes');
+      await saveRecipe({id:rid2,title:r.title,from:'Pantry idea from Claude',intro:r.why||'',prep:'',cook:r.time||'',serves:r.serves||'',ingredients:(r.ingredients||[]).join('\n'),method:(r.method||[]).join('\n'),notes:'',created:now,updated:now,cols:[]}); R.saved[n]=true; render(); toast('Saved to Recipes, under To try.'); break }
     case 'hrm': { if(!canWrite()) break; const k=t.dataset.k; if(UI.hrm!==k){ UI.hrm=k; render(); break } UI.hrm=null; const gone=habits().find(h=>h.id===k); const doc={tasks:habits().filter(h=>h.id!==k)}; S.hcfg=Object.assign({id:'tasks'},doc); render(); Store.set('habitcfg','tasks',doc); toast(`Removed ${gone?gone.name:'the task'}. Its past ticks are kept.`); break }
     case 'hrmx': UI.hrm=null; render(); break;
     case 'htick': { if(!canWrite()) break; const d=t.dataset.d, k=t.dataset.k; const doc=Object.assign({done:{}},S.hlog[d]||{}); doc.done=Object.assign({},doc.done); if(doc.done[k]) delete doc.done[k]; else doc.done[k]=true; S.hlog[d]=Object.assign({id:d},doc); render(); Store.set('habitlog',d,doc); if(d===TODAY&&habits().every(h=>doc.done[h.id])) toast('All done for today.'); break }
@@ -1833,6 +1922,7 @@ document.addEventListener('submit',async e=>{
   if(f==='labpack'){ const v=$('#labpack').value.trim(); if(!v) return; $('#labpack').value=''; const g=$('#labgrp').value; const d=labData(); d.pack.push({id:rid().slice(-8),name:v.charAt(0).toUpperCase()+v.slice(1),done:false,g}); saveLab(d); setTimeout(()=>{ const i=$('#labpack'); if(i) i.focus() },30); return }
   if(f==='newlist'){ const v=$('#newlist').value.trim(); if(!v) return; $('#newlist').value=''; newList(v); return }
   if(f==='renlist'){ const v=$('#renlist').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); UI.lrename=false; if(L&&v&&v!==L.name){ L.name=v; Store.set('lists',L.id,L); toast(`Renamed to ${v}.`) } render(); return }
+  if(f==='pnadd'){ const v=$('#pnname').value.trim(); if(!v) return; const pid=Store.newId('pantry'); const dt=$('#pndate').value; const doc={name:v.charAt(0).toUpperCase()+v.slice(1),qty:'',loc:$('#pnloc').value,date:dt,dtype:dt?'best_before':'none',cat:'other',note:'',at:Date.now()}; S.pantry.push(Object.assign({id:pid},doc)); $('#pnname').value=''; $('#pndate').value=''; render(); Store.set('pantry',pid,doc); return }
   if(f==='habitadd'){ const v=$('#habitnew').value.trim(); if(!v) return; const name=v.charAt(0).toUpperCase()+v.slice(1); if(habits().some(h=>h.name.toLowerCase()===name.toLowerCase())){ toast('That task is already on the list.'); return } const doc={tasks:habits().concat([{id:slug(name).slice(0,24)+'-'+rid().slice(-4),name,from:TODAY}])}; S.hcfg=Object.assign({id:'tasks'},doc); render(); Store.set('habitcfg','tasks',doc); setTimeout(()=>{ const i=$('#habitnew'); if(i) i.focus() },20); return }
   if(f==='newsec'){ const v=$('#newsec').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); UI.addingSec=false; if(L&&v){ L.secs=secsOf(L).concat([{id:rid().slice(-8),name:v.charAt(0).toUpperCase()+v.slice(1)}]); Store.set('lists',L.id,L); const sid=L.secs[L.secs.length-1].id; render(); setTimeout(()=>{ const i=document.getElementById('si-'+sid); if(i) i.focus() },30) } else render(); return }
   if(f==='rensec'){ const v=$('#rensec').value.trim(); const L=S.lists.find(x=>x.id===UI.lid); const sc=L&&secsOf(L).find(x=>x.id===e.target.dataset.sec); UI.secRename=null; if(sc&&v&&v!==sc.name){ sc.name=v; Store.set('lists',L.id,L) } render(); return }
@@ -2061,6 +2151,7 @@ Store.init().then(()=>{
   Store.sub('lists',d=>{ S.lists=d; choresSoon(); if(UI.view!=='edit') soon(); else renderSide() });
   Store.sub('litems',d=>{ S.litems=d; choresSoon(); if(UI.view!=='edit') soon() });
   Store.sub('regulars',d=>{ S.regs=d; if(UI.view!=='edit') soon() });
+  Store.sub('pantry',d=>{ S.pantry=d; if(UI.view!=='edit') soon() });
   Store.sub('habitcfg',d=>{ S.hcfg=d.find(x=>x.id==='tasks')||null; if(UI.view!=='edit') soon() });
   Store.sub('habitlog',d=>{ S.hlog={}; d.forEach(x=>S.hlog[x.id]=x); if(UI.view!=='edit') soon() });
   Store.sub('qty',d=>{ S.qty={}; d.forEach(q=>S.qty[q.id]=q); if(UI.view!=='edit') soon() });
