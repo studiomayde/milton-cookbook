@@ -342,6 +342,30 @@ body.secsorting{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .cueic .f{fill:var(--fg);stroke:none}
 .cue{padding-bottom:22px}
 @media (max-width:860px){.cuegrid{grid-template-columns:1fr;gap:14px}}
+.plhab{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.plhabc{background:var(--soft);border-radius:10px;padding:16px 14px;display:flex;flex-direction:column;gap:6px}
+.plhabc b{font-size:12.5px;font-weight:600;margin-top:4px}
+.plhabc p{margin:0;font-size:11.5px;line-height:1.5;color:var(--muted)}
+.plic{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none}
+.plic svg{width:22px;height:22px;fill:none;stroke:var(--fg);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.pltrack{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));position:relative;margin:4px 0 6px}
+.pltrack::before{content:"";position:absolute;left:8.33%;right:8.33%;top:11px;height:2px;background:var(--line)}
+.pltrack button{position:relative;display:flex;flex-direction:column;align-items:center;gap:7px;padding:0 2px 2px}
+.pltrack i{width:24px;height:24px;border-radius:50%;background:var(--bg);border:2px solid var(--h);transition:transform .15s}
+.pltrack button.on i{background:var(--h);transform:scale(1.25);box-shadow:0 0 0 4px var(--bg)}
+.pltrack span{font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.pltrack button.on span{color:var(--fg)}
+.pltrack em{font-style:normal;font-size:8px;letter-spacing:.14em;text-transform:uppercase;background:var(--fg);color:var(--on-fg);border-radius:999px;padding:2px 7px}
+.plhead{margin:22px 0 4px;padding:18px 20px;border-radius:10px;background:color-mix(in srgb,var(--hue) 45%,var(--bg))}
+.plhead h3{font-family:var(--serif);font-weight:400;font-size:30px;line-height:1.1;margin:4px 0 6px}
+.plhead p{margin:0;font-size:13px;line-height:1.55;max-width:560px}
+.plsee{display:flex;flex-wrap:wrap;gap:6px}
+.plsee span{font-size:11.5px;padding:6px 12px;border-radius:999px;background:var(--bg);border:1px solid var(--line)}
+.placts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.plact{display:flex;gap:12px;align-items:flex-start;background:var(--bg);border-radius:10px;padding:14px}
+.plact b{font-size:12.5px;font-weight:600}
+.plact p{margin:3px 0 0;font-size:12px;line-height:1.5;color:var(--muted)}
+@media (max-width:860px){.plhab{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px 18px;padding:0 16px 4px}.plhabc{flex:0 0 72%;scroll-snap-align:start}.placts{grid-template-columns:1fr}.pltrack span{font-size:8.5px;letter-spacing:.04em}.pltrack em{font-size:7px;padding:1px 5px}.plhead h3{font-size:26px}}
 .bbtabs{display:flex;flex-wrap:wrap;gap:6px}
 .bbtabs button{padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
 .bbtabs button.on{background:var(--fg);border-color:var(--fg);color:var(--on-fg)}
@@ -1270,6 +1294,82 @@ function babyData(){ if(S.baby) return S.baby; if(BABY_DEF) return BABY_DEF;
   return BABY_DEF={about:{},todo:BABY_GROUPS.flatMap(G=>BABY_TODO[G].map(n=>({id:rid().slice(-8),name:n,done:false,g:G})))} }
 function saveBaby(d,quiet){ S.baby=d; Store.set('settings','baby',Object.assign({id:'baby'},d)); if(!quiet) render() }
 function babyRow(i,w){ return `<div class="it"><button class="itmain" data-act="bbtick" data-id="${esc(i.id)}"><span class="cb${i.done?' on':''}">${i.done?ic('check'):''}</span><span class="nm"><span class="${i.done?'done':''}">${esc(i.name)}</span></span></button>${w?`<button class="xbtn" data-act="bbrm" data-id="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">${ic('x')}</button>`:''}</div>` }
+/* ---------- baby girl: play and development ---------- */
+const PLAY_IC={
+ talk:'<path d="M5 7.5A3.5 3.5 0 0 1 8.5 4h7A3.5 3.5 0 0 1 19 7.5v3a3.5 3.5 0 0 1-3.5 3.5H11l-4 3.5V14h0A3.5 3.5 0 0 1 5 10.5Z"/><path d="M9 9h.01M12 9h.01M15 9h.01"/>',
+ book:'<path d="M12 6.5C10.3 5.2 8 4.8 4.5 5v12.5c3.5-.2 5.8.2 7.5 1.5 1.7-1.3 4-1.7 7.5-1.5V5c-3.5-.2-5.8.2-7.5 1.5Z"/><path d="M12 6.5V19"/>',
+ tummy:'<circle cx="17.5" cy="9.5" r="2.6"/><path d="M4 16.5c2.2-2.3 5.3-3.6 9.5-3.4"/><path d="M14.7 12.2 13.6 16M3.5 18.5h17"/>',
+ screen:'<rect x="4" y="5.5" width="16" height="11" rx="2"/><path d="M9 19.5h6M5 5l14 14"/>',
+ clock:'<circle cx="12" cy="12" r="7.5"/><path d="M12 8v4.2l2.8 1.8"/>',
+ face:'<circle cx="12" cy="12" r="7.5"/><path d="M9.3 10.2h.01M14.7 10.2h.01"/><path d="M9.2 13.8c1.6 1.6 4 1.6 5.6 0"/>',
+ heart:'<path d="M12 19s-6.5-4.1-6.5-9.2A3.7 3.7 0 0 1 12 7.4a3.7 3.7 0 0 1 6.5 2.4C18.5 14.9 12 19 12 19Z"/>',
+ note:'<path d="M9.5 17.5V6.5l9-2v11"/><circle cx="7.5" cy="17.5" r="2"/><circle cx="16.5" cy="15.5" r="2"/>',
+ hand:'<path d="M8 12.5V6.8a1.3 1.3 0 0 1 2.6 0V11M10.6 10.5V5.3a1.3 1.3 0 0 1 2.6 0v5.2M13.2 10.7V6.3a1.3 1.3 0 0 1 2.6 0v5.4M15.8 11.2V9a1.3 1.3 0 0 1 2.6 0v4.5c0 3.4-2.4 6-5.8 6h-.8c-2 0-3.3-.8-4.6-2.4L4.9 14a1.3 1.3 0 0 1 2-1.6L8 13.6"/>',
+ eye:'<path d="M3.5 12S6.5 6.5 12 6.5 20.5 12 20.5 12 17.5 17.5 12 17.5 3.5 12 3.5 12Z"/><circle cx="12" cy="12" r="2.6"/>',
+ rattle:'<circle cx="9" cy="9" r="4.5"/><path d="M12.3 12.3 18.5 18.5"/><path d="M17 20l3-3"/><path d="M7.4 8.2h.01M10.2 7.6h.01M9 10.6h.01"/>',
+ ear:'<path d="M8 9a4.5 4.5 0 0 1 9 0c0 3-2.6 3.8-2.6 6.3A2.7 2.7 0 0 1 11.7 18c-1.2 0-2-.6-2.4-1.5"/><path d="M10.5 9.2a2 2 0 0 1 4 0c0 1-.8 1.4-1.5 2"/><path d="M20 7.5c.7 1.4.7 3.6 0 5"/>',
+ gym:'<path d="M4 19c0-7 3.6-12 8-12s8 5 8 12"/><path d="M9 9v4M15 9v4"/><circle cx="9" cy="14.5" r="1.5"/><path d="M14 14h2v2h-2z"/>',
+ legs:'<path d="M7 5.5c3 2 3 5 1 8l-1.5 2.5M15.5 5.5c-1.5 3 .5 5.5 2.5 7.5l1 3"/><path d="M5 18.5h3M17.5 18.5h3"/>',
+ reach:'<circle cx="17" cy="7" r="2.6"/><path d="M4 17c3-3.6 6.3-6.6 10.2-8.6"/><path d="M4 20h16"/>',
+ mirror:'<ellipse cx="12" cy="10" rx="5.5" ry="6.5"/><path d="M12 16.5V20M9 20h6"/><path d="M9.6 8.2c.6-1 1.5-1.6 2.6-1.8"/>',
+ lips:'<path d="M4 12c2.5-3 5-3.5 8-1.8 3-1.7 5.5-1.2 8 1.8-2.5 3.5-5.2 4.5-8 4.5S6.5 15.5 4 12Z"/><path d="M4 12h16"/>',
+ sit:'<circle cx="12" cy="6" r="2.6"/><path d="M12 9v5.5M8.5 11.5l3.5-1.5 3.5 1.5"/><path d="M7 18.5c1.4-2.2 3-3.3 5-3.3s3.6 1.1 5 3.3Z"/>',
+ leaf:'<path d="M6 18c0-7 4.5-11.5 12-12-.5 7.5-5 12-12 12Z"/><path d="M6 18 13 11"/>',
+ drop:'<path d="M12 4v10M8 10.5l4 4 4-4"/><path d="M6 19.5h12"/>',
+ hide:'<path d="M4 9.5c3-2.5 13-2.5 16 0v6c-3 2.5-13 2.5-16 0Z"/><path d="M8.5 12.5c1 .7 2.2 1 3.5 1s2.5-.3 3.5-1"/>',
+ echo:'<path d="M4 6.5h9a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H9l-3 2.5v-2.5H6"/><path d="M15 10.5h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2v2.5l-3-2.5h-3"/>',
+ turns:'<path d="M5 9h12l-3-3M19 15H7l3 3"/>',
+ crawl:'<circle cx="18" cy="8.5" r="2.4"/><path d="M15.6 10.5 9 11.5c-2 .3-3.3 1.6-3.8 3.5L4.5 18M15 11.2l.8 6.8M9.5 11.7l1 6.3"/><path d="M3.5 19.5h17"/>',
+ wave:'<path d="M9 14.5V7.3a1.2 1.2 0 0 1 2.4 0v5M11.4 12V5.7a1.2 1.2 0 0 1 2.4 0V12M13.8 12V6.8a1.2 1.2 0 0 1 2.4 0V13c0 3.6-2.2 6.2-5.6 6.2-2.4 0-3.8-1.3-5-3.4l-1.4-2.6a1.2 1.2 0 0 1 2-1.3L9 14"/><path d="M18.5 4.5c1 .7 1.6 1.8 1.8 3M4 6.5c.3-1.2 1-2.2 2-2.8"/>',
+ drum:'<ellipse cx="12" cy="10" rx="7" ry="2.5"/><path d="M5 10v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/><path d="M8.5 3.5 11 8M17 4l-3 4"/>',
+ point:'<path d="M5.5 11h7.7a1.4 1.4 0 0 0 0-2.8H9.5"/><path d="M9 8.2V6.5a1.4 1.4 0 0 1 2.8 0"/><path d="M5.5 11v7h7.5a3 3 0 0 0 3-3v-3.5"/><path d="M19.5 6.5h.01"/>',
+ blocks:'<path d="M4.5 14h6v6h-6zM13.5 14h6v6h-6zM9 6h6v6H9z"/>',
+ push:'<path d="M4 9.5h10v7H4z"/><circle cx="6.5" cy="18.5" r="1.5"/><circle cx="11.5" cy="18.5" r="1.5"/><path d="M14 11.5h3.5L20 6.5"/>',
+ cup:'<path d="M6.5 6.5h11l-1.2 11.2a2 2 0 0 1-2 1.8H9.7a2 2 0 0 1-2-1.8Z"/><path d="M7 10.5h10"/>',
+ flap:'<path d="M4.5 5.5h7v13h-7zM12.5 5.5h7v13h-7z"/><path d="M12.5 10.5l4.5-3.5v8l-4.5 3.5"/>',
+ spark:'<path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.6 6.6l2.6 2.6M14.8 14.8l2.6 2.6M6.6 17.4l2.6-2.6M14.8 9.2l2.6-2.6"/>'
+};
+const PLAY_HABITS=[
+ ['talk','Serve and return','When she coos, looks or cries, answer with eyes, words or a cuddle, then pause for her turn.'],
+ ['book','Talk, read, sing','A few minutes of a book and a song every day, from day one. Your voice beats any recording.'],
+ ['tummy','Tummy time','Little and often while she’s awake, building to at least 30 minutes a day.'],
+ ['screen','No screens under 2','Video calls with family are fine. Babies learn from people, not screens.'],
+ ['clock','Free to move','No more than 1 hour at a time in the pram, car seat, bouncer or high chair.']];
+const PLAY_STAGES=[
+ {k:'0–4 wk',age:'Weeks 0 to 4',hue:'#f3c9c1',t:'Getting to know you',i:'Closeness is the main job. Play is a minute or two at a time, mostly face to face.',
+  see:['Focuses on faces 20 to 30 cm away','Turns to familiar voices','Startles at loud sounds','Calms when held'],
+  a:[['face','Face time','Hold her close and talk slowly. Poke your tongue out and pause. Some newborns copy.'],['tummy','Chest tummy time','Recline with her on your chest for 1 to 2 minutes, a few times a day.'],['talk','Narrate the day','Talk her through nappies, baths and dressing as if she understands.'],['note','Lullabies','Sing the same two or three songs at the same times each day.'],['hand','Gentle massage','Slow strokes down her arms, legs and back after a bath.']]},
+ {k:'5–8 wk',age:'Weeks 5 to 8',hue:'#f6d9a8',t:'First smiles',i:'Social smiles arrive, and with them the first real conversations: she coos, you answer, she answers back.',
+  see:['Smiles when you smile','Looks at your face','Coos and makes sounds','Watches you move','Holds her head up on her tummy'],
+  a:[['talk','Cooing chats','Copy her sounds back, then wait a few seconds for her turn.'],['eye','Follow me','Move your face or a rattle slowly from side to side.'],['tummy','Floor tummy time','A blanket on the floor with a toy or mirror at eye level.'],['ear','Sound hunt','Shake a rattle gently to one side. Does she look for it?'],['book','Bold books','Hold a simple board book close and name each picture.']]},
+ {k:'9–12 wk',age:'Weeks 9 to 12',hue:'#cfe3b5',t:'Hands and kicks',i:'She discovers her hands, swipes at things on purpose and chats for longer.',
+  see:['Coos “oooo” and “aahh”','Turns to your voice','Studies her hands','Swipes at toys','Pushes up on her forearms'],
+  a:[['gym','Play gym','Lie her under a few toys hung within reach to swipe at.'],['rattle','Hold and mouth','Pop a light rattle in her hand. Mouthing is how she explores.'],['legs','Bicycle legs','Cycle her legs gently, or let her kick against your hands.'],['tummy','Towel roll','A rolled towel under her chest makes tummy time easier.'],['talk','Name game','Call her name from different sides of the room.']]},
+ {k:'4–6 mo',age:'Months 4 to 6',hue:'#bfe0dc',t:'Laughs and rolls',i:'Properly playful now: laughing, reaching, rolling and starting to sit with help.',
+  see:['Laughs','Knows familiar people','Blows raspberries','Reaches for toys','Rolls tummy to back','Sits leaning on her hands'],
+  a:[['reach','Just out of reach','Put a toy a little past her hands during tummy time.'],['lips','Raspberries','Blow raspberries and babble back and forth.'],['sit','Supported sitting','Sit her between your legs with toys in front.'],['leaf','Name things on walks','Point and name: dog, tree, bus.'],['drop','Drop and return','Give back dropped toys and say “there it is”.'],['mirror','Mirror play','Point and name: there’s your nose.']]},
+ {k:'7–9 mo',age:'Months 7 to 9',hue:'#c9d6ef',t:'Babbles and peekaboo',i:'She sits on her own, starts to move, and learns things still exist when hidden.',
+  see:['Babbles “mamama”, “bababa”','Wary of strangers','Looks when called','Lifts arms to be picked up','Sits without support','Passes toys hand to hand'],
+  a:[['hide','Peekaboo','Hide behind a cloth, or a toy under a blanket, and let her find it.'],['echo','Echo and add','Repeat her babble and add a word: ba-ba… ball!'],['turns','My turn, your turn','Pass a toy back and forth, or take turns filling a tub.'],['crawl','Crawl course','Toys just out of reach and cushions to clamber over.'],['wave','Wave and sign','Wave bye-bye and try simple signs like “more”.'],['drum','Bang and clap','Wooden spoon and a saucepan, and clapping songs.']]},
+ {k:'10–12 mo',age:'Months 10 to 12',hue:'#ddcdea',t:'Pointing and first words',i:'She pulls up, cruises the furniture and understands far more than she can say.',
+  see:['Waves bye-bye','Says mama, dada or a special name','Understands “no”','Pulls up to stand','Cruises furniture','Picks up food with thumb and finger'],
+  a:[['point','Point and name','When she points, name it and add a little: a big red truck.'],['blocks','In and out','A tub and blocks to drop in and tip out.'],['push','Cruise and push','Sturdy furniture or a push toy. Skip baby walkers.'],['flap','Flap books','Let her lift the flaps: where’s the dog?'],['drum','Kitchen band','Pots, pans and wooden spoons on the floor.'],['cup','Finger food','Soft finger foods and a small open cup of water.']]}
+];
+function playAgeStage(){ const b=(babyData().about||{}).born; if(!b) return null; const t=Date.parse(b); if(isNaN(t)) return null; const days=Math.floor((Date.now()-t)/864e5); if(days<0) return null;
+  return days<35?0:days<63?1:days<91?2:days<213?3:days<304?4:days<366?5:null }
+function playHTML(){ const auto=playAgeStage(); const si=UI.bbPlay!=null?UI.bbPlay:(auto!=null?auto:0); const S2=PLAY_STAGES[si];
+  const pic=(k,h)=>`<span class="plic" style="background:${h}"><svg viewBox="0 0 24 24" aria-hidden="true">${PLAY_IC[k]||PLAY_IC.spark}</svg></span>`;
+  return `<h2 class="labh">Play and development</h2>
+  <div class="plhab">${PLAY_HABITS.map(([k,t,d],i)=>`<div class="plhabc">${pic(k,PLAY_STAGES[i].hue)}<b>${esc(t)}</b><p>${esc(d)}</p></div>`).join('')}</div>
+  <div class="lsec plstage" style="--hue:${S2.hue}">
+    <div class="pltrack" role="tablist">${PLAY_STAGES.map((x,i)=>`<button role="tab" aria-selected="${i===si}" class="${i===si?'on':''}${i===auto?' now':''}" data-act="bbplay" data-i="${i}" style="--h:${x.hue}"><i></i><span>${esc(x.k)}</span>${i===auto?'<em>Now</em>':''}</button>`).join('')}</div>
+    <div class="plhead"><div><div class="kick">${esc(S2.age)}</div><h3>${esc(S2.t)}</h3><p>${esc(S2.i)}</p></div></div>
+    <div class="fsec">What you might see</div>
+    <div class="plsee">${S2.see.map(x=>`<span>${esc(x)}</span>`).join('')}</div>
+    <div class="fsec">Try this</div>
+    <div class="placts">${S2.a.map(([k,t,d])=>`<div class="plact">${pic(k,S2.hue)}<div><b>${esc(t)}</b><p>${esc(d)}</p></div></div>`).join('')}</div>
+    <p class="muted" style="font-size:11px;line-height:1.6;margin:18px 0 0">Every baby develops at her own pace. Most babies can do these things by the end of the stage, so it’s normal not to see them all yet. If she’s missing several, or loses a skill she had, mention it at her next child health check. Based on the <a href="https://www.cdc.gov/act-early/milestones/index.html" target="_blank" rel="noopener">CDC milestones</a>, <a href="https://www.health.gov.au/topics/physical-activity-and-exercise/physical-activity-and-exercise-guidelines-for-all-australians/for-infants-toddlers-and-preschoolers-birth-to-5-years" target="_blank" rel="noopener">Australia’s movement guidelines</a> and <a href="https://developingchild.harvard.edu/science/key-concepts/serve-and-return/" target="_blank" rel="noopener">Harvard’s serve and return research</a>.</p>
+  </div>` }
 function viewBaby(){ const d=babyData(); const w=canWrite(); const a=d.about||{}; const done=d.todo.filter(i=>i.done).length;
   const ph={born:'e.g. 2 Dec 2026',weight:'kg',length:'cm',head:'cm',time:'e.g. 4.12am'};
   const about=`<div class="lsec"><div class="lsh"><h3>About her</h3></div><div class="bbabout">${BABY_FIELDS.map(([k,l])=>`<label class="bbf"><span class="lbl">${l}</span>${w?`<input class="in" id="bbf-${k}" data-babyf="${k}" value="${esc(a[k]||'')}" placeholder="${ph[k]||''}" autocomplete="off">`:`<span>${esc(a[k]||'')}</span>`}</label>`).join('')}</div></div>`;
@@ -1294,7 +1394,7 @@ function viewBaby(){ const d=babyData(); const w=canWrite(); const a=d.about||{}
   const cues=`<h2 class="labh">Reading her cues</h2><div class="cuegrid">${CUES.map(([k,t,l,d])=>`<div class="lsec cue"><svg class="cueic" viewBox="0 0 48 48" aria-hidden="true">${CUE_FACE[k]}</svg><h3>${esc(t)}</h3><div class="fsec">Looks like</div><p>${esc(l)}</p><div class="fsec">What to do</div><p>${esc(d)}</p></div>`).join('')}</div>`;
   const note=`<p class="muted" style="font-size:11px;line-height:1.6;margin:22px 0 0">A general guide only. Your midwife, child health nurse and GP know her best.</p>`;
   return `<div class="head"><div class="tg"><div class="kick">Welcome home</div><h1 class="h1">Baby girl</h1></div></div>
-    <div class="labtop">${about}${help}</div>${todo}${weeks}${cues}<div style="height:20px"></div>${urgent}${note}` }
+    <div class="labtop">${about}${help}</div>${todo}${weeks}${playHTML()}${cues}<div style="height:20px"></div>${urgent}${note}` }
 document.addEventListener('change',e=>{ const k=e.target&&e.target.dataset&&e.target.dataset.babyf; if(!k) return; const d=JSON.parse(JSON.stringify(babyData())); d.about=d.about||{}; d.about[k]=e.target.value.trim(); saveBaby(d,true) });
 /* ---------- home ---------- */
 function favWidgets(){ const fs=sortedLists().filter(L=>L.fav); if(!fs.length) return '';
@@ -1571,6 +1671,7 @@ document.addEventListener('click',async e=>{
     case 'bbtick': { const d=babyData(); const i=d.todo.find(x=>x.id===id); if(i){ i.done=!i.done; saveBaby(d) } break }
     case 'bbrm': { const d=babyData(); d.todo=d.todo.filter(x=>x.id!==id); saveBaby(d); break }
     case 'bbwk': UI.bbWk=+t.dataset.i; render(); break
+    case 'bbplay': UI.bbPlay=+t.dataset.i; render(); break
     case 'bbdone': UI.bbDone=!UI.bbDone; render(); break
     case 'labpacked': UI.labPacked=!UI.labPacked; render(); break
     case 'labrm': { const d=labData(); d.pack=d.pack.filter(x=>x.id!==id); saveLab(d); break }
