@@ -698,7 +698,11 @@ const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const parse=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
 const addDays=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return ymd(d)};
 const mondayOf=s=>{const d=parse(s);const w=(d.getDay()+6)%7;d.setDate(d.getDate()-w);return ymd(d)};
-const TODAY=ymd(new Date());
+/* "today" is always the date in Perth, and moves on at midnight even if the app stays open */
+function perthToday(){ try{ const p=new Intl.DateTimeFormat('en-AU',{timeZone:'Australia/Perth',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const g=t=>(p.find(x=>x.type===t)||{}).value; return g('year')+'-'+g('month')+'-'+g('day') }catch(e){ return ymd(new Date()) } }
+let TODAY=perthToday();
+function checkDay(){ const t=perthToday(); if(t!==TODAY){ TODAY=t; try{ if(typeof choresSoon==='function') choresSoon() }catch(e){} render() } }
+setInterval(checkDay,60000); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') checkDay() }); window.addEventListener('focus',checkDay);
 const longDate=s=>{const d=parse(s);return DAYS_LONG[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()]};
 const weekLabel=w=>{const a=parse(w),b=parse(addDays(w,6));return a.getMonth()===b.getMonth()?`${a.getDate()} – ${b.getDate()} ${MONTHS[b.getMonth()]}`:`${a.getDate()} ${MONTHS[a.getMonth()].slice(0,3)} – ${b.getDate()} ${MONTHS[b.getMonth()].slice(0,3)}`};
 const weekMonths=w=>{const a=parse(w),b=parse(addDays(w,6));return a.getMonth()===b.getMonth()?MONTHS[a.getMonth()]+' '+a.getFullYear():MONTHS[a.getMonth()]+(a.getFullYear()!==b.getFullYear()?' '+a.getFullYear():'')+' – '+MONTHS[b.getMonth()]+' '+b.getFullYear()};
